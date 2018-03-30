@@ -18,6 +18,9 @@ based on
 https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder
 instead to remove this limitation.
 
+# Screenshot
+![Glasses viewer screenshot](/screenshot.jpg?raw=true)
+
 # Usage
 When running the viewer GUI, `glassesViewer.m`, a file picker will
 appear. Select the folder of a recording to view. This needs to point to
