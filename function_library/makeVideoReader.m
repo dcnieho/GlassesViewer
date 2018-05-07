@@ -8,10 +8,6 @@ cleaner = onCleanup(@()warning(warnState));
 mmrobj = VideoReader(fName);
 
 rdr.StreamHandle = mmrobj;
-nFrames = get(mmrobj, 'NumberOfFrames');
-if isempty(nFrames)
-    error(message('MATLAB:audiovideo:VideoReader:unknownNumFrames',lastwarn));
-end
 
 rdr.FrameRate  = get(mmrobj, 'FrameRate');
 rdr.Dimensions = [get(mmrobj, 'Height') get(mmrobj, 'Width')];
@@ -22,9 +18,15 @@ if qGetPreciseEndFrame
     % NumFrames field is not reliable. I get "The frame index requested is
     % beyond the end of the file." errors before reaching NumberOfFrames as
     % read index. So, try to read the last frame and run back until we find a
-    % frame that can be read. Assume unreliable both ways, so start with a few
-    % frames too much.
-    s = nFrames+10;
+    % frame that can be read. NB: This happens for mp4 files where last few
+    % frames are erroneously marked as keyframes. This seek method fails on
+    % that. This can be determined directly from stss table of the video
+    % track in the mp4 file (for the Tobii Glasses files I have looked at).
+    nFrames = get(mmrobj, 'NumberOfFrames');
+    if isempty(nFrames)
+        error(message('MATLAB:audiovideo:VideoReader:unknownNumFrames',lastwarn));
+    end
+    s = nFrames;
     while true
         try
             rdr.StreamHandle.read(s);
