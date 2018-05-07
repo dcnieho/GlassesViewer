@@ -1494,7 +1494,7 @@ for p=1:size(hm.UserData.vid.objs,2)
         case 2
             field = 'eye';
     end
-    frameToShow = find(hm.UserData.data.videoSync.(field).fts>=hm.UserData.time.currentTime,1);
+    frameToShow = find(hm.UserData.data.videoSync.(field).fts<=hm.UserData.time.currentTime,1,'last');
     
     % if different from currently showing frame, update
     if ~isempty(frameToShow) && hm.UserData.vid.currentFrame(p)~=frameToShow
