@@ -249,49 +249,41 @@ if qGenCacheFile
                     tsoff= data.videoSync.  eye.ts(data.videoSync.  eye.evts==0);
             end
             fname = fullfile(recordingDir,'segments',segments(s).name,file);
-            objs = makeVideoReader(fname,true);
-            % get frame timestamps from info stored in the mp4 file's atoms
-            if isdeployed
-                exe = 'mp4dump.exe';
-            else
-                path= fileparts(mfilename('fullpath'));
-                exe = fullfile(path,'mp4dump.exe');
-            end
-            [~,mp4Info] = system(['"' exe '" "' fname '" --verbosity 1 --format json']);
-            mp4Info=jsondecode(mp4Info);
-            assert(strcmp(mp4Info{4}.name,'moov'))
-            assert(strcmp(mp4Info{4}.children{2}.name,'trak'))
-            assert(strcmp(mp4Info{4}.children{2}.children{2}.name,'mdia'))
-            assert(strcmp(mp4Info{4}.children{2}.children{2}.children{1}.name,'mdhd'))
-            assert(strcmp(mp4Info{4}.children{2}.children{2}.children{3}.children{3}.children{2}.name,'stts'))
-            % get timescale, duration in those units and duration in ms
-            timeInfo = mp4Info{4}.children{2}.children{2}.children{1};
-            assert(round(timeInfo.duration_ms_-objs.StreamHandle.Duration*1000)==0)
-            % get ssts Table, containing the info needed to determine
-            % timestamp for each frame
-            stts = mp4Info{4}.children{2}.children{2}.children{3}.children{3}.children{2};
-            % now, use entries in stts to determine frame timestamps. Use
-            % formulae described here: https://developer.apple.com/library/content/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-25696
-            fields = fieldnames(stts); fields(1:4) = [];
-            sttsEntries = cellfun(@(x) sscanf(stts.(x),'sample_count=%d, sample_duration=%d').',fields,'uni',false);
-            sttsEntries = cat(1,sttsEntries{:});
-            if sttsEntries(end,2)==0
-                sttsEntries(end,:) = [];
-            end
+            % get frame timestamps and such from info stored in the mp4
+            % file's atoms
+            [timeInfo,sttsEntries,atoms,videoTrack] = getMP4VideoInfo(fname);
+            % 1. timeInfo (from mdhd atom) contains info about timescale,
+            % duration in those units and duration in ms
+            % 2. stts table, contains the info needed to determine
+            % timestamp for each frame. Use entries in stts to determine
+            % frame timestamps. Use formulae described here:
+            % https://developer.apple.com/library/content/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-25696
             fIdxs = SmartVec(sttsEntries(:,2),sttsEntries(:,1),'flat');
             timeStamps = cumsum([0 fIdxs]);
-            timeStamps = timeStamps/timeInfo.timescale;
+            timeStamps = timeStamps/timeInfo.time_scale;
             % last is timestamp for end of last frame, should be equal to
             % length of video
-            assert(floor(timeStamps(end)*1000)==timeInfo.duration_ms_,'these should match')
-            % we may have more timestamps than actually readable frames,
-            % throw away ones we don't need
-            assert(length(timeStamps)>=objs.NumFrames)
-            timeStamps(objs.NumFrames+1:end) = [];
+            assert(floor(timeStamps(end)*1000)==timeInfo.duration_ms,'these should match')
+            % 3. determine number of frames in file that matlab can read by
+            % direct indexing. It seems the Tobii files sometimes have a
+            % few frames at the end erroneously marked as keyframes. All
+            % those cannot be read by matlab (when using read for a
+            % specific time or frame number), so take number of frames as
+            % last real keyframe. If not a problem, just take number of
+            % frames as last for which we have timeStamp
+            lastFrame = atoms.tracks(videoTrack).stss.table(find(diff(atoms.tracks(videoTrack).stss.table)==1,1));
+            if isempty(lastFrame)
+                lastFrame = sum(sttsEntries(:,1));
+            end
+            % now that we know number of readable frames, we may have more
+            % timestamps than actually readable frames, throw away ones we
+            % don't need as we can't read
+            assert(length(timeStamps)>=lastFrame)
+            timeStamps(lastFrame+1:end) = [];
             % Sync video frames with data by offsetting the timelines for
             % each based on timesync info in tobii data file
             data.videoSync.(field).fts = [data.videoSync.(field).fts timeStamps+tsoff(s)];
-            data.videoSync.(field).segframes = [data.videoSync.(field).segframes objs.NumFrames];
+            data.videoSync.(field).segframes = [data.videoSync.(field).segframes lastFrame];
         end
     end
     

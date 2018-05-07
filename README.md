@@ -12,12 +12,6 @@ GUI, it is quite possible that the viewer part of this repository is not
 all that compatible with different matlab versions. Pull requests
 welcomed!
 
-Currently only works on windows due to mp4dump.exe utility used for
-getting timestamps of frames in the video files. Should move to code
-based on
-https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder
-instead to remove this limitation.
-
 # Screenshot
 ![Glasses viewer screenshot](/screenshot.jpg?raw=true)
 
@@ -54,9 +48,6 @@ position
 zoomed along the cursor position
 
 # TODOs
-- replace mp4dump.exe with code based on
-  https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder,
-  which reads just the relevant bits from the mp4 header. 
 - have settings in an option file (XML or json? prefer latter)
 - progress bar when loading in data Tobii data (not linear time but can indicate steps completed or so)
 - support for viewing data from other systems (e.g. SMI glasses)
@@ -70,8 +61,17 @@ zoomed along the cursor position
 - file picker: if failed (e.g. wrong folder), outline the problem areas
   in red
 
-# license details
-Most parts of this repository are licensed under the Creative Commons
-Attribution 4.0 (CC BY 4.0) license. mp4dump.exe carries its own license
+# Known issues
+- matlab VideoReader (at least in R2017b on Windows 10) cannot read the
+  last few frames of some video files, when seeking to a specific time
+  of frame, even though it can read them when just reading through the
+  file frame by frame. This *appears* to occur for files where the last
+  few frames are marked as keyframes in the mp4 stss table, even though
+  they are not. All read frames are correct, so not a big problem.
 
-mp4dump.exe is from https://github.com/axiomatic-systems/Bento4
+# License details
+Most parts of this repository are licensed under the Creative Commons
+Attribution 4.0 (CC BY 4.0) license.
+
+# Acknowledgments
+mp4 parsing code extracted from https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder
