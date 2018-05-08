@@ -46,7 +46,7 @@ function vect = SmartVec(start,slength,step,mode)
 % DN 2011-07-23 Now supports different stepsizes for each segment
 
 % check input
-psychassert(length(slength)==1 || length(slength)==length(start),'slength must be a scalar or a vector with the same length as start');
+assert(length(slength)==1 || length(slength)==length(start),'slength must be a scalar or a vector with the same length as start');
 qplat   = false;
 qneg    = false;
 mult    = 1;
@@ -71,7 +71,7 @@ if nargin >= 3
         mult = step;
     end
 end
-psychassert(length(mult)==1 || length(mult)==length(start),'step must be a scalar or a vector with the same length as start');
+assert(length(mult)==1 || length(mult)==length(start),'step must be a scalar or a vector with the same length as start');
 maxlen      = max(slength);
 slength     = slength(:);
 
