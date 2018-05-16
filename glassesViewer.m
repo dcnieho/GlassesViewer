@@ -1,4 +1,4 @@
-clear all
+function hm = glassesViewer
 close all
 
 qDEBUG = false;
@@ -434,6 +434,13 @@ drawnow;
 doPostInit(hm);
 updateTime(hm);
 drawnow;
+
+if nargout==0
+    % assign hm in base, so we can just run this function with F5 and still
+    % observe state of the GUI from the command line
+    assignin('base','hm',hm);
+end
+end
 
 
 
