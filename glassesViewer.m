@@ -47,7 +47,7 @@ hm.UserData.ui.DPIScale             = getDPIScale();
 
 %% global options and starting values
 hm.UserData.settings.plot.removeAccDC        = true; % remove DC from the accelerometer trace?
-hm.UserData.settings.plot.SGWindowVelocity   = 20;   % ms
+hm.UserData.settings.plot.SGWindowVelocity   = 20;   % ms (gets adjusted below if not matching sampling frequency of data)
 
 hm.UserData.plot.timeWindow             = 2;    % s
 plotOrder                               = {'azi','gyro','ele','vel','pup','acc'};   % do not make a settings, as it'll be stored by means of tags in the axes themselves. this one could only get stale...
@@ -126,13 +126,14 @@ for a=1:nPanel
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.ele,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'vel'
             % 3. velocity
-            velL = getVelocity(hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs,false);
-            velR = getVelocity(hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs,false);
-            hm.UserData.plot.defaultValueScale(:,a) = [0 min(nanmax([velL.vel(:); velR.vel(:)]),hm.UserData.settings.plot.velLim)];
+            hm.UserData.settings.plot.SGWindowVelocity = max(2,round(hm.UserData.settings.plot.SGWindowVelocity/1000*hm.UserData.data.eye.fs))*1000/hm.UserData.data.eye.fs;    % min SG window is 2*sample duration
+            velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
+            velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
+            hm.UserData.plot.defaultValueScale(:,a) = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','vel');
             hm.UserData.plot.ax(a).YLabel.String = 'vel (°/s)';
-            plot(hm.UserData.data.eye. left.ts,velL.vel,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
-            plot(hm.UserData.data.eye.right.ts,velR.vel,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
+            plot(hm.UserData.data.eye. left.ts,velL,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
+            plot(hm.UserData.data.eye.right.ts,velR,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'pup'
             % 4. pupil
             hm.UserData.plot.defaultValueScale(:,a) = [0 nanmax([hm.UserData.data.eye.left.pd(:); hm.UserData.data.eye.right.pd(:)])];
@@ -464,17 +465,40 @@ end
 hm.UserData.plot.axRect= [hm.UserData.plot.axPos(:,1:2) hm.UserData.plot.axPos(:,1:2)+hm.UserData.plot.axPos(:,3:4)];
 end
 
-function out = getVelocity(data,velWindow,fs,qAlsoStoreComponentDerivs)
+function vel = getVelocity(hm,data,velWindow,fs)
 % span of filter, use minimum length of saccade. Its very important to not
 % make the filter window much wider than the narrowest feature we are
 % interested in, or we'll smooth out those features too much.
 window  = ceil(velWindow/1000*fs);
 % number of filter taps
 ntaps   = 2*ceil(window)-1;
+% polynomial order
+pn = 2;
+% differentiation order
+dn = 1;
 
-% calc deriv
-tempV = savitzkyGolayFilt([data.azi data.ele],2,1,ntaps);
-tempV = -tempV * fs;                 % not sure why, but the Savitzky-Golay filter gives me the wrong sign for the component velocities
+tempV = [data.azi data.ele];
+if pn < ntaps
+    % smoothed deriv
+    tempV = -savitzkyGolayFilt(tempV,pn,dn,ntaps) * fs;
+else
+    % numerical deriv
+    tempV   = diff(tempV,1,1);
+    % make same length as position trace by repeating first sample
+    tempV   = tempV([1 1:end],:) * fs;
+end
+% indicate too small window by coloring spinner red
+if isfield(hm.UserData.ui,'setting')
+    obj = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','LWSpinner');
+    obj = obj.Editor().getTextField().getBackground;
+    clr = [obj.getRed obj.getGreen obj.getBlue]./255;
+    
+    obj = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','SGSpinner');
+    if pn >= ntaps
+        clr(2:3) = .5;
+    end
+    obj.Editor().getTextField().setBackground(javax.swing.plaf.ColorUIResource(clr(1),clr(2),clr(3)));
+end
 
 % Calculate eye velocity and acceleration straightforwardly by applying
 % Pythagoras' theorem. This gives us no information about the
@@ -482,13 +506,7 @@ tempV = -tempV * fs;                 % not sure why, but the Savitzky-Golay filt
 % calculated correctly. Apply scale for velocity, as a 10° azimuth
 % rotation at 0° elevation does not cover same distance as it does at
 % 45° elevation: sqrt(theta_dot^2*cos^2 phi + phi_dot^2)
-out.vel     = hypot(tempV(:,1).*cosd(data.ele), tempV(:,2));
-
-if qAlsoStoreComponentDerivs
-    % also store velocities and acceleration in X and Y direction
-    out.velAzi = tempV(:,1);
-    out.velEle = tempV(:,2);
-end
+vel = hypot(tempV(:,1).*cosd(data.ele), tempV(:,2));
 end
 
 function doZoom(hm,evt)
@@ -617,7 +635,7 @@ c=0;
 c=c+1;
 SGPos       = [140 parent.InnerPosition(4)-5-20 60 20];
 ts          = 1000/hm.UserData.data.eye.fs;
-jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts*2,ts*20,ts);
+jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
 comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',SGPos,'Tag','SGSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
@@ -660,14 +678,14 @@ comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',lbl
 c=c+1;
 arrangerPos = [10+butSz(1)+5 lblPos(2)-arrangerSz(2) arrangerSz];
 listItems   = {hm.UserData.plot.ax.Tag};
-comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPos, 'String',listItems,'Tag','plotArranger','Max',2,'Min',0,'Value',[]);
+comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPos, 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
 listbox     = comps(c);
 
 % 3.3 listbox
 c=c+1;
 arrangerPosJ= [arrangerPos(1)+arrangerPos(3)+5+butSz(1)+5 arrangerPos(2) arrangerSz];
 listItems   = {};
-comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPosJ, 'String',listItems,'Tag','plotArranger','Max',2,'Min',0,'Value',[]);
+comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPosJ, 'String',listItems,'Tag','plotArrangerHidden','Max',2,'Min',0,'Value',[]);
 listboxJail = comps(c);
 
 
@@ -708,7 +726,7 @@ c=c+1;
 LWPos       = [140 sepPos(2)-sepPos(4)-5-20 60 20];
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',LWPos,'Tag','SGSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',LWPos,'Tag','LWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0.0 pix ');
 comps(c).JavaComponent.setEditor(jEditor);
@@ -717,7 +735,7 @@ c=c+1;
 jLabel      = com.mathworks.mwswing.MJLabel('Plot line width');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
 jLabel.setToolTipText('Line width for the plotted data');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,LWPos(2),LWPos(1)-10,LWPos(4)],'Tag','SGSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,LWPos(2),LWPos(1)-10,LWPos(4)],'Tag','LWSpinnerLabel');
 
 % 6 separator
 c=c+1;
@@ -806,15 +824,15 @@ if newVal~=hm.UserData.settings.plot.SGWindowVelocity
     hm.UserData.settings.plot.SGWindowVelocity = newVal;
     
     % refilter data
-    velL = getVelocity(hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs,false);
-    velR = getVelocity(hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs,false);
+    velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
+    velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
     
     % update plot
     ax = findobj(hm.UserData.plot.ax,'Tag','vel');
     left  = findobj(ax.Children,'Tag','data|left');
-    left.YData = velL.vel;
+    left.YData = velL;
     right = findobj(ax.Children,'Tag','data|right');
-    right.YData = velR.vel;
+    right.YData = velR;
 end
 end
 
