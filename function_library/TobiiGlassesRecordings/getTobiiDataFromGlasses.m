@@ -294,3 +294,5 @@ if qGenCacheFile
 else
     data = load(fullfile(recordingDir,'livedata.mat'));
 end
+
+checkMissingFrames(data, 0.05, 0.1);
