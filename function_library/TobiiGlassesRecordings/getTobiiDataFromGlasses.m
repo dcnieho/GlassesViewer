@@ -164,15 +164,15 @@ if qGenCacheFile
     qData   (qRemove,:) = [];
     clear qAllEyeDat qBad qDupl qGidxTags qHasEye qHasGidx qLeftEye qRemove i j gs x
     % 4.2 pupil data: pupil center (3D position w.r.t. scene camera) and pupil diameter
-    pc  = getDataTypeFromTobiiArray(dat,qData(:,1) , 'pc',3,{'gidx','eye'},2,qDEBUG);       % pupil center
-    pd  = getDataTypeFromTobiiArray(dat,qData(:,2) , 'pd',1,{'gidx','eye'},2,qDEBUG);       % pupil diameter
+    pc  = getDataTypeFromTobiiArray(dat,qData(:,1), 'pc',3,{'gidx','eye'},2,qDEBUG);        % pupil center
+    pd  = getDataTypeFromTobiiArray(dat,qData(:,2), 'pd',1,{'gidx','eye'},2,qDEBUG);        % pupil diameter
     % 4.3 gaze data: gaze direction vector. gaze position on scene video. 3D gaze position (where eyes intersect, in camera coordinate system?)
-    gd  = getDataTypeFromTobiiArray(dat,qData(:,3) , 'gd',3,{'gidx','eye'},2,qDEBUG);       % gaze direction
-    gp  = getDataTypeFromTobiiArray(dat,qData(:,4) , 'gp',2,{'gidx'      },1,qDEBUG);       % gaze position on scene video
-    gp3 = getDataTypeFromTobiiArray(dat,qData(:,5),'gp3',3,{'gidx'      },1,qDEBUG);       % gaze convergence position in 3D space
+    gd  = getDataTypeFromTobiiArray(dat,qData(:,3), 'gd',3,{'gidx','eye'},2,qDEBUG);        % gaze direction
+    gp  = getDataTypeFromTobiiArray(dat,qData(:,4), 'gp',2,{'gidx'      },1,qDEBUG);        % gaze position on scene video
+    gp3 = getDataTypeFromTobiiArray(dat,qData(:,5),'gp3',3,{'gidx'      },1,qDEBUG);        % gaze convergence position in 3D space
     % 4.4 gyroscope and accelerometer data
-    gy  = getDataTypeFromTobiiArray(dat,qData(:,6) , 'gy',3,{'ts'        },0,false );       % gyroscope
-    ac  = getDataTypeFromTobiiArray(dat,qData(:,7) , 'ac',3,{'ts'        },0,false );       % accelerometer
+    gy  = getDataTypeFromTobiiArray(dat,qData(:,6), 'gy',3,{'ts'        },0,false );        % gyroscope
+    ac  = getDataTypeFromTobiiArray(dat,qData(:,7), 'ac',3,{'ts'        },0,false );        % accelerometer
     % 4.5 get video sync info. (e)vts package contains what video
     % timestamp corresponds to a given data timestamp, these occur once
     % in a while so we can see how the two clocks have progressed.
