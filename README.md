@@ -22,10 +22,15 @@ a specific recording's folder. If "projects" is the project folder on
 the SD card, an example of a specific recording is:
     `projects\rkamrkb\recordings\zi4xmt2`
 
-If you just wish to parse the Tobii glasses data into a matlab readable
+If you just wish to parse the Tobii glasses data into a MATLAB readable
 file, you can directly call
 `./function_library/TobiiGlassesRecordings/getTobiiDataFromGlasses.m`
 with the same specific recording as above as the input argument.
+
+Default settings for the reader are in the `default.json` file. To alter
+these settings, read in the json file with `jsondecode()`, change any
+values in the resulting struct, and pass that as an input argument to
+`glassesViewer`.
 
 # Viewer interface
 keys:
@@ -48,10 +53,10 @@ position
 zoomed along the cursor position
 
 # TODOs
-- have settings in an option file (XML or json? prefer latter)
 - progress bar when loading in data Tobii data (not linear time but can indicate steps completed or so)
 - support for viewing data from other systems (e.g. SMI glasses)
-- make fancier file picker (see undocumentedmatlab example). When
+- make fancier file picker (see undocumentedmatlab example at
+  https://undocumentedmatlab.com/blog/javacomponent). When
   selecting a folder, autodetect which tracker the data comes from and
   sampling freq (and e.g. for SMI, notify that you must run idfconverter
   if have not yet done that). User can change detected system (and

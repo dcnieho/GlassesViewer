@@ -1,0 +1,15 @@
+{
+    "plot":
+    {
+        "removeAccDC"     : true,
+        "SGWindowVelocity": 20,
+        "timeWindow"      : 2,
+        "initPanelOrder"  : ["azi","ele","vel","pup","gyro","acc"],
+        "aziLim"          : 45,
+        "eleLim"          : 30,
+        "velLim"          : 400,
+        "gyroLim"         : 150,
+        "lineWidth"       : 1,
+        "scarfHeight"     : 10
+    }
+}

@@ -1,9 +1,16 @@
-function hm = glassesViewer
+function hm = glassesViewer(settings)
 close all
 
 qDEBUG = false;
 if qDEBUG
     dbstop if error
+end
+
+if nargin<1 || isempty(settings)
+    myDir     = fileparts(mfilename('fullpath'));
+    fid       = fopen(fullfile(myDir,'defaults.json'),'rt');
+    settings  = jsondecode(fread(fid,inf,'*char').');
+    fclose(fid);
 end
 
 addpath(genpath('function_library'))
@@ -46,16 +53,7 @@ hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2),
 hm.UserData.ui.DPIScale             = getDPIScale();
 
 %% global options and starting values
-hm.UserData.settings.plot.removeAccDC        = true; % remove DC from the accelerometer trace?
-hm.UserData.settings.plot.SGWindowVelocity   = 20;   % ms (gets adjusted below if not matching sampling frequency of data)
-
-hm.UserData.plot.timeWindow             = 2;    % s
-plotOrder                               = {'azi','ele','vel','pup','gyro','acc'};   % do not make a settings, as it'll be stored by means of tags in the axes themselves. this one could only get stale...
-hm.UserData.settings.plot.aziLim        = 45;
-hm.UserData.settings.plot.eleLim        = 30;
-hm.UserData.settings.plot.velLim        = 400;
-hm.UserData.settings.plot.gyroLim       = 150;
-hm.UserData.settings.plot.lineWidth     = 1;    % pix
+hm.UserData.settings = settings;
 
 %% setup time
 % setup main time and timer for smooth playback
@@ -98,17 +96,17 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-setupPlots(hm,plotOrder);
+setupPlots(hm,hm.UserData.settings.plot.initPanelOrder);
 
 % make axes and plot data
-nPanel = length(plotOrder);
+nPanel = length(hm.UserData.settings.plot.initPanelOrder);
 hm.UserData.plot.ax = gobjects(1,nPanel);
 hm.UserData.plot.defaultValueScale = zeros(2,nPanel);
-commonPropAxes = {'XGrid','on','GridLineStyle','-','NextPlot','add','Parent',hm,'XTickLabel',{},'Units','pixels','XLim',[0 hm.UserData.plot.timeWindow],'Layer','top'};
+commonPropAxes = {'XGrid','on','GridLineStyle','-','NextPlot','add','Parent',hm,'XTickLabel',{},'Units','pixels','XLim',[0 hm.UserData.settings.plot.timeWindow],'Layer','top'};
 commonPropPlot = {'HitTest','off','LineWidth',hm.UserData.settings.plot.lineWidth};
 % we have:
 for a=1:nPanel
-    switch plotOrder{a}
+    switch hm.UserData.settings.plot.initPanelOrder{a}
         case 'azi'
             % 1. azimuth
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.aziLim.*[-1 1]];
@@ -162,7 +160,7 @@ for a=1:nPanel
             plot(hm.UserData.data.accelerometer.ts,ac(:,2),'b','Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,3),'g','Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
         otherwise
-            error('data panel type ''%s'' not understood',plotOrder{a});
+            error('data panel type ''%s'' not understood',hm.UserData.settings.plot.initPanelOrder{a});
     end
 end
 % setup x axis of bottom plot
@@ -324,7 +322,7 @@ vidPos = hm.UserData.vid.ax(1).Position;
 sliderSz = [vidPos(3) 40];
 sliderPos= [vidPos(1) vidPos(2)-sliderSz(2) sliderSz];
 hm.UserData.ui.VCR.slider.fac= 100;
-hm.UserData.ui.VCR.slider.raw = com.jidesoft.swing.RangeSlider(0,hm.UserData.time.endTime*hm.UserData.ui.VCR.slider.fac,0,hm.UserData.plot.timeWindow*hm.UserData.ui.VCR.slider.fac);
+hm.UserData.ui.VCR.slider.raw = com.jidesoft.swing.RangeSlider(0,hm.UserData.time.endTime*hm.UserData.ui.VCR.slider.fac,0,hm.UserData.settings.plot.timeWindow*hm.UserData.ui.VCR.slider.fac);
 hm.UserData.ui.VCR.slider.jComp = uicomponent(hm.UserData.ui.VCR.slider.raw,'Parent',hm,'Units','pixels','Position',sliderPos);
 hm.UserData.ui.VCR.slider.jComp.StateChangedCallback = @(hndl,evt) sliderChange(hm,hndl,evt);
 hm.UserData.ui.VCR.slider.jComp.MousePressedCallback = @(hndl,evt) sliderClick(hm,hndl,evt);
@@ -543,7 +541,7 @@ if evt.isControlDown || evt.isShiftDown
             zoomFac = 1-evt.getPreciseWheelRotation*.05;
             
             % determine new timeWindow
-            setTimeWindow(hm,min(zoomFac*hm.UserData.plot.timeWindow,hm.UserData.time.endTime),false);
+            setTimeWindow(hm,min(zoomFac*hm.UserData.settings.plot.timeWindow,hm.UserData.time.endTime),false);
             % determine left of window such that time under cursor does not
             % move
             bottom = max(posInDat(1)-(posInDat(1)-ax.XLim(1))*zoomFac,0);
@@ -787,7 +785,7 @@ comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',Lbl
 % 8 current window
 c=c+1;
 CWPos       = [sepPos(1)+10 CTPos(2)-15-20-5-20 85 20];
-jModel      = javax.swing.SpinnerNumberModel(hm.UserData.plot.timeWindow,0,hm.UserData.time.endTime,1);
+jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindow,0,hm.UserData.time.endTime,1);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
 comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',CWPos,'Tag','TWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
@@ -1055,7 +1053,7 @@ end
 function sliderChange(hm,hndl,~)
 % get expected values
 expectedLow     = floor(hm.UserData.plot.ax(1).XLim(1)*hm.UserData.ui.VCR.slider.fac);
-expectedExtent  = floor(hm.UserData.plot.timeWindow*hm.UserData.ui.VCR.slider.fac);
+expectedExtent  = floor(hm.UserData.settings.plot.timeWindow*hm.UserData.ui.VCR.slider.fac);
 extent          = max(hndl.Extent,1); % make sure not zero
 
 % if not as expected, set
@@ -1460,7 +1458,7 @@ end
 
 function jumpWin(hm,dir)
 % calculate step
-step = dir*hm.UserData.plot.timeWindow;
+step = dir*hm.UserData.settings.plot.timeWindow;
 % execute
 left = hm.UserData.plot.ax(1).XLim(1) + step;
 setPlotView(hm,left);   % clipping to time happens in here
@@ -1485,7 +1483,7 @@ newTime = hm.UserData.time.currentTime + hm.UserData.time.timeIncrement*ticks;
 
 % check for cycle play within limits set by user
 if hm.UserData.ui.VCR.state.cyclePlay && newTime>hm.UserData.plot.ax(1).XLim(2)
-    newTime = newTime-hm.UserData.plot.timeWindow;
+    newTime = newTime-hm.UserData.settings.plot.timeWindow;
 end
 
 % stop play if ran out of video timeline
@@ -1548,7 +1546,7 @@ updateTimeLines(hm);
 % window altogether of course
 wPos        = hm.UserData.plot.ax(1).XLim(1);
 qTLeft      = hm.UserData.time.currentTime<wPos;
-qTimeTooFar = (hm.UserData.time.currentTime-wPos > hm.UserData.plot.timeWindow*.8) && ~hm.UserData.ui.VCR.state.cyclePlay && ~hm.UserData.ui.justMovedTimeByMouse && ~hm.UserData.ui.grabbedTime;
+qTimeTooFar = (hm.UserData.time.currentTime-wPos > hm.UserData.settings.plot.timeWindow*.8) && ~hm.UserData.ui.VCR.state.cyclePlay && ~hm.UserData.ui.justMovedTimeByMouse && ~hm.UserData.ui.grabbedTime;
 hm.UserData.ui.justMovedTimeByMouse  = false;
 if qTLeft || qTimeTooFar
     % determine new window position:
@@ -1557,7 +1555,7 @@ if qTLeft || qTimeTooFar
     if qTLeft
         left = hm.UserData.time.currentTime;
     else
-        left = hm.UserData.time.currentTime-hm.UserData.plot.timeWindow*.2;
+        left = hm.UserData.time.currentTime-hm.UserData.settings.plot.timeWindow*.2;
     end
     
     setPlotView(hm,left);
@@ -1623,8 +1621,8 @@ function setTimeWindow(hm,newTime,qCallSetPlotView)
 % allow window to change in steps of 1 sample, and be minimum 2 samples
 % wide
 newTime = max(round(newTime*hm.UserData.data.eye.fs)/hm.UserData.data.eye.fs,2/hm.UserData.data.eye.fs);
-if newTime~=hm.UserData.plot.timeWindow
-    hm.UserData.plot.timeWindow = newTime;
+if newTime~=hm.UserData.settings.plot.timeWindow
+    hm.UserData.settings.plot.timeWindow = newTime;
     if qCallSetPlotView
         setPlotView(hm,hm.UserData.plot.ax(1).XLim(1));
     end
@@ -1655,13 +1653,13 @@ function setPlotView(hm,left)
 if left < 0
     left = 0;
 end
-if left+hm.UserData.plot.timeWindow > hm.UserData.time.endTime
-    left = hm.UserData.time.endTime - hm.UserData.plot.timeWindow;
+if left+hm.UserData.settings.plot.timeWindow > hm.UserData.time.endTime
+    left = hm.UserData.time.endTime - hm.UserData.settings.plot.timeWindow;
 end
 
-if left~=hm.UserData.plot.ax(1).XLim(1) || left+hm.UserData.plot.timeWindow~=hm.UserData.plot.ax(1).XLim(2)
+if left~=hm.UserData.plot.ax(1).XLim(1) || left+hm.UserData.settings.plot.timeWindow~=hm.UserData.plot.ax(1).XLim(2)
     % changed, update data plots
-    [hm.UserData.plot.ax.XLim] = deal(left+[0 hm.UserData.plot.timeWindow]);
+    [hm.UserData.plot.ax.XLim] = deal(left+[0 hm.UserData.settings.plot.timeWindow]);
     % update data trail
     if strcmp(hm.UserData.vid.gt.Visible,'on')
         setDataTrail(hm);
@@ -1670,11 +1668,11 @@ if left~=hm.UserData.plot.ax(1).XLim(1) || left+hm.UserData.plot.timeWindow~=hm.
     % update slider (we assume slider always matches axes limits. So would
     % always need to update
     hm.UserData.ui.VCR.slider.jComp.LowValue = left*hm.UserData.ui.VCR.slider.fac;
-    hm.UserData.ui.VCR.slider.jComp.HighValue=(left+hm.UserData.plot.timeWindow)*hm.UserData.ui.VCR.slider.fac;
+    hm.UserData.ui.VCR.slider.jComp.HighValue=(left+hm.UserData.settings.plot.timeWindow)*hm.UserData.ui.VCR.slider.fac;
 end
 
 timeWindow = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','TWSpinner');
-if timeWindow.Value~=hm.UserData.plot.timeWindow
-    timeWindow.Value = hm.UserData.plot.timeWindow;
+if timeWindow.Value~=hm.UserData.settings.plot.timeWindow
+    timeWindow.Value = hm.UserData.settings.plot.timeWindow;
 end
 end
