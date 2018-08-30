@@ -10,7 +10,9 @@ display, the matlab GUI renderer can't handle all this.
 Tested on Matlab R2017b. Because a bunch of java hacks are used for the
 GUI, it is quite possible that the viewer part of this repository is not
 all that compatible with different matlab versions. Pull requests
-welcomed!
+welcomed! Some used functionality was only introduced with R2016b
+(`jsondecode()`), so the code in this repository is not expected to run
+on versions of matlab older than that.
 
 # Screenshot
 ![Glasses viewer screenshot](/screenshot.jpg?raw=true)
