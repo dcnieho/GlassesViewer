@@ -8,13 +8,13 @@ function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
 
     function checkMissingFrames(ts, id)
         %toleranceRatio = 0.05;
-        %reportThresholdMs = 0.1; 
+        %reportThresholdMs = 0.1;
         
         dt = diff(ts);
         ifp = median(dt); % estimate for the interframe period
         tolerance = toleranceRatio * ifp;
         faulty = dt > ifp + tolerance | dt < ifp - tolerance;
-        dtFaulty = dt(find(faulty));
+        dtFaulty = dt(faulty);
         totalFaulty = sum(dtFaulty);
         totalVideo = ts(end) - ts(1);
         percFaulty = 100 * totalFaulty / totalVideo;
@@ -30,8 +30,10 @@ function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
         end
     end
 
+if isfield(data.videoSync,'eye')
     checkMissingFrames(data.videoSync.eye.fts, 'eye');
-    checkMissingFrames(data.videoSync.scene.fts, 'scene');
+end
+checkMissingFrames(data.videoSync.scene.fts, 'scene');
 
 end
 
