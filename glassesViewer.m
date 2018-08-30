@@ -50,7 +50,7 @@ hm.UserData.settings.plot.removeAccDC        = true; % remove DC from the accele
 hm.UserData.settings.plot.SGWindowVelocity   = 20;   % ms (gets adjusted below if not matching sampling frequency of data)
 
 hm.UserData.plot.timeWindow             = 2;    % s
-plotOrder                               = {'azi','gyro','ele','vel','pup','acc'};   % do not make a settings, as it'll be stored by means of tags in the axes themselves. this one could only get stale...
+plotOrder                               = {'azi','ele','vel','pup','gyro','acc'};   % do not make a settings, as it'll be stored by means of tags in the axes themselves. this one could only get stale...
 hm.UserData.settings.plot.aziLim        = 45;
 hm.UserData.settings.plot.eleLim        = 30;
 hm.UserData.settings.plot.velLim        = 400;
