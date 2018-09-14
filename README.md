@@ -76,6 +76,11 @@ zoomed along the cursor position
   few frames are marked as keyframes in the mp4 stss table, even though
   they are not. All read frames are correct, so not a big problem.
 
+# Requirements
+- Firmware versions that are too old do not contain some of the fields
+  in their data file that are required by this reader. Known to work are
+  1.22.0-zucchinipaj and several later firmware releases.
+
 # License details
 Most parts of this repository are licensed under the Creative Commons
 Attribution 4.0 (CC BY 4.0) license.

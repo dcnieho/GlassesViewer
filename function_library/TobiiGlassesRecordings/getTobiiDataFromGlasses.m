@@ -81,6 +81,7 @@ if qGenCacheFile
     qHasEyeVideo = any(qData(:,9));
     % parse in gidx and eye
     gidx = regexp(txt,'(?<="gidx":)\d+,','match');
+    assert(~isempty(gidx),'The data file does not fulfill the requirements of this code, the ''gidx'' field is missing. Possibly the firmware of the recording unit was too old.')
     dat.gidx(qHasGidx) = sscanf(cat(2,gidx{:}),'%f,');
     eye  = regexp(txt,'(?<="eye":")[lr]','match');
     dat.eye(qHasEye) = cat(1,eye{:});
