@@ -6,34 +6,34 @@ function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
 %   a) data for the whole video
 %   b) data for faulty periods >= reportThresholdSec (given in seconds)
 
-    function checkMissingFrames(ts, id)
-        %toleranceRatio = 0.05;
-        %reportThresholdMs = 0.1;
-        
-        dt = diff(ts);
-        ifp = median(dt); % estimate for the interframe period
-        tolerance = toleranceRatio * ifp;
-        faulty = dt > ifp + tolerance | dt < ifp - tolerance;
-        dtFaulty = dt(faulty);
-        totalFaulty = sum(dtFaulty);
-        totalVideo = ts(end) - ts(1);
-        percFaulty = 100 * totalFaulty / totalVideo;
-        if totalFaulty > 0
-            fprintf('Missing %.2f /%.2f seconds of the %s video (%.2f%%)\n', ...
-                totalFaulty, totalVideo, id, percFaulty);
-            for v = sort(dtFaulty, 'descend')
-                if v >= reportThresholdSec
-                    fprintf('%.3fs (%.2f%%)\n', ...
-                        v, 100 * v / totalVideo );
-                end
-            end
-        end
-    end
 
 if isfield(data.videoSync,'eye')
-    checkMissingFrames(data.videoSync.eye.fts, 'eye');
+    checkMissingFramesImpl(data.videoSync.eye.fts, 'eye', toleranceRatio, reportThresholdSec);
 end
-checkMissingFrames(data.videoSync.scene.fts, 'scene');
+checkMissingFramesImpl(data.videoSync.scene.fts, 'scene', toleranceRatio, reportThresholdSec);
 
+
+
+
+function checkMissingFramesImpl(ts, id, toleranceRatio, reportThresholdSec)
+%toleranceRatio = 0.05;
+%reportThresholdMs = 0.1;
+
+dt = diff(ts);
+ifp = median(dt); % estimate for the interframe period
+tolerance = toleranceRatio * ifp;
+faulty = dt > ifp + tolerance | dt < ifp - tolerance;
+dtFaulty = dt(faulty);
+totalFaulty = sum(dtFaulty);
+totalVideo = ts(end) - ts(1);
+percFaulty = 100 * totalFaulty / totalVideo;
+if totalFaulty > 0
+    fprintf('Missing %.2f /%.2f seconds of the %s video (%.2f%%)\n', ...
+        totalFaulty, totalVideo, id, percFaulty);
+    for v = sort(dtFaulty, 'descend')
+        if v >= reportThresholdSec
+            fprintf('%.3fs (%.2f%%)\n', ...
+                v, 100 * v / totalVideo );
+        end
+    end
 end
-
