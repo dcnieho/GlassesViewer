@@ -2,7 +2,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 2;
+fileVersion = 3;
 
 qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
 if ~qGenCacheFile
@@ -39,7 +39,7 @@ if qGenCacheFile
         fclose(fid);
     end
     % 2 get ts, s and type per packet
-    types = regexp(txt,'(?:"ts":)(\d+,).*?(?:"s":)(\d).*?(?:")(pc|pd|gd|gp|gp3|gy|ac|vts|evts|pts|epts|dir)(?:")','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
+    types = regexp(txt,'(?:"ts":)(\d+,).*?(?:"s":)(\d).*?(?:")(pc|pd|gd|gp|gp3|gy|ac|vts|evts|pts|epts|sig|type)(?:")','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
     types = cat(1,types{:});
     % 3 transform packets into struct of arrays we do our further
     % processing on
@@ -51,31 +51,42 @@ if qGenCacheFile
     % - eye (first letter) or x
     % corresponding packet
     % in the process, remove all packets with non-zero status field (-means
-    % its crap, failed or otherwise shouldn't be used) and also remove
-    % unwanted fields (pts, epts, dir)
-    qOk     = cat(1,types{:,2})=='0' & ~(strcmp(types(:,3),'dir')|strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts'));  % remove non-zero s and unwanted fields
-    nOk     = sum(qOk);
+    % its crap, failed or otherwise shouldn't be used), split off and
+    % remove fields requiring custom processing (sig, type) and remove
+    % unwanted fields (pts, epts)
+    qOk     = cat(1,types{:,2})=='0';
+    qSplit  = strcmp(types(:,3),'sig')|strcmp(types(:,3),'type');
+    qUnwanted = strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts');
+    qKeep   = qOk & ~qSplit & ~qUnwanted;  % remove non-zero s, split off fields and unwanted fields
+    nKeep   = sum(qKeep);
     dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[]);
-    dat.ts  = sscanf(cat(2,types{qOk,1}),'%f,');
-    dat.dat = nan(nOk,3);
-    dat.gidx= nan(nOk,1);
-    dat.eye = repmat('x',nOk,1);
-    types   = types(qOk,3);
-    % now remove these packets from string
+    dat.ts  = sscanf(cat(2,types{qKeep,1}),'%f,');
+    dat.dat = nan(nKeep,3);
+    dat.gidx= nan(nKeep,1);
+    dat.eye = repmat('x',nKeep,1);
+    % check where each packet begins and ends
     iNewLines = [1 find(txt==newline)];
     if iNewLines(end)~=length(txt)
         iNewLines = [iNewLines length(txt)];
     end
-    assert(length(iNewLines)==length(qOk)+1,'must have missed a type in the above regexp, or the assumption that each element has only one of the above strings is no longer true')
-    inOk    = find(~qOk);
-    q       = bounds2bool(iNewLines(inOk),iNewLines(inOk+1));
+    assert(length(iNewLines)==length(qKeep)+1,'must have missed a type in the above regexp, or the assumption that each element has only one of the above strings is no longer true')
+    % split off the ones we process separately
+    qSplitOk = qSplit & qOk;
+    q = bounds2bool(iNewLines([qSplitOk; false])+1,iNewLines([false; qSplitOk]));
+    syncPortAPISyncTxt  = txt(q);
+    syncPortAPISyncType = types(qSplitOk,3);
+    % get types for main packets
+    types   = types(qKeep,3);
+    % now remove these packets from string
+    qRem    = ~qKeep;
+    q       = bounds2bool(iNewLines([qRem; false])+1,iNewLines([false; qRem]));
     txt(q)  = [];
-    clear qOk iNewLines inOk q
+    clear qOk qSplit qUnwanted qKeep qSplitOk qRem iNewLines q
     % find where each type is in this data
-    qData    = [strcmp(types,'pc') strcmp(types,'pd') strcmp(types,'gd')...
-        strcmp(types,'gp') strcmp(types,'gp3')...
-        strcmp(types,'gy') strcmp(types,'ac')...
-        strcmp(types,'vts') strcmp(types,'evts')];
+    qData    = [strcmp(types,'pc')  strcmp(types,'pd') strcmp(types,'gd')...
+                strcmp(types,'gp')  strcmp(types,'gp3')...
+                strcmp(types,'gy')  strcmp(types,'ac')...
+                strcmp(types,'vts') strcmp(types,'evts')];
     qHasEye  = any(qData(:,1:3),2);
     qHasGidx = any([qHasEye qData(:,4:5)],2);
     qHasEyeVideo = any(qData(:,9));
@@ -86,7 +97,7 @@ if qGenCacheFile
     eye  = regexp(txt,'(?<="eye":")[lr]','match');
     dat.eye(qHasEye) = cat(1,eye{:});
     qLeftEye = qHasEye & dat.eye=='l';
-    clear gidx eye
+    clear gidx eye types
     % parse in scalar data (only pd)
     dat.dat(qData(:,2),1  )   = parseTobiiGlassesData(txt,  'pd',1);
     % parse in 2-vector (only gp)
@@ -183,6 +194,28 @@ if qGenCacheFile
     end
     % clean up
     clear dat;
+    % 4.6 parse sync signal (parse directly as it has extra field of interest)
+    temp = regexp(syncPortAPISyncTxt,'(?:"ts":)(\d+,).*?(?:"dir":")(in|out)(?:","sig":)(\d})','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
+    temp = cat(1,temp{:});
+    qOut = strcmp(temp(:,2),'out');
+    if any(qOut)
+        sig.out.ts    = sscanf(cat(2,temp{qOut,1}),'%f,');
+        sig.out.state = sscanf(cat(2,temp{qOut,3}),'%f}');
+    else
+        [sig.out.ts,sig.out.state] = deal([]);
+    end
+    if any(~qOut)
+        sig.in.ts    = sscanf(cat(2,temp{~qOut,1}),'%f,');
+        sig.in.state = sscanf(cat(2,temp{~qOut,3}),'%f}');
+    else
+        [sig.in.ts,sig.in.state] = deal([]);
+    end
+    
+    % 4.7 TODO: parse API sync-packages
+    % qAPISync = strcmp(syncPortAPISyncType,'type');
+    % clean up
+    clear temp syncPortAPISyncTxt syncPortAPISyncType;
+    
     
     % 5 reorganize eye data into binocular data, left eye data and right eye data
     data.eye = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3);
@@ -212,7 +245,10 @@ if qGenCacheFile
         data.videoSync.eye      = evts;
     end
     
-    % 9 determine t0, convert all timestamps to s
+    % 9 add sync port data API sync data (TODO) to output file
+    data.syncPort = sig;
+    
+    % 10 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
     t0s = min(data.videoSync.scene.ts);
     if qHasEyeVideo
@@ -228,8 +264,10 @@ if qGenCacheFile
     if qHasEyeVideo
         data.videoSync.eye.ts   = (data.videoSync.eye.ts-t0)./1000000;
     end
+    data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
+    data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
     
-    % open video files for each segment, check how many frames, and make
+    % 11 open video files for each segment, check how many frames, and make
     % frame timestamps
     data.videoSync.scene.fts = [];
     data.videoSync.scene.segframes = [];
@@ -278,7 +316,7 @@ if qGenCacheFile
             end
             % now that we know number of readable frames, we may have more
             % timestamps than actually readable frames, throw away ones we
-            % don't need as we can't read
+            % don't need as we can't read those frames
             assert(length(timeStamps)>=lastFrame)
             timeStamps(lastFrame+1:end) = [];
             % Sync video frames with data by offsetting the timelines for
@@ -288,7 +326,7 @@ if qGenCacheFile
         end
     end
     
-    % 10 store to cache file
+    % 12 store to cache file
     data.name           = participant.pa_info.Name;
     data.fileVersion    = fileVersion;
     save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
