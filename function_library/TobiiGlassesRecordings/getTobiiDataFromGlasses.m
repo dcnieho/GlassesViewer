@@ -145,12 +145,18 @@ if qGenCacheFile
     qGidxTags = false(length(i),size(qAllEyeDat,2));
     [x,~] = find(qAllEyeDat.');
     qGidxTags(sub2ind(size(qGidxTags),j,x)) = true;
-    % 4.1.3 remove monocular data for incomplete eyes
+    % 4.1.3 remove binocular data for gidx for which monocular data for
+    % both eyes is incomplete (one eye incomplete is possible, binocular
+    % data is then computed based on assumption of unchanged vergence
+    % distance since last available true binocular data)
+    qBad = ~all(qGidxTags(:,1:3),2) & ~all(qGidxTags(:,4:6),2) & any(qGidxTags(:,7:8),2);
+    qRemove = ismember(dat.gidx,gs(qBad))&any(qData(:,4:5),2);   % remove binocular data for these
+    % 4.1.4 remove monocular data for incomplete eyes
     qBad = ~all(qGidxTags(:,1:3),2);    % left eye
-    qRemove =           ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)& qLeftEye;
+    qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)& qLeftEye;
     qBad = ~all(qGidxTags(:,4:6),2);    % right eye
     qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)&~qLeftEye;
-    % 4.1.4 check for case with monocular data twice from same eye for
+    % 4.1.5 check for case with monocular data twice from same eye for
     % given gidx. like for gidx with more than 8 packets, we don't know
     % which is the right one, so remove both
     % To check: sort samples by e, use that to sort gidx and see if any
@@ -216,7 +222,7 @@ if qGenCacheFile
     % 5.1 convert gaze vectors to azimuth elevation
     [la,le] = cart2sph(data.eye. left.gd(:,1),data.eye. left.gd(:,3),data.eye. left.gd(:,2));   % matlab's Z and Y are reversed w.r.t. ours
     [ra,re] = cart2sph(data.eye.right.gd(:,1),data.eye.right.gd(:,3),data.eye.right.gd(:,2));
-    data.eye. left.azi  =  la*180/pi-90;    % checked sign and offset of azi and ele so that things match the gaze position on the scene video in the data file (gp)
+    data.eye. left.azi  =  la*180/pi-90;    % I have checked sign and offset of azi and ele so that things match the gaze position on the scene video in the data file (gp)
     data.eye.right.azi  =  ra*180/pi-90;
     data.eye. left.ele  = -le*180/pi;
     data.eye.right.ele  = -re*180/pi;
