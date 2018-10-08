@@ -6,8 +6,8 @@ function data = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3)
 % gp3: gaze convergence position in 3D space (binocular)
 assert(  all(ismember( gp.ts,pc.ts))) % we have less binocular samples because they can only be created if data from both eyes is ok. but binocular should not contain timestamps not in the monocular data
 assert(isempty(setxor(gp3.ts,gp.ts))) % both binocular channels should contain the same timestamps
-assert(isempty(setxor( pd.ts,pc.ts))) % monocular channels should contains the same timestamps
-assert(isempty(setxor( gd.ts,pc.ts))) % monocular channels should contains the same timestamps
+assert(isempty(setxor( pd.ts,pc.ts))) % monocular channels should contain the same timestamps
+assert(isempty(setxor( gd.ts,pc.ts))) % monocular channels should contain the same timestamps
 
 gidx = unique(pc.gidx);
 data.left       = struct('gidx',gidx);
@@ -91,6 +91,10 @@ for v=1:length(vars)
     % check gidxs match
     assert(all(data.(eye).gidx(qIdxs) == binoc.(vars{v}).gidx))
 end
+% for each binocular gidx, check how number of eyes from which monocular
+% data was available
+qLeftEye = monoc.pc.eye=='l';
+data.binocular.nEye = sum([ismember(data.binocular.gidx,monoc.pc.gidx(qLeftEye)) ismember(data.binocular.gidx,monoc.pc.gidx(~qLeftEye))],2);
 % check gidx is still monotonically increasing and then remove, it has
 % served its purpose
 for eye={'left','right','binocular'}
