@@ -297,7 +297,7 @@ end
 % create data trail on video
 hm.UserData.vid.gt = plot(nan,nan,'r-','Parent',hm.UserData.vid.ax(1),'Visible','off','HitTest','off');
 % create gaze marker (NB: size is marker area, not diameter or radius)
-hm.UserData.vid.gm = scatter(0,0,'Marker','o','SizeData',10^2,'MarkerFaceColor',[1 0 0],'MarkerFaceAlpha',0.6,'MarkerEdgeColor','none','Parent',hm.UserData.vid.ax(1),'HitTest','off');
+hm.UserData.vid.gm = scatter(0,0,'Marker','o','SizeData',10^2,'MarkerFaceColor',[0 1 0],'MarkerFaceAlpha',0.6,'MarkerEdgeColor','none','Parent',hm.UserData.vid.ax(1),'HitTest','off');
 
 % We expect to have one video at roughly 50Hz and one at roughly 25.
 % hardcode, but check
@@ -1538,6 +1538,11 @@ idxToShow = find(hm.UserData.data.eye.binocular.ts<=hm.UserData.time.currentTime
 pos = hm.UserData.data.eye.binocular.gp(idxToShow,:).*hm.UserData.vid.objs(1,1).Dimensions(2:-1:1);
 hm.UserData.vid.gm.XData = pos(1);
 hm.UserData.vid.gm.YData = pos(2);
+if hm.UserData.data.eye.binocular.nEye(idxToShow)==2
+    hm.UserData.vid.gm.MarkerFaceColor = [0 1 0];
+elseif hm.UserData.data.eye.binocular.nEye(idxToShow)==1
+    hm.UserData.vid.gm.MarkerFaceColor = [1 0 0];
+end
 
 % update time indicator on data plots, and VCR line
 updateTimeLines(hm);
