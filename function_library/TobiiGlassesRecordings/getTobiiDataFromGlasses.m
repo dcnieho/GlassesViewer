@@ -118,9 +118,10 @@ if qGenCacheFile
     % 4 organize into types
     % the overall strategy to deal with crap in the files is to:
     % 1. remove all gidx with more than 8 packets
-    % 2. remove eye for which not all three monocular packets are available
-    %    for a given gidx
-    % 3. remove data where (when sorted by gidx) time apparently went
+    % 2. remove binocular data if data for neither eye is complete
+    % 3. check if any monocular gidx with 2 packets for single eye,
+    %    remove
+    % 4. remove data where (when sorted by gidx) time apparently went
     %    backward (check per eye if monocular). This mostly gets a few
     %    packets of monocular data where only a single eye is available
     %    for a given gidx (this one is done in
