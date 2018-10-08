@@ -118,12 +118,9 @@ if qGenCacheFile
     % 4 organize into types
     % the overall strategy to deal with crap in the files is to:
     % 1. remove all gidx with more than 8 packets
-    % 2. remove binocular data _only_ for all gidx with binocular data, but
-    %    not all monocular data (e.g. monocular data for one eye +
-    %    binocular)
-    % 3. check if any monocular gidx with 2 packets for single eye,
-    %    remove
-    % 4. remove data where (when sorted by gidx) time apparently went
+    % 2. remove eye for which not all three monocular packets are available
+    %    for a given gidx
+    % 3. remove data where (when sorted by gidx) time apparently went
     %    backward (check per eye if monocular). This mostly gets a few
     %    packets of monocular data where only a single eye is available
     %    for a given gidx (this one is done in
@@ -148,14 +145,10 @@ if qGenCacheFile
     qGidxTags = false(length(i),size(qAllEyeDat,2));
     [x,~] = find(qAllEyeDat.');
     qGidxTags(sub2ind(size(qGidxTags),j,x)) = true;
-    % 4.1.2.1 remove binocular data for gidx for which there isn't complete
-    % monocular data for both eyes
-    qBad = ~all(qGidxTags(:,1:6),2) & any(qGidxTags(:,7:8),2);
-    qRemove = ismember(dat.gidx,gs(qBad))&any(qData(:,4:5),2);   % remove binocular data for these
-    % 4.1.2.2 remove monocular data for incomplete eyes
-    qBad = ~all(qGidxTags(:,1:3),2);
-    qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)& qLeftEye;
-    qBad = ~all(qGidxTags(:,4:6),2);
+    % 4.1.3 remove monocular data for incomplete eyes
+    qBad = ~all(qGidxTags(:,1:3),2);    % left eye
+    qRemove =           ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)& qLeftEye;
+    qBad = ~all(qGidxTags(:,4:6),2);    % right eye
     qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)&~qLeftEye;
     % 4.1.4 check for case with monocular data twice from same eye for
     % given gidx. like for gidx with more than 8 packets, we don't know
@@ -245,10 +238,12 @@ if qGenCacheFile
         data.videoSync.eye      = evts;
     end
     
-    % 9 add sync port data API sync data (TODO) to output file
+    % 9 add sync port data to output file
     data.syncPort = sig;
     
-    % 10 determine t0, convert all timestamps to s
+    % 10 add API sync data to output file (TODO)
+    
+    % 11 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
     t0s = min(data.videoSync.scene.ts);
     if qHasEyeVideo
@@ -267,7 +262,7 @@ if qGenCacheFile
     data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
     
-    % 11 open video files for each segment, check how many frames, and make
+    % 12 open video files for each segment, check how many frames, and make
     % frame timestamps
     data.videoSync.scene.fts = [];
     data.videoSync.scene.segframes = [];
@@ -326,7 +321,7 @@ if qGenCacheFile
         end
     end
     
-    % 12 store to cache file
+    % 13 store to cache file
     data.name           = participant.pa_info.Name;
     data.fileVersion    = fileVersion;
     save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
