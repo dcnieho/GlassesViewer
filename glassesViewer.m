@@ -78,7 +78,7 @@ temp    = axes('Units','pixels','OuterPosition',[0 floor(hm.Position(4)/2) floor
 drawnow
 opos    = temp.OuterPosition;
 pos     = temp.Position;
-temp.YLabel.String = 'azi (°)';
+temp.YLabel.String = 'azi (deg)';
 drawnow
 opos2   = temp.OuterPosition;
 posy    = temp.Position;
@@ -111,14 +111,14 @@ for a=1:nPanel
             % 1. azimuth
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.aziLim.*[-1 1]];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','azi');
-            hm.UserData.plot.ax(a).YLabel.String = 'azi (°)';
+            hm.UserData.plot.ax(a).YLabel.String = 'azi (deg)';
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.azi,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.azi,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'ele'
             % 2. elevation
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.eleLim.*[-1 1]];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','ele');
-            hm.UserData.plot.ax(a).YLabel.String = 'ele (°)';
+            hm.UserData.plot.ax(a).YLabel.String = 'ele (deg)';
             hm.UserData.plot.ax(a).YDir = 'reverse';
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.ele,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.ele,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
@@ -129,7 +129,7 @@ for a=1:nPanel
             velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
             hm.UserData.plot.defaultValueScale(:,a) = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','vel');
-            hm.UserData.plot.ax(a).YLabel.String = 'vel (°/s)';
+            hm.UserData.plot.ax(a).YLabel.String = 'vel (deg/s)';
             plot(hm.UserData.data.eye. left.ts,velL,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,velR,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'pup'
@@ -143,7 +143,7 @@ for a=1:nPanel
             % 5. gyroscope
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','gyro');
-            hm.UserData.plot.ax(a).YLabel.String = 'gyro (°/s)';
+            hm.UserData.plot.ax(a).YLabel.String = 'gyro (deg/s)';
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,1),'r','Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,2),'b','Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,3),'g','Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
@@ -508,9 +508,9 @@ end
 % Calculate eye velocity and acceleration straightforwardly by applying
 % Pythagoras' theorem. This gives us no information about the
 % instantaneous axis of the eye rotation, but eye velocity is
-% calculated correctly. Apply scale for velocity, as a 10° azimuth
-% rotation at 0° elevation does not cover same distance as it does at
-% 45° elevation: sqrt(theta_dot^2*cos^2 phi + phi_dot^2)
+% calculated correctly. Apply scale for velocity, as a 10ï¿½ azimuth
+% rotation at 0ï¿½ elevation does not cover same distance as it does at
+% 45ï¿½ elevation: sqrt(theta_dot^2*cos^2 phi + phi_dot^2)
 vel = hypot(tempV(:,1).*cosd(data.ele), tempV(:,2));
 end
 
