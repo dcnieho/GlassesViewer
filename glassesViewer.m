@@ -508,9 +508,9 @@ end
 % Calculate eye velocity and acceleration straightforwardly by applying
 % Pythagoras' theorem. This gives us no information about the
 % instantaneous axis of the eye rotation, but eye velocity is
-% calculated correctly. Apply scale for velocity, as a 10� azimuth
-% rotation at 0� elevation does not cover same distance as it does at
-% 45� elevation: sqrt(theta_dot^2*cos^2 phi + phi_dot^2)
+% calculated correctly. Apply scale for velocity, as a 10deg azimuth
+% rotation at 0deg elevation does not cover same distance as it does at
+% 45deg elevation: sqrt(theta_dot^2*cos^2 phi + phi_dot^2)
 vel = hypot(tempV(:,1).*cosd(data.ele), tempV(:,2));
 end
 
