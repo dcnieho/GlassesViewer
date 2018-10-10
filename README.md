@@ -45,16 +45,18 @@ keys:
 mouse:
 - can drag the time indicator (red line in data axes) with left mouse
   button. `escape` key cancels this action.
-- dragging with right mouse button (or left mouse button + `cnrl`) moves
+- dragging with right mouse button (or left mouse button + `ctrl`) moves
   the visible data in the window
 - double-click on data axis sets time to clicked time
-- using mouse scrollwheel when on data axis has two functions:
-1. if holding down `ctrl`, the time window is zoomed along the cursor
+- using mouse scrollwheel when the pointer is on a data axis has two functions:
+  1. if holding down `ctrl`, the time window is zoomed along the cursor
 position
-2. if holding down `shift`, the value range of the vertical axis is
+  2. if holding down `shift`, the value range of the vertical axis is
 zoomed along the cursor position
 
 # TODOs
+- user own json decoder function (or get from mathworks FEX), so we can
+  support matlab version a little older than what i do currently
 - progress bar when loading in data Tobii data (not linear time but can indicate steps completed or so)
 - support for viewing data from other systems (e.g. SMI glasses)
 - make fancier file picker (see undocumentedmatlab example at
