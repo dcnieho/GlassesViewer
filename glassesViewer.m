@@ -173,6 +173,16 @@ for p=1:length(hm.UserData.plot.ax)
     hm.UserData.plot.timeIndicator(p) = plot([nan nan], hm.UserData.plot.ax(p).YLim,'r-','Parent',hm.UserData.plot.ax(p),'Tag',['timeIndicator|' hm.UserData.plot.ax(p).Tag]);
 end
 
+% setup background highlighting sync port high on each plot
+button_presses = find(hm.UserData.data.syncPort.in.state);
+for b=1:numel(button_presses)
+    ts = hm.UserData.data.syncPort.in.ts(button_presses(b)+[0 1]);
+    for p=1:length(hm.UserData.plot.ax)
+        hTemp = patch('XData',ts([1 2 2 1]), 'YData', [10^5 10^5 -10^5 -10^5],'FaceColor',[.6 .6 .6],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',sprintf('buttonShade|%d',b));
+        uistack(hTemp,'bottom');
+    end
+end
+
 % plot UI for dragging time and scrolling the whole window
 hm.UserData.ui.hoveringTime         = false;
 hm.UserData.ui.grabbedTime          = false;
