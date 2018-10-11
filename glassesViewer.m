@@ -178,7 +178,7 @@ button_presses = find(hm.UserData.data.syncPort.in.state);
 for b=1:numel(button_presses)
     ts = hm.UserData.data.syncPort.in.ts(button_presses(b)+[0 1]);
     for p=1:length(hm.UserData.plot.ax)
-        hTemp = patch('XData',ts([1 2 2 1]), 'YData', [10^5 10^5 -10^5 -10^5],'FaceColor',[.6 .6 .6],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',sprintf('buttonShade|%d',b));
+        hTemp = patch('XData',ts([1 2 2 1]), 'YData', [10^5 10^5 -10^5 -10^5],'FaceColor',[.7 .7 .7],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',sprintf('buttonShade|%d',b));
         uistack(hTemp,'bottom');
     end
 end
