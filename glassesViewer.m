@@ -1013,7 +1013,7 @@ for a=1:nVisible
 end
 
 % reorder handles and other plot attributes
-assert(isempty(setxor(fieldnames(hm.UserData.plot),{'timeWindow','ax','defaultValueScale','axPos','axRect','timeIndicator','margin','zoom'})),'added new fields, check if need to reorder')
+assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','zoom'})),'added new fields, check if need to reorder')
 hm.UserData.plot.ax                 = hm.UserData.plot.ax(newOrder);
 hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
