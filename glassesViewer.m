@@ -69,7 +69,7 @@ hm.UserData.time.mainTimer      = timer('Period', hm.UserData.time.tickPeriod, '
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 % update figure title
-hm.Name = [hm.Name ' (' hm.UserData.data.name ')'];
+hm.Name = [hm.Name ' (' hm.UserData.data.name '-' hm.UserData.data.recname ')'];
 
 
 %% setup data axes
