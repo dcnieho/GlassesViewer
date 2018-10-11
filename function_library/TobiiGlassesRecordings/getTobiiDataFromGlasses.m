@@ -2,7 +2,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 4;
+fileVersion = 5;
 
 qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
 if ~qGenCacheFile
@@ -329,7 +329,8 @@ if qGenCacheFile
     end
     
     % 13 store to cache file
-    data.name           = participant.pa_info.Name;
+    data.subjName       = participant.pa_info.Name;
+    data.recName        = recording.rec_info.Name;
     data.fileVersion    = fileVersion;
     save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
 else
