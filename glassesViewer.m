@@ -96,17 +96,18 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-setupPlots(hm,hm.UserData.settings.plot.initPanelOrder);
+panels = {'azi','ele','vel','pup','gyro','acc'};
+setupPlots(hm,panels);
 
 % make axes and plot data
-nPanel = length(hm.UserData.settings.plot.initPanelOrder);
+% we have:
+nPanel = length(panels);
 hm.UserData.plot.ax = gobjects(1,nPanel);
 hm.UserData.plot.defaultValueScale = zeros(2,nPanel);
 commonPropAxes = {'XGrid','on','GridLineStyle','-','NextPlot','add','Parent',hm,'XTickLabel',{},'Units','pixels','XLim',[0 hm.UserData.settings.plot.timeWindow],'Layer','top'};
 commonPropPlot = {'HitTest','off','LineWidth',hm.UserData.settings.plot.lineWidth};
-% we have:
 for a=1:nPanel
-    switch hm.UserData.settings.plot.initPanelOrder{a}
+    switch panels{a}
         case 'azi'
             % 1. azimuth
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.aziLim.*[-1 1]];
@@ -439,7 +440,7 @@ createSettings(hm);
 hm.Visible = 'on';
 drawnow;
 % do some inits only possible when figure is visible
-doPostInit(hm);
+doPostInit(hm,panels);
 updateTime(hm);
 drawnow;
 
@@ -711,24 +712,24 @@ gfx         = load('icons');
 c=c+1;
 icon        = getIcon(gfx,'<jump_to');
 comps(c)    = uicontrol('Style','pushbutton','Tag','moveUp','Position',[butPosBase(1) butPosBase(2)+butMargin/2 butSz],...
-    'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) movePlot(hm,listbox,-1));
+    'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) movePlot(hm,-1));
 
 c=c+1;
 icon        = getIcon(gfx,'<-jump_to');
 comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[butPosBase(1) butPosBase(2)-butMargin/2-butSz(2) butSz],...
-    'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) movePlot(hm,listbox,1));
+    'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) movePlot(hm,1));
 
 
 butPosBase  = [arrangerPos(1)+arrangerPos(3)+5 lblPos(2)-2-arrangerPos(3)/2];
 c=c+1;
 icon        = getIcon(gfx,'ffwd_default');
 comps(c)    = uicontrol('Style','pushbutton','Tag','moveUp','Position',[butPosBase(1) butPosBase(2)+butMargin/2 butSz],...
-    'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) jailAxis(hm,listbox,listboxJail,'jail'));
+    'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'jail'));
 
 c=c+1;
 icon        = getIcon(gfx,'rewind_default');
 comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[butPosBase(1) butPosBase(2)-butMargin/2-butSz(2) butSz],...
-    'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) jailAxis(hm,listbox,listboxJail,'restore'));
+    'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'restore'));
 
 % 4 separator
 c=c+1;
@@ -867,9 +868,10 @@ if newVal~=hm.UserData.settings.plot.lineWidth
 end
 end
 
-function movePlot(hm,listbox,dir)
+function movePlot(hm,dir)
+listbox  = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
 selected = listbox.Value;
-list = listbox.String;
+list     = listbox.String;
 
 items = 1:length(list);
 toMove = selected;
@@ -902,18 +904,20 @@ else
 end
 
 % move the plot axes, update info about them in hm
-moveThePlots(hm,items);
-
-% update this listbox and its selection
-listbox.String = list(items);
-listbox.Value = sort([find(ismember(items,toMove)) cantMove]);
+moveThePlots(hm,items,sort([find(ismember(items,toMove)) cantMove]));
 end
 
-function jailAxis(hm,listbox,listboxJail,action)
+function jailAxis(hm,action,qSelectHidden)
+
+listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+listBoxJail  = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerHidden');
+if nargin<3 || isempty(qSelectHidden)
+    qSelectHidden = true;
+end
 
 if strcmp(action,'jail')
-    shownList   = listbox.String;
-    selected    = listbox.Value;
+    shownList   = listBoxShown.String;
+    selected    = listBoxShown.Value;
     % first move plots to remove from view to end
     items       = 1:length(shownList);
     qSel        = ismember(items,selected);
@@ -927,7 +931,7 @@ if strcmp(action,'jail')
     newPos = num2cell(hm.UserData.plot.axPos,2);
     nShown = length(shown);
     nHiding= length(hide);
-    [hm.UserData.plot.ax(1:nShown)    .Position]= newPos{:};
+    [hm.UserData.plot.ax(1:nShown).Position]= newPos{:};
     for p=nShown+[1:nHiding]
         hndls = [hm.UserData.plot.ax(p); hm.UserData.plot.ax(p).Children];
         [hndls.Visible] = deal('off');
@@ -936,14 +940,16 @@ if strcmp(action,'jail')
     hm.UserData.plot.ax(nShown).XTickLabelMode = 'auto';
     hm.UserData.plot.ax(nShown).XLabel.String = hm.UserData.plot.ax(end).XLabel.String;
     % update list boxes
-    listbox.Value       = [];    % deselect
-    listbox.String      = shown; % leftovers
-    listboxJail.String  = [hide; listboxJail.String];
-    listboxJail.Value   = [1:nHiding];
+    listBoxShown.Value  = [];    % deselect
+    listBoxShown.String = shown; % leftovers
+    listBoxJail.String  = [hide; listBoxJail.String];
+    if qSelectHidden
+        listBoxJail.Value   = [1:nHiding];
+    end
 else
-    jailList = listboxJail.String;
-    shownList= listbox    .String;
-    selected = listboxJail.Value;
+    jailList = listBoxJail .String;
+    shownList= listBoxShown.String;
+    selected = listBoxJail.Value;
     % get those to show again
     toShow   = jailList(selected);
     nShown   = length(shownList);
@@ -972,17 +978,17 @@ else
     hm.UserData.plot.ax(nShownNew).XLabel.String = hm.UserData.plot.ax(nShown).XLabel.String;
     hm.UserData.plot.ax(nShown).XLabel.String = '';
     % update list boxes
-    listboxJail.Value   = [];    % deselect
-    listboxJail.String  = jailList(~qSel);
-    listbox.String      = toShow;
-    listbox.Value       = nShown+1:nShownNew;
+    listBoxJail.Value   = [];    % deselect
+    listBoxJail.String  = jailList(~qSel);
+    listBoxShown.String = toShow;
+    listBoxShown.Value  = nShown+1:nShownNew;
 end
 % reposition axis labels (as vertical height of visible axes just changed)
 fixupAxisLabels(hm)
 
 end
 
-function moveThePlots(hm,newOrder)
+function moveThePlots(hm,newOrder,sel)
 if iscell(newOrder)
     currOrder = {hm.UserData.plot.ax.Tag};
     newOrder = cellfun(@(x) find(strcmp(x,currOrder),1),newOrder);
@@ -1019,6 +1025,14 @@ hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
 hm.UserData.plot.axPos              = hm.UserData.plot.axPos(newOrder,:);
 hm.UserData.plot.axRect             = hm.UserData.plot.axRect(newOrder,:);
+
+% update this listbox and its selection
+listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+newOrder = newOrder(1:length(listBoxShown.String));
+listBoxShown.String = listBoxShown.String(newOrder);
+if nargin>=3
+    listBoxShown.Value = sel;
+end
 end
 
 function resetPlotValueLimits(hm)
@@ -1073,7 +1087,7 @@ if hndl.LowValue~=expectedLow || extent~=expectedExtent
 end
 end
 
-function doPostInit(hm)
+function doPostInit(hm,panels)
 % setup line to indicate time on slider under video. Take into account DPI
 % scaling, reading from the slider's position is done in true screen space
 px1 = arrayfun(@(x) hm.UserData.ui.VCR.slider.jComp.UI.valueForXPosition(x),5:40);
@@ -1098,6 +1112,24 @@ hm.UserData.plot.zoom.obj.ActionPostCallback= @(~,evt)doZoom(hm,evt);
 setAllowAxesZoom(hm.UserData.plot.zoom.obj,hm.UserData.ui.signalLegend,false);
 % timer for switching zoom mode back off
 hm.UserData.plot.zoom.timer = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) startZoom(hm), 'StartDelay', 10/1000);
+
+% jail axes and order plots based on defaults
+unknown = hm.UserData.settings.plot.initPanelOrder(~ismember(hm.UserData.settings.plot.initPanelOrder,panels));
+if ~isempty(unknown)
+    str = sprintf('\n  ''%s''',unknown{:});
+    error('The following data panels are not understood:%s',str);
+end
+[~,pOrder] = ismember(hm.UserData.settings.plot.initPanelOrder,panels);
+toJail = find(~ismember(panels,hm.UserData.settings.plot.initPanelOrder));
+% reorder panels, moving ones to be removed to end
+pOrder = [pOrder; toJail.'];
+moveThePlots(hm,pOrder);
+% remove panels
+if ~isempty(toJail)
+    listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+    listBoxShown.Value = [-length(toJail)+1:0]+length(panels);
+    jailAxis(hm,'jail',false);
+end
 
 % fix all y-axis labels to same distance
 fixupAxisLabels(hm);
