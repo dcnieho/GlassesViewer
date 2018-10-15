@@ -55,6 +55,7 @@ position
 zoomed along the cursor position
 
 # TODOs
+- remove PTB dependency (at least SmartVec in getTobiiDataFromGlasses)
 - user own json decoder function (or get from mathworks FEX), so we can
   support matlab version a little older than what i do currently
 - progress bar when loading in data Tobii data (not linear time but can indicate steps completed or so)
