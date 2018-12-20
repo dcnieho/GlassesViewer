@@ -1946,14 +1946,17 @@ setHoverCursor(hm);
 end
 
 function MouseClick(hm,~)
-% TODO allow shift-click, holding down, drag, release to add intervening
-% event with only one click
+% get modifiers
+hasCtrl     = any(strcmp('control',hm.CurrentModifier));
+hasShift    = any(strcmp('shift',hm.CurrentModifier));
+hasAlt      = any(strcmp('alt',hm.CurrentModifier));
+
 % end adding intervening object if any click other than shift click
-if hm.UserData.ui.coding.addingIntervening && ~strcmp(hm.SelectionType,'extend')
+if hm.UserData.ui.coding.addingIntervening && ~hasShift
     endAddingInterveningEvt(hm);
 end
 
-if strcmp(hm.SelectionType,'normal')
+if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt % normal to get only left clicks
     if hm.UserData.ui.hoveringTime
         % start drag time line
         hm.UserData.ui.grabbedTime      = true;
@@ -1975,7 +1978,7 @@ if strcmp(hm.SelectionType,'normal')
             end
         end
     end
-elseif strcmp(hm.SelectionType,'extend')
+elseif hasShift && ~hasCtrl && ~hasAlt
     % if clicking on event, start or finish adding in the middle of it
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
@@ -2046,24 +2049,25 @@ elseif strcmp(hm.SelectionType,'extend')
             endAddingInterveningEvt(hm);
         end
     end
-elseif strcmp(hm.SelectionType,'alt')
-    % control-click or right mouse click, 
+elseif hasCtrl && ~hasShift && ~hasAlt
+    % control-click
     % 1: if hovering marker, start drag of all aligned markers accross streams
     % 2: else, if on axis: scroll time axis
     if hm.UserData.ui.coding.hoveringMarker
         % start drag marker
         startMarkerDrag(hm,true);
-    else
-        ax = hitTestType(hm,'axes');
-        if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
-            hm.UserData.ui.scrollRef    = ax.CurrentPoint(1,1:2);
-            hm.UserData.ui.scrollRefAx  = ax;
-            % if we were, now we're no longer hovering time line
-            if hm.UserData.ui.hoveringTime
-                hm.UserData.ui.hoveringTime = false;
-                % change cursor
-                setHoverCursor(hm);
-            end
+    end
+elseif strcmp(hm.SelectionType,'alt') && ~hasCtrl % alt also triggers for control+click, exclude that
+    % right click: scroll time axis
+    ax = hitTestType(hm,'axes');
+    if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+        hm.UserData.ui.scrollRef    = ax.CurrentPoint(1,1:2);
+        hm.UserData.ui.scrollRefAx  = ax;
+        % if we were, now we're no longer hovering time line
+        if hm.UserData.ui.hoveringTime
+            hm.UserData.ui.hoveringTime = false;
+            % change cursor
+            setHoverCursor(hm);
         end
     end
 elseif strcmp(hm.SelectionType,'open')
