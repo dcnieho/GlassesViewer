@@ -1946,6 +1946,8 @@ setHoverCursor(hm);
 end
 
 function MouseClick(hm,~)
+% TODO allow shift-click, holding down, drag, release to add intervening
+% event with only one click
 % end adding intervening object if any click other than shift click
 if hm.UserData.ui.coding.addingIntervening && ~strcmp(hm.SelectionType,'extend')
     endAddingInterveningEvt(hm);
