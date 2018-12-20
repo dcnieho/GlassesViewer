@@ -787,15 +787,20 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
             end
         end
         if ~hm.UserData.coding.type{stream}(idx)
-            qInMiddle = idx<length(hm.UserData.coding.type{stream});
             % no tag left, remove event
-            if idx==1
-                % selected first event, remove and grow second leftward
+            if idx==length(hm.UserData.coding.type{stream})
+                % rightmost event, just remove right marker
+                hm.UserData.coding.mark{stream}(idx+1) = [];
+                hm.UserData.coding.type{stream}(idx)   = [];
+                addToLog(hm,'RemovedRightEvent',struct('stream',stream,'mark',mark,'idx',idx));
+            elseif idx==1
+                % selected first event, (which isn't also last/only),
+                % remove and grow second leftward
                 hm.UserData.coding.mark{stream}(idx+1) = [];
                 hm.UserData.coding.type{stream}(idx)   = [];
                 disableCodingStreamInPanel(hm,stream);
                 addToLog(hm,'RemovedFirstEvent',struct('stream',stream,'mark',mark,'idx',idx));
-            elseif qInMiddle
+            else
                 % selected event in middle of coded stream, remove whole
                 % event
                 % check flanking events to see what action to take
@@ -819,11 +824,6 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
                 % can't place it back in again, so disable this stream on
                 % coding panel
                 disableCodingStreamInPanel(hm,stream);
-            else
-                % rightmost event, just remove right marker
-                hm.UserData.coding.mark{stream}(idx+1) = [];
-                hm.UserData.coding.type{stream}(idx)   = [];
-                addToLog(hm,'RemovedRightEvent',struct('stream',stream,'mark',mark,'idx',idx));
             end
             hm.UserData.ui.coding.panel.evtTagIdx(stream) = nan;
             % update coded extent to reflect new code
@@ -914,8 +914,9 @@ if mPosXAx<=markToTime(hm,hm.UserData.coding.mark{stream}(end))
     % 2. also exactly coincident event tags in the other streams
     for p=1:length(otherStream)
         % have event with same start+end in this stream?
-        marksO = markToTime(hm,hm.UserData.coding.mark{otherStream(p)});
-        if all(ismember(marks(evtTagIdx+[0 1]),marksO))
+        marksO  = markToTime(hm,hm.UserData.coding.mark{otherStream(p)});
+        iHave   = find(ismember(marksO,marks(evtTagIdx+[0 1])));
+        if length(iHave)==2 && diff(iHave)==1
             iEvt = find(marksO==marks(evtTagIdx));
             activateCodingButtons(hm.UserData.ui.coding.subpanel(otherStream(p)).Children, hm.UserData.coding.type{otherStream(p)}(iEvt));
             hm.UserData.ui.coding.panel.evtTagIdx(otherStream(p)) = iEvt;
