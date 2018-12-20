@@ -1,7 +1,7 @@
 function hm = glassesViewer(settings)
 close all
 
-qDEBUG = false;
+qDEBUG = true;
 if qDEBUG
     dbstop if error
 end
@@ -17,11 +17,11 @@ addpath(genpath('function_library'))
 % specific recording's folder. if "projects" is the project folder on the
 % SD card, an example of a specific recording is:
 %   projects\rkamrkb\recordings\zi4xmt2
-if 1
+if 0
     filedir = uigetdir('','Select recording folder');
 else
     % for easy use, hardcode a folder. 
-    filedir = '';
+    filedir = 'C:\dat\projects\headmounted event classification\data\Exported data\P09\ytrqjkq';
 end
 if ~filedir
     return
@@ -2006,47 +2006,8 @@ elseif hasShift && ~hasCtrl && ~hasAlt
                 end
             end
         else
-            % adding second marker, closing off event if placed well
-            if hm.UserData.ui.coding.interveningTempLoc==mark
-                % clicked same location twice, pretend second didn't happen
-                % as likely in error
-                return;
-            end
-            marks = sort([hm.UserData.ui.coding.interveningTempLoc mark]);
-            % per stream, check if both new marks are within bound of
-            % existing event (one sample offset, note the larger than
-            % and smaller than
-            for p=size(hm.UserData.ui.coding.addingInterveningEvt,1):-1:1   % go backwards so we can remove things we did not add, and then append info about added to the log
-                if all(marks>hm.UserData.ui.coding.addingInterveningEvt(p,3) & marks<hm.UserData.ui.coding.addingInterveningEvt(p,4))
-                    % ok, add new event, init to code 1, the default,
-                    % to start with
-                    % see what to add and where
-                    stream  = hm.UserData.ui.coding.addingInterveningEvt(p,1);
-                    idx     = hm.UserData.ui.coding.addingInterveningEvt(p,2);
-                    addType = 1;
-                    if hm.UserData.coding.type{stream}(idx)==1
-                        % ensure we don't insert same event as the event
-                        % we're splitting
-                        addType = 2;
-                    end
-                    % add event
-                    hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
-                    hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
-                else
-                    hm.UserData.ui.coding.addingInterveningEvt(p,:) = [];
-                end
-            end
-            % if added event, update graphics and open menu
-            if ~isempty(hm.UserData.ui.coding.addingInterveningEvt)
-                addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningEvt(:,1),'idx',hm.UserData.ui.coding.addingInterveningEvt(:,2)+1,'marks',marks));
-                updateCodedShadeAndMarks(hm);
-                updateScarf(hm);
-                hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint(1,1:2);
-                hm.UserData.ui.coding.panel.mPosAx(1) = markToTime(hm,marks(2));
-                initAndOpenCodingPanel(hm,hm.UserData.ui.coding.addingInterveningEvt(1,1));
-            end
-            % clean up
-            endAddingInterveningEvt(hm);
+            % try adding second marker, closing off event if placed well
+            tryAddInterveningEvt(hm,mark)
         end
     end
 elseif hasCtrl && ~hasShift && ~hasAlt
@@ -2089,7 +2050,13 @@ end
 end
 
 function MouseRelease(hm,~)
-if hm.UserData.ui.grabbedTime || hm.UserData.ui.coding.grabbedMarker
+if hm.UserData.ui.coding.addingIntervening
+    ax = hitTestType(hm,'axes');
+    if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+        mark = timeToMark(hm,ax.CurrentPoint(1,1));
+        tryAddInterveningEvt(hm,mark);
+    end
+elseif hm.UserData.ui.grabbedTime || hm.UserData.ui.coding.grabbedMarker
     if hm.UserData.ui.coding.grabbedMarker
         addToLog(hm,'FinishedMarkerDrag',struct('stream',hm.UserData.ui.coding.grabbedMarkerLoc(:,1),'idx',hm.UserData.ui.coding.grabbedMarkerLoc(:,2),'mark',hm.UserData.ui.coding.grabbedMarkerLoc(:,3)));
     end
@@ -2098,6 +2065,50 @@ elseif ~isnan(hm.UserData.ui.scrollRef(1))
     hm.UserData.ui.scrollRef = [nan nan];
     hm.UserData.ui.scrollRefAx = matlab.graphics.GraphicsPlaceholder;
 end
+end
+
+function tryAddInterveningEvt(hm,mark)
+% adding second marker, closing off event if placed well
+if hm.UserData.ui.coding.interveningTempLoc==mark
+    % clicked same location twice, pretend second didn't happen
+    % as likely in error
+    return;
+end
+marks = sort([hm.UserData.ui.coding.interveningTempLoc mark]);
+% per stream, check if both new marks are within bound of
+% existing event (one sample offset, note the larger than
+% and smaller than
+for p=size(hm.UserData.ui.coding.addingInterveningEvt,1):-1:1   % go backwards so we can remove things we did not add, and then append info about added to the log
+    if all(marks>hm.UserData.ui.coding.addingInterveningEvt(p,3) & marks<hm.UserData.ui.coding.addingInterveningEvt(p,4))
+        % ok, add new event, init to code 1, the default,
+        % to start with
+        % see what to add and where
+        stream  = hm.UserData.ui.coding.addingInterveningEvt(p,1);
+        idx     = hm.UserData.ui.coding.addingInterveningEvt(p,2);
+        addType = 1;
+        if hm.UserData.coding.type{stream}(idx)==1
+            % ensure we don't insert same event as the event
+            % we're splitting
+            addType = 2;
+        end
+        % add event
+        hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
+        hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
+    else
+        hm.UserData.ui.coding.addingInterveningEvt(p,:) = [];
+    end
+end
+% if added event, update graphics and open menu
+if ~isempty(hm.UserData.ui.coding.addingInterveningEvt)
+    addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningEvt(:,1),'idx',hm.UserData.ui.coding.addingInterveningEvt(:,2)+1,'marks',marks));
+    updateCodedShadeAndMarks(hm);
+    updateScarf(hm);
+    hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint(1,1:2);
+    hm.UserData.ui.coding.panel.mPosAx(1) = markToTime(hm,marks(2));
+    initAndOpenCodingPanel(hm,hm.UserData.ui.coding.addingInterveningEvt(1,1));
+end
+% clean up
+endAddingInterveningEvt(hm);
 end
 
 function endAddingInterveningEvt(hm)
