@@ -1061,8 +1061,6 @@ for p=1:length(stream)
     end
 end
 end
-% TODO: hover cursor (and hover itself?) over time or marker stays active
-% when moving mouse into coding panel
 
 function updateCodingShades(hm)
 axs = hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf'));
@@ -1915,7 +1913,7 @@ else
         % and now vertically
         vertOff = mPosXY(2)-hm.UserData.ui.scrollRef(2);
         hm.UserData.ui.scrollRefAx.YLim = hm.UserData.ui.scrollRefAx.YLim-vertOff;
-    elseif hm.UserData.ui.hoveringTime
+    elseif hm.UserData.ui.hoveringTime || hm.UserData.ui.coding.hoveringMarker
         % exited axes, remove hover cursor
         hm.UserData.ui.hoveringTime = false;
         hm.UserData.ui.coding.hoveringMarker = false;
