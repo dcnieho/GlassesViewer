@@ -186,14 +186,6 @@ for p=1:length(hm.UserData.plot.ax)
     hm.UserData.plot.timeIndicator(p) = plot([nan nan], [-10^6 10^6],'r-','Parent',hm.UserData.plot.ax(p),'Tag',['timeIndicator|' hm.UserData.plot.ax(p).Tag]);
 end
 
-% setup background indicating coded extent on each plot
-for p=1:length(hm.UserData.plot.ax)
-    if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
-        hm.UserData.plot.codedShade(p) = patch('XData',[0 0 0 0],'YData', [10^6 10^6 -10^5 -10^5],'FaceColor',[.8 .8 .8],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',['codedShade|' hm.UserData.plot.ax(p).Tag]);
-        uistack(hm.UserData.plot.codedShade(p),'bottom');
-    end
-end
-
 % setup coder marks
 for p=1:length(hm.UserData.plot.ax)
     if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
@@ -206,22 +198,23 @@ makeCoderPanel(hm);
 
 % draw actual coding, if any
 hm.UserData.ui.coding.currentStream = nan;
-updateCoderStream(hm,1);
+changeCoderStream(hm,1);
 updateScarf(hm);
 % TODO: logica klopt ergens niet: begin met lege coding. klik ergens op
 % tijd en zet een code erin. druk dan weer op de knop om die code weg te
 % halen. de stream waar je net op drukte wordt dan gedeactiveerd...
 
 % plot UI for dragging time and scrolling the whole window
-hm.UserData.ui.hoveringTime         = false;
-hm.UserData.ui.grabbedTime          = false;
-hm.UserData.ui.grabbedTimeLoc       = nan;
-hm.UserData.ui.justMovedTimeByMouse = false;
-hm.UserData.ui.scrollRef            = [nan nan];
-hm.UserData.ui.scrollRefAx          = matlab.graphics.GraphicsPlaceholder;
+hm.UserData.ui.hoveringTime                 = false;
+hm.UserData.ui.grabbedTime                  = false;
+hm.UserData.ui.grabbedTimeLoc               = nan;
+hm.UserData.ui.justMovedTimeByMouse         = false;
+hm.UserData.ui.scrollRef                    = [nan nan];
+hm.UserData.ui.scrollRefAx                  = matlab.graphics.GraphicsPlaceholder;
 % UI for dragging coding markers
 hm.UserData.ui.coding.grabbedMarker         = false;
 hm.UserData.ui.coding.grabbedMarkerLoc      = [];
+hm.UserData.ui.coding.grabbedShadeElement   = [];
 hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
 hm.UserData.ui.coding.hoveringMarker        = false;
 hm.UserData.ui.coding.hoveringWhichMarker   = nan;
@@ -586,7 +579,6 @@ if evt.isControlDown || evt.isShiftDown
     ax = hitTestType(hm,'axes');    % works because we have a WindowButtonMotionFcn installed
     
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
-        axIdx = find(hm.UserData.plot.ax==ax,1);
         posInDat = ax.CurrentPoint(1,1:2);
         
         if evt.isControlDown
@@ -777,7 +769,7 @@ if mark>hm.UserData.coding.mark{stream}(end)
     % log
     addToLog(hm,'AddedNewCode',struct('stream',stream,'mark',mark,'type',evtCode,'idx',hm.UserData.ui.coding.panel.evtTagIdx(stream)));
     % update coded extent to reflect new code
-    updateCodedShadeAndMarks(hm);
+    updateCodeMarks(hm);
 elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
     idx = hm.UserData.ui.coding.panel.evtTagIdx(stream);
     % see if button toggled on or off
@@ -835,7 +827,7 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
             end
             hm.UserData.ui.coding.panel.evtTagIdx(stream) = nan;
             % update coded extent to reflect new code
-            updateCodedShadeAndMarks(hm);
+            updateCodeMarks(hm);
         else
             % flag removed
             addToLog(hm,'RemovedFlag',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
@@ -868,7 +860,8 @@ else
     return
 end
 
-% update scarf plot to reflect new code
+% update coding shades and scarf plot to reflect new code
+updateCodingShades(hm)
 updateScarf(hm);
 end
 
@@ -879,7 +872,7 @@ stop(hm.UserData.ui.doubleClickTimer);
 if strcmp(hm.UserData.ui.coding.panel.clickedAx.Tag,'scarf')
     % clicked on the scarf plot, see which of the four streams to activate
     stream = round(hm.UserData.ui.coding.panel.mPosAx(2));
-    updateCoderStream(hm,stream);
+    changeCoderStream(hm,stream);
 else
     % clicked one of the data axes, open panel to place new mark
     initAndOpenCodingPanel(hm);
@@ -980,14 +973,15 @@ if all(strcmp({hm.UserData.ui.coding.buttons.Enable},'off'))
 end
 end
 
-function updateCoderStream(hm,stream)
+function changeCoderStream(hm,stream)
 if stream==hm.UserData.ui.coding.currentStream
     return
 end
 hm.UserData.ui.coding.currentStream = stream;
 
-% update marks and coded extent
-updateCodedShadeAndMarks(hm);
+% update marks and coding shades
+updateCodeMarks(hm);
+updateCodingShades(hm);
 
 % update arrow indicating which stream is active
 qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
@@ -1001,12 +995,9 @@ highlight = baseColor.*(1-opacity)+[1 0 0].*opacity;
 hm.UserData.ui.coding.subpanel(stream).BackgroundColor = highlight;
 end
 
-function updateCodedShadeAndMarks(hm)
-% TODO: use event coloring to color background instead of just gray
+function updateCodeMarks(hm)
 marks   = markToTime(hm,hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream});
 qAx     = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
-% coded shade
-[hm.UserData.plot.codedShade(qAx).XData] = deal(marks([1 end end 1]));
 % marks
 xMark = nan(1,length(marks)*3);
 xMark(1:3:end) = marks;
@@ -1019,7 +1010,7 @@ for iAx=find(qAx)
 end
 end
 
-function moveMarker(hm,stream,mark,markers,markerIdx)
+function moveMarker(hm,stream,mark,markerIdx)
 % update if needed
 for p=1:length(stream)
     if mark(p) ~= hm.UserData.coding.mark{stream(p)}(markerIdx(p))
@@ -1030,13 +1021,28 @@ for p=1:length(stream)
         time = markToTime(hm,mark(p));
         qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
         if stream(p)==hm.UserData.ui.coding.currentStream
-            % if dragging rightmost, updated coded shades
-            if markerIdx(p)==length(markers{p})
-                [hm.UserData.plot.codedShade(qAx).XData] = deal([0 time time 0]);
-            end
             % always update the dragged marker
             for iAx=find(qAx)
                 hm.UserData.plot.coderMarks(iAx).XData((markerIdx-1)*3+[1 2]) = time;
+            end
+        end
+        if stream(p)==hm.UserData.ui.coding.currentStream
+            % update coding shade
+            if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{1})
+                % update tag
+                [hm.UserData.ui.coding.grabbedShadeElement{1}.Tag]    = deal(sprintf('codeShade%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0])));
+                % update graphics
+                temp = hm.UserData.ui.coding.grabbedShadeElement{1}(1).XData;
+                temp(2:3) = time;
+                [hm.UserData.ui.coding.grabbedShadeElement{1}.XData]  = deal(temp);
+            end
+            if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && size(hm.UserData.ui.coding.grabbedShadeElement,2)>1 && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{2})
+                % update tag
+                [hm.UserData.ui.coding.grabbedShadeElement{2}.Tag]    = deal(sprintf('codeShade%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1])));
+                % update graphics
+                temp = hm.UserData.ui.coding.grabbedShadeElement{2}(1).XData;
+                temp([1 4]) = time;
+                [hm.UserData.ui.coding.grabbedShadeElement{2}.XData]  = deal(temp);
             end
         end
         % update scarf
@@ -1055,6 +1061,56 @@ for p=1:length(stream)
     end
 end
 end
+% TODO: hover cursor (and hover itself?) over time or marker stays active
+% when moving mouse into coding panel
+
+function updateCodingShades(hm)
+axs = hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf'));
+% get which element we should expect given coded events
+toAdd = [hm.UserData.coding.type{hm.UserData.ui.coding.currentStream}; hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(1:end-1); hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(2:end)];
+toAdd = [repmat(hm.UserData.ui.coding.currentStream,1,size(toAdd,2)); toAdd]; % add stream number
+expect = cellfun(@(x)sprintf('codeShade%d,%d,%d,%d',x),num2cell(toAdd,1),'uni',false).';
+% get which elements we have
+kids = findall(axs(1).Children,'Type','Patch'); % NB: assume shades are the same for all axes, as they should be
+have = {};
+if ~isempty(kids)
+    have = {kids.Tag};
+end
+% find which should be removed and which added
+add = expect(~ismember(expect,have));
+qRem = ~ismember(have,expect);
+% remove unneeded
+if any(qRem)
+    for a=1:length(axs)
+        kids = findall(axs(a).Children,'Type','Patch'); % NB: assume shades are the same for all axes, as they should be
+        delete(kids(qRem));
+    end
+end
+% add new ones
+for p=1:length(add)
+    info = sscanf(add{p},'codeShade%d,%d,%d,%d');
+    % for color, get first set bit (flags are highest bits)
+    bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
+    clrIdx = find(bits,1);
+    clr = {repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+    if sum(bits)>1
+        clr{1}(1,:) = clr{1}(1,:)/2;
+        clr{1}(2,:) = clr{1}(2,:)/2+.5;
+        clr{3} = 'interp';
+    end
+    markTimes = markToTime(hm,info([3 4]));
+    for a=1:length(axs)
+        patch('XData',markTimes([1 2 2 1]),'YData', [10^6 10^6 -10^5 -10^5],'FaceVertexCData',clr{:},'FaceAlpha',.3,'LineStyle','none','Parent',axs(a),'Tag',add{p});
+    end
+end
+% make sure all shades are on the bottom
+if any(qRem) || ~isempty(add)
+    for a=1:length(axs)
+        kids = findall(axs(a).Children,'Type','Patch');
+        uistack(kids,'bottom');
+    end
+end
+end
 
 function updateScarf(hm)
 ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
@@ -1062,12 +1118,11 @@ ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
 expect = {};
 for p=1:length(hm.UserData.coding.type)
     toAdd = [hm.UserData.coding.type{p}; hm.UserData.coding.mark{p}(1:end-1); hm.UserData.coding.mark{p}(2:end)];
-    toAdd = [repmat(p,1,size(toAdd,2)); toAdd];
+    toAdd = [repmat(p,1,size(toAdd,2)); toAdd]; % add stream number
     expect = [expect; cellfun(@(x)sprintf('code%d,%d,%d,%d',x),num2cell(toAdd,1),'uni',false).'];
 end
 % get which elements we have
 kids = findall(ax.Children,'Type','Patch');
-timeIndicator = findall(ax.Children,'Type','Line');
 have = {};
 if ~isempty(kids)
     have = {kids.Tag};
@@ -1093,8 +1148,11 @@ for p=1:length(add)
     patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),'FaceVertexCData',clr{:},'LineStyle','none','Parent',ax,'Tag',add{p});
 end
 % make sure time indicator is on top
-qTI = ax.Children==timeIndicator;
-ax.Children = [timeIndicator; ax.Children(~qTI)];
+if any(qRem) || ~isempty(add)
+    timeIndicator = findall(ax.Children,'Type','Line');
+    qTI = ax.Children==timeIndicator;
+    ax.Children = [timeIndicator; ax.Children(~qTI)];
+end
 end
 
 function createSettings(hm)
@@ -1486,13 +1544,12 @@ for a=1:nVisible
 end
 
 % reorder handles and other plot attributes
-assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','codedShade','coderMarks','zoom'})),'added new fields, check if need to reorder')
+assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','coderMarks','zoom'})),'added new fields, check if need to reorder')
 hm.UserData.plot.ax                 = hm.UserData.plot.ax(newOrder);
 hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
 hm.UserData.plot.axPos              = hm.UserData.plot.axPos(newOrder,:);
 hm.UserData.plot.axRect             = hm.UserData.plot.axRect(newOrder,:);
-hm.UserData.plot.codedShade         = hm.UserData.plot.codedShade(newOrder);
 hm.UserData.plot.coderMarks         = hm.UserData.plot.coderMarks(newOrder);
 
 % update this listbox and its selection
@@ -1747,7 +1804,9 @@ if ~isempty(theChar)
                 end
                 addToLog(hm,'CancelledMarkerDrag',struct('stream',hm.UserData.ui.coding.grabbedMarkerLoc(:,1),'idx',hm.UserData.ui.coding.grabbedMarkerLoc(:,2),'mark',hm.UserData.ui.coding.grabbedMarkerLoc(:,3)));
                 endDrag(hm);
-                updateCodedShadeAndMarks(hm);
+                updateCodeMarks(hm);
+                updateCodingShades(hm);
+                updateScarf(hm);
             elseif hm.UserData.ui.coding.addingIntervening
                 % if adding intervening event, cancel it
                 endAddingInterveningEvt(hm);
@@ -1836,7 +1895,7 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
             newMark(p) = max(min(newMark(p),nextMark-1),prevMark+1);    % stay one sample away from the previous or next
         end
         % update marker store and corresponding graphics
-        moveMarker(hm,hm.UserData.ui.coding.grabbedMarkerLoc(:,1),newMark,markers,markerIdx);
+        moveMarker(hm,hm.UserData.ui.coding.grabbedMarkerLoc(:,1),newMark,markerIdx);
     elseif isempty(lineHndl) && (hm.UserData.ui.hoveringTime || hm.UserData.ui.coding.hoveringMarker)
         % we're no longer hovering time line or marker
         checkCursorHover(hm,lineHndl,mPosX);
@@ -1900,7 +1959,8 @@ else
             end
         end
         endDrag(hm);
-        updateCodedShadeAndMarks(hm);
+        updateCodeMarks(hm);
+        updateCodingShades(hm);
         updateScarf(hm);
     end
 end
@@ -2100,12 +2160,14 @@ for p=size(hm.UserData.ui.coding.addingInterveningEvt,1):-1:1   % go backwards s
 end
 % if added event, update graphics and open menu
 if ~isempty(hm.UserData.ui.coding.addingInterveningEvt)
+    pos = hm.UserData.ui.coding.addingInterveningEvt(1,1);
     addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningEvt(:,1),'idx',hm.UserData.ui.coding.addingInterveningEvt(:,2)+1,'marks',marks));
-    updateCodedShadeAndMarks(hm);
+    updateCodeMarks(hm);
+    updateCodingShades(hm);
     updateScarf(hm);
     hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint(1,1:2);
     hm.UserData.ui.coding.panel.mPosAx(1) = markToTime(hm,marks(2));
-    initAndOpenCodingPanel(hm,hm.UserData.ui.coding.addingInterveningEvt(1,1));
+    initAndOpenCodingPanel(hm,pos);
 end
 % clean up
 endAddingInterveningEvt(hm);
@@ -2130,11 +2192,13 @@ wm = hm.UserData.ui.coding.hoveringWhichMarker;
 mark = hm.UserData.coding.mark{cs}(wm);
 hm.UserData.ui.coding.grabbedMarker         = true;
 hm.UserData.ui.coding.grabbedMarkerLoc      = [cs wm mark];
-% get corresponding scarf element
+% get corresponding code shade and scarf elements
+hm.UserData.ui.coding.grabbedShadeElement{1,1}  = getCodeShadeElements(hm,cs,hm.UserData.coding.type{cs}(wm-1), hm.UserData.coding.mark{cs}(wm+[-1 0]));
 hm.UserData.ui.coding.grabbedScarfElement(1,1)  = getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm-1), hm.UserData.coding.mark{cs}(wm+[-1 0]));
 if wm<length(hm.UserData.coding.mark{cs})
-    % the marker is part of two scarf elements
-    hm.UserData.ui.coding.grabbedScarfElement(1,2)= getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
+    % the marker is part of two code shade and scarf elements
+    hm.UserData.ui.coding.grabbedShadeElement{1,2}  = getCodeShadeElements(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
+    hm.UserData.ui.coding.grabbedScarfElement(1,2)  = getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
 end
 
 % is also dragging aligned, check other streams for marker at same location
@@ -2156,6 +2220,11 @@ if qAlignedMarkersAlso
 end
 end
 
+function obj = getCodeShadeElements(hm,varargin)
+tag = sprintf('codeShade%d,%d,%d,%d',varargin{:});
+obj = findobj(cat(1,hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children),'Tag',tag);
+end
+
 function obj = getScarfElement(hm,varargin)
 tag = sprintf('code%d,%d,%d,%d',varargin{:});
 obj = findobj(hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children,'Tag',tag);
@@ -2174,6 +2243,7 @@ if hm.UserData.ui.grabbedTime
 else
     hm.UserData.ui.coding.grabbedMarker         = false;
     hm.UserData.ui.coding.grabbedMarkerLoc      = [];
+    hm.UserData.ui.coding.grabbedShadeElement   = [];
     hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
     if nargin<2 || doFullUpdate
         updateScarf(hm);
