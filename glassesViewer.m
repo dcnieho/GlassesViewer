@@ -8,9 +8,7 @@ end
 
 if nargin<1 || isempty(settings)
     myDir     = fileparts(mfilename('fullpath'));
-    fid       = fopen(fullfile(myDir,'defaults.json'),'rt');
-    settings  = jsondecode(fread(fid,inf,'*char').');
-    fclose(fid);
+    settings  = jsondecode(fileread(fullfile(myDir,'defaults.json')));
 end
 
 addpath(genpath('function_library'))
@@ -50,24 +48,31 @@ hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2),
 
 % need to figure out if any DPI scaling active, some components work in
 % original screen space
-hm.UserData.ui.DPIScale             = getDPIScale();
+hm.UserData.ui.DPIScale = getDPIScale();
 
 %% global options and starting values
 hm.UserData.settings = settings;
 
 %% setup time
+% TODO at least stepMultiplier should be in settings json
 % setup main time and timer for smooth playback
-hm.UserData.time.tickPeriod     = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
-hm.UserData.time.timeIncrement  = hm.UserData.time.tickPeriod;   % change to play back at slower rate
-hm.UserData.time.stepMultiplier = 0.01; % timestep per 1 unit of button press (we have buttons for moving by 1 and by 10 units)
-hm.UserData.time.currentTime    = 0;
-hm.UserData.time.endTime        = nan;   % determined below when videos are loaded
-hm.UserData.time.mainTimer      = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
+hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
+hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
+hm.UserData.time.stepMultiplier     = 0.01; % timestep per 1 unit of button press (we have buttons for moving by 1 and by 10 units)
+hm.UserData.time.currentTime        = 0;
+hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
+hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
+hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
+hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
 
 %% load data
 % read glasses data
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
+% TODO: load or gen coding data
+% TODO: when loading, check for case where user changed coding streams in
+% some way
+hm.UserData.coding = getCodingData(filedir,'',settings.coding);
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 
@@ -96,7 +101,7 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-panels = {'azi','ele','vel','pup','gyro','acc'};
+panels = {'azi','scarf','ele','vel','pup','gyro','acc'};
 setupPlots(hm,panels);
 
 % make axes and plot data
@@ -160,6 +165,13 @@ for a=1:nPanel
             plot(hm.UserData.data.accelerometer.ts,ac(:,1),'r','Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,2),'b','Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,3),'g','Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
+        case 'scarf'
+            % 7. scarf plot special axis
+            hm.UserData.plot.defaultValueScale(:,a) = [.5 length(hm.UserData.coding.codeCats)+.5];
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','scarf','YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
+            % for arrow indicating current stream
+            hm.UserData.plot.ax(a).YAxis.FontSize = 12;
+            hm.UserData.plot.ax(a).YAxis.TickLength(1) = 0;
         otherwise
             error('data panel type ''%s'' not understood',hm.UserData.settings.plot.initPanelOrder{a});
     end
@@ -171,18 +183,34 @@ hm.UserData.plot.ax(end).XTickLabelMode = 'auto';
 % setup time indicator line on each plot
 hm.UserData.plot.timeIndicator = gobjects(size(hm.UserData.plot.ax));
 for p=1:length(hm.UserData.plot.ax)
-    hm.UserData.plot.timeIndicator(p) = plot([nan nan], hm.UserData.plot.ax(p).YLim,'r-','Parent',hm.UserData.plot.ax(p),'Tag',['timeIndicator|' hm.UserData.plot.ax(p).Tag]);
+    hm.UserData.plot.timeIndicator(p) = plot([nan nan], [-10^6 10^6],'r-','Parent',hm.UserData.plot.ax(p),'Tag',['timeIndicator|' hm.UserData.plot.ax(p).Tag]);
 end
 
-% setup background highlighting sync port high on each plot
-button_presses = find(hm.UserData.data.syncPort.in.state);
-for b=1:numel(button_presses)
-    ts = hm.UserData.data.syncPort.in.ts(button_presses(b)+[0 1]);
-    for p=1:length(hm.UserData.plot.ax)
-        hTemp = patch('XData',ts([1 2 2 1]), 'YData', [10^5 10^5 -10^5 -10^5],'FaceColor',[.7 .7 .7],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',sprintf('buttonShade|%d',b));
-        uistack(hTemp,'bottom');
+% setup background indicating coded extent on each plot
+for p=1:length(hm.UserData.plot.ax)
+    if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
+        hm.UserData.plot.codedShade(p) = patch('XData',[0 0 0 0],'YData', [10^6 10^6 -10^5 -10^5],'FaceColor',[.8 .8 .8],'LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',['codedShade|' hm.UserData.plot.ax(p).Tag]);
+        uistack(hm.UserData.plot.codedShade(p),'bottom');
     end
 end
+
+% setup coder marks
+for p=1:length(hm.UserData.plot.ax)
+    if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
+        hm.UserData.plot.coderMarks(p) = plot([nan nan], [nan nan],'k-','Parent',hm.UserData.plot.ax(p),'Tag',['codeMark|' hm.UserData.plot.ax(p).Tag]);
+    end
+end
+
+% prepare coder popup panel
+makeCoderPanel(hm);
+
+% draw actual coding, if any
+hm.UserData.ui.coding.currentStream = nan;
+updateCoderStream(hm,1);
+updateScarf(hm);
+% TODO: logica klopt ergens niet: begin met lege coding. klik ergens op
+% tijd en zet een code erin. druk dan weer op de knop om die code weg te
+% halen. de stream waar je net op drukte wordt dan gedeactiveerd...
 
 % plot UI for dragging time and scrolling the whole window
 hm.UserData.ui.hoveringTime         = false;
@@ -191,6 +219,17 @@ hm.UserData.ui.grabbedTimeLoc       = nan;
 hm.UserData.ui.justMovedTimeByMouse = false;
 hm.UserData.ui.scrollRef            = [nan nan];
 hm.UserData.ui.scrollRefAx          = matlab.graphics.GraphicsPlaceholder;
+% UI for dragging coding markers
+hm.UserData.ui.coding.grabbedMarker         = false;
+hm.UserData.ui.coding.grabbedMarkerLoc      = [];
+hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
+hm.UserData.ui.coding.hoveringMarker        = false;
+hm.UserData.ui.coding.hoveringWhichMarker   = nan;
+% UI for adding event in middle of another
+hm.UserData.ui.coding.addingIntervening     = false;
+hm.UserData.ui.coding.addingInterveningEvt  = [];
+hm.UserData.ui.coding.interveningTempLoc    = nan;
+hm.UserData.ui.coding.interveningTempElem   = matlab.graphics.GraphicsPlaceholder;
 
 % reset plot limits button
 butPos = [hm.UserData.plot.axRect(end,3)+10 hm.UserData.plot.axRect(end,2) 100 30];
@@ -457,6 +496,9 @@ end
 %% helpers etc
 function setupPlots(hm,plotOrder,nTotal)
 nPanel  = length(plotOrder);
+iScarf  = find(strcmp(plotOrder,'scarf'));
+qHaveScarf = ~isempty(iScarf);
+nFullPanel = nPanel-numel(iScarf);
 if nargin<3
     nTotal = nPanel;
 end
@@ -465,11 +507,13 @@ if hm.UserData.ui.haveEyeVideo
 else
     widthFac = .6;
 end
+scarfHeight = hm.UserData.settings.plot.scarfHeight*length(hm.UserData.coding.codeCats);
 
 width   = widthFac*hm.Position(3)-hm.UserData.plot.margin.base(1)-hm.UserData.plot.margin.y(1);   % half of window width, but leave space left of axis for tick labels and axis label
-height  = (hm.Position(4) -(nPanel-1)*hm.UserData.plot.margin.between -hm.UserData.plot.margin.base(2)-hm.UserData.plot.margin.xy(2))/nPanel; % vertical height of window, minus nPanel-1 times space between panels, minus space below axis for tick labels and axis label
+height  = (hm.Position(4) -(nPanel-1)*hm.UserData.plot.margin.between -hm.UserData.plot.margin.base(2)-hm.UserData.plot.margin.xy(2) -scarfHeight*qHaveScarf)/nFullPanel; % vertical height of window, minus nPanel-1 times space between panels, minus space below axis for tick labels and axis label
 left    = hm.UserData.plot.margin.base(1)+hm.UserData.plot.margin.y(1);                     % leave space left of axis for tick labels and axis label
 heights = repmat(height,nPanel,1);
+heights(iScarf) = scarfHeight;
 bottom  = repmat(hm.Position(4),nPanel,1)-cumsum(heights)-cumsum([0; repmat(hm.UserData.plot.margin.between,nPanel-1,1)]);
 
 hm.UserData.plot.axPos = [repmat(left,nPanel,1) bottom repmat(width,nPanel,1) heights];
@@ -533,8 +577,8 @@ setTimeWindow(hm,diff(ax.XLim),false);
 % set new left of it
 setPlotView(hm,ax.XLim(1));
 
-% now do vertical scale. Already set by zoom, just update elements on plot
-repositionFullHeightAxisAnnotations(hm,[],evt.Axes);
+% nothing to do for vertical scaling, all elements by far exceed reasonable
+% axis limits
 end
 
 function scrollFunc(hm,~,evt)
@@ -562,6 +606,11 @@ if evt.isControlDown || evt.isShiftDown
         else
             % zoom value axis
             
+            % if scarf plot, do not scale
+            if strcmp(ax.Tag,'scarf')
+                return
+            end
+            
             % get current range
             range = diff(ax.YLim);
             
@@ -583,22 +632,9 @@ if evt.isControlDown || evt.isShiftDown
             
             % apply new limits
             ax.YLim = bottom+[0 newRange];
-            
-            % fix up elements on axis that should be full height
-            repositionFullHeightAxisAnnotations(hm,axIdx,ax);
         end
     end
 end
-end
-
-function repositionFullHeightAxisAnnotations(hm,axIdx,ax)
-if nargin<3
-    ax = hm.UserData.plot.ax(axIdx);
-elseif isempty(axIdx)
-    axIdx = find(hm.UserData.plot.ax==ax);
-end
-% also scale time indicator to always fill whole axis
-hm.UserData.plot.timeIndicator(axIdx).YData = ax.YLim;
 end
 
 function icon = getIcon(gfx,icon)
@@ -628,6 +664,437 @@ while ~isempty(transform)
     end
     transform(1) = [];
 end
+end
+
+function makeCoderPanel(hm)
+% create panel
+marginsP = [3 2];
+marginsB = [2 5];   % horizontal: [margin from left edge, margin between buttons]
+buttonSz = [40 24];
+
+% temp uipanel because we need to figure out size of margins
+temp    = uipanel('Units','pixels','Position',[10 10 100 100],'title','Xxj');
+drawnow
+off     = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
+delete(temp);
+
+% figure out width/height of each coding stream
+nStream = length(hm.UserData.coding.codeCats);
+rowWidths = nan(nStream,1);
+rowHeight = buttonSz(2);
+for s=1:nStream
+    nBut = size(hm.UserData.coding.codeCats{s},1);
+    rowWidths(s,1) = 2*marginsB(1)+nBut*buttonSz(1)+(nBut-1)*marginsB(2);
+end
+subPanelWidth   = max(rowWidths)+ceil(off(3));
+subPanelHeight  = rowHeight+ceil(off(4));
+panelWidth      = subPanelWidth+marginsP(1)*2;
+panelHeight     = subPanelHeight*nStream+nStream*2*marginsP(2); % between panel margin on both sides of each panel
+
+hm.UserData.ui.coding.panel.obj = uipanel('Units','pixels','Position',[10 10 panelWidth panelHeight]);
+drawnow
+
+% get components, do some graphical work
+parent = hm.UserData.ui.coding.panel.obj;
+parent.UserData.jObj = parent.JavaFrame.getPrintableComponent;
+parent.Visible = 'off';
+parent.UserData.jObj.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.black));
+
+% create subpanels
+for s=1:nStream
+    p = nStream-s;
+    hm.UserData.ui.coding.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) subPanelHeight*p+(p*2+1)*marginsP(2) subPanelWidth subPanelHeight],'Parent',parent,'title',hm.UserData.coding.streamLbls{s});
+    hm.UserData.ui.coding.subpanel(s).ForegroundColor = [0 0 0];
+    hm.UserData.ui.coding.subpanel(s).HighlightColor = [0 0 0];
+end
+
+% make buttons in each
+baseColor = hm.UserData.ui.coding.subpanel(1).BackgroundColor;
+buttons = hm.UserData.coding.codeCats;
+colors  = hm.UserData.coding.codeColors;
+for p=1:length(buttons)
+    qFlag = cellfun(@(x)x(1)=='*',buttons{p}(:,1));
+    assert(sum(qFlag)==0||sum(qFlag)==1)
+    if any(qFlag)
+        iFlag = find(qFlag);
+        buttons{p} = [buttons{p}(1:iFlag-1,:); {'||',0}; buttons{p}(iFlag:end,:)];
+        colors{p}  = [ colors{p}(1:iFlag-1  ); { []   };  colors{p}(iFlag:end)];
+    end
+end
+alpha = .5;
+b=1;
+for p=1:length(buttons)
+    % calc width of button row
+    start = [3+marginsB(1) (hm.UserData.ui.coding.subpanel(p).InnerPosition(4)-buttonSz(2))./2+2];
+    for q=1:size(buttons{p},1)
+        if strcmp(buttons{p}{q,1},'||')
+            % flush right (assume only one button left)
+            assert(q==size(buttons{p},1)-1)
+            start(1) = subPanelSz(1)-7+marginsB(1)-buttonSz(1);
+        else
+            if isempty(colors{p}{q})
+                clr = baseColor*.98;
+            else
+                clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
+            end
+            btnLbl = buttons{p}{q,1};
+            btnLbl(btnLbl=='*'|btnLbl=='+') = [];
+            hm.UserData.ui.coding.buttons(b) = uicontrol(...
+                'Style','togglebutton','Tag',sprintf('%s',buttons{p}{q,1}),'Position',[start buttonSz],...
+                'Callback',@(hBut,~) codingButtonCallback(hBut,hm,p,buttons{p}{q,:}),'String',btnLbl,...
+                'Parent',hm.UserData.ui.coding.subpanel(p),...
+                'BackgroundColor',clr);
+            
+            % advance to next pos
+            start(1) = start(1)+buttonSz(1)+marginsB(2);
+            b=b+1;
+        end
+    end
+end
+
+end
+
+function codingButtonCallback(hBut,hm,stream,butLbl,evtCode)
+
+mark = timeToMark(hm,hm.UserData.ui.coding.panel.mPosAx(1));
+% see if editing current code or adding new
+if mark>hm.UserData.coding.mark{stream}(end)
+    % adding new
+    % check if event not the same as previous
+    if ~isempty(hm.UserData.coding.type{stream}) && bitand(hm.UserData.coding.type{stream}(end),evtCode)
+        hBut.Value=0;   % cancel press
+        return
+    end
+    % check we're not trying to add a flag (would be without base event)
+    if butLbl(1)=='*'
+        hBut.Value=0;   % cancel press
+        return
+    end
+    % add code, set evtTagIdx, done
+    hm.UserData.coding.mark{stream}(end+1) = mark;
+    hm.UserData.coding.type{stream}(end+1) = evtCode;
+    hm.UserData.ui.coding.panel.evtTagIdx(stream) = length(hm.UserData.coding.type{stream});
+    % log
+    addToLog(hm,'AddedNewCode',struct('stream',stream,'mark',mark,'type',evtCode,'idx',hm.UserData.ui.coding.panel.evtTagIdx(stream)));
+    % update coded extent to reflect new code
+    updateCodedShadeAndMarks(hm);
+elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
+    idx = hm.UserData.ui.coding.panel.evtTagIdx(stream);
+    % see if button toggled on or off
+    if ~hBut.Value
+        hm.UserData.coding.type{stream}(idx) = bitxor(hm.UserData.coding.type{stream}(idx),evtCode);
+        if butLbl(end)=='+' && hm.UserData.coding.type{stream}(idx)
+            % we just removed a code that may have a flag attached and we
+            % still have a non-zero field so flag is likely applied. check
+            % for flags and remove if applied. NB: code currently assumes
+            % only one flag can be attached
+            kid = hm.UserData.ui.coding.subpanel(stream).Children(end-log2(hm.UserData.coding.type{stream}(idx)));
+            if kid.Tag(1)=='*'
+                hm.UserData.coding.type{stream}(idx) = 0;
+                kid.Value = 0;  % deactivate button
+            end
+        end
+        if ~hm.UserData.coding.type{stream}(idx)
+            qInMiddle = idx<length(hm.UserData.coding.type{stream});
+            % no tag left, remove event
+            if idx==1
+                % selected first event, remove and grow second leftward
+                hm.UserData.coding.mark{stream}(idx+1) = [];
+                hm.UserData.coding.type{stream}(idx)   = [];
+                disableCodingStreamInPanel(hm,stream);
+                addToLog(hm,'RemovedFirstEvent',struct('stream',stream,'mark',mark,'idx',idx));
+            elseif qInMiddle
+                % selected event in middle of coded stream, remove whole
+                % event
+                % check flanking events to see what action to take
+                evt1Bits = fliplr(rem(floor(hm.UserData.coding.type{stream}(idx-1)*pow2(1-8:0)),2));
+                evt2Bits = fliplr(rem(floor(hm.UserData.coding.type{stream}(idx+1)*pow2(1-8:0)),2));
+                if find(evt1Bits,1)==find(evt2Bits,1)   % check if first bits equal: ignore flags
+                    % equal events on both sides: merge by removing both
+                    % markers and two event type indicators. Flags of left
+                    % event are kept intact
+                    hm.UserData.coding.mark{stream}(idx+[0 1]) = [];
+                    hm.UserData.coding.type{stream}(idx+[0 1]) = [];
+                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',mark,'idx',idx,'action','merge'));
+                else
+                    % different event on both sides, just remove left
+                    % marker of the affected event and event tag, this has
+                    % left flanking event expand into the deleted one
+                    hm.UserData.coding.mark{stream}(idx) = [];
+                    hm.UserData.coding.type{stream}(idx) = [];
+                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',mark,'idx',idx,'action','growLeft'));
+                end
+                % can't place it back in again, so disable this stream on
+                % coding panel
+                disableCodingStreamInPanel(hm,stream);
+            else
+                % rightmost event, just remove right marker
+                hm.UserData.coding.mark{stream}(idx+1) = [];
+                hm.UserData.coding.type{stream}(idx)   = [];
+                addToLog(hm,'RemovedRightEvent',struct('stream',stream,'mark',mark,'idx',idx));
+            end
+            hm.UserData.ui.coding.panel.evtTagIdx(stream) = nan;
+            % update coded extent to reflect new code
+            updateCodedShadeAndMarks(hm);
+        else
+            % flag removed
+            addToLog(hm,'RemovedFlag',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+        end
+    elseif butLbl(1)=='*'
+        % check if current event allows flag
+        evt = hm.UserData.coding.type{stream}(idx);
+        if hm.UserData.ui.coding.subpanel(stream).Children(end-log2(evt)).Tag(end)~='+'
+            hBut.Value=0;   % cancel press
+            return
+        end
+        hm.UserData.coding.type{stream}(idx) = bitor(hm.UserData.coding.type{stream}(idx),evtCode);
+        addToLog(hm,'AddedFlag',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+    else
+        % check if not same as previous
+        if idx>1 && bitand(hm.UserData.coding.type{stream}(idx-1),evtCode)
+            hBut.Value=0;   % cancel press
+            return
+        end
+        % change event
+        hm.UserData.coding.type{stream}(idx) = evtCode;
+        % log
+        addToLog(hm,'ChangedEvent',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+        % untoggle other buttons
+        activateCodingButtons(hm.UserData.ui.coding.subpanel(stream).Children, hm.UserData.coding.type{stream}(idx),true);
+    end
+else
+    % cannot edit that stream at the clicked position, cancel click
+    hBut.Value=0;   % cancel press
+    return
+end
+
+% update scarf plot to reflect new code
+updateScarf(hm);
+end
+
+function clickOnAxis(hm)
+% stop the timer that fired this
+stop(hm.UserData.ui.doubleClickTimer);
+
+if strcmp(hm.UserData.ui.coding.panel.clickedAx.Tag,'scarf')
+    % clicked on the scarf plot, see which of the four streams to activate
+    stream = round(hm.UserData.ui.coding.panel.mPosAx(2));
+    updateCoderStream(hm,stream);
+else
+    % clicked one of the data axes, open panel to place new mark
+    initAndOpenCodingPanel(hm);
+end
+end
+
+function initAndOpenCodingPanel(hm,stream)
+if nargin<2
+    % allow caller to override stream w.r.t. panel is set up (needed when
+    % adding intervening event that is past last mark in active stream but
+    % intervening for another stream)
+    stream = hm.UserData.ui.coding.currentStream;
+end
+
+% position panel
+figPos    = hm.UserData.ui.coding.panel.mPos;
+figPos(1) = figPos(1)+2;  % position just a bit off to the side, so that second click of double click can't land on the panel easily
+figPos(2) = max(figPos(2)-hm.UserData.ui.coding.panel.obj.Position(4),1);   % move panel up if would extend below figure bottom
+hm.UserData.ui.coding.panel.obj.Position = [figPos hm.UserData.ui.coding.panel.obj.Position(3:4)];
+
+% clear button states
+deactivateAllCodingButtons(hm);
+enableAllCodingStreams(hm);
+
+% see if new code or editing existing code
+hm.UserData.ui.coding.panel.evtTagIdx = nan(length(hm.UserData.ui.coding.subpanel),1);
+otherStream = 1:length(hm.UserData.ui.coding.subpanel);
+otherStream(otherStream==stream) = [];
+mPosXAx = hm.UserData.ui.coding.panel.mPosAx(1);
+if mPosXAx<=markToTime(hm,hm.UserData.coding.mark{stream}(end))
+    % pressed in already coded area. see which event tag was selected
+    marks = markToTime(hm,hm.UserData.coding.mark{stream});
+    evtTagIdx = find(mPosXAx>marks(1:end-1) & mPosXAx<=marks(2:end));
+    hm.UserData.ui.coding.panel.evtTagIdx(stream) = evtTagIdx;
+    % load and activate toggles
+    % 1. current stream
+    activateCodingButtons(hm.UserData.ui.coding.subpanel(stream).Children, hm.UserData.coding.type{stream}(evtTagIdx));
+    
+    % 2. also exactly coincident event tags in the other streams
+    for p=1:length(otherStream)
+        % have event with same start+end in this stream?
+        marksO = markToTime(hm,hm.UserData.coding.mark{otherStream(p)});
+        if all(ismember(marks(evtTagIdx+[0 1]),marksO))
+            iEvt = find(marksO==marks(evtTagIdx));
+            activateCodingButtons(hm.UserData.ui.coding.subpanel(otherStream(p)).Children, hm.UserData.coding.type{otherStream(p)}(iEvt));
+            hm.UserData.ui.coding.panel.evtTagIdx(otherStream(p)) = iEvt;
+        else
+            disableCodingStreamInPanel(hm,otherStream(p));
+        end
+    end
+else
+    % check for other streams whether click is also beyond last event, else
+    % disable that stream
+    for p=1:length(otherStream)
+        if mPosXAx<=markToTime(hm,hm.UserData.coding.mark{otherStream(p)}(end))
+            disableCodingStreamInPanel(hm,otherStream(p));
+        end
+    end
+end
+
+% make it visible
+hm.UserData.ui.coding.panel.obj.Visible = 'on';
+end
+
+function deactivateAllCodingButtons(hm)
+[hm.UserData.ui.coding.buttons.Value] = deal(0);
+end
+
+function enableAllCodingStreams(hm)
+[hm.UserData.ui.coding.buttons.Enable] = deal('on');
+[hm.UserData.ui.coding.subpanel.ForegroundColor] = deal([0 0 0]);
+[hm.UserData.ui.coding.subpanel.HighlightColor]  = deal([0 0 0]);
+% disable locked streams again immediately
+for p=1:length(hm.UserData.coding.streamIsLocked)
+    if hm.UserData.coding.streamIsLocked(p)
+        disableCodingStreamInPanel(hm,p);
+    end
+end
+end
+
+function activateCodingButtons(buts,code,qDeactivateOthers)
+% see which bits are set. Both bits and button children come in reversed
+% order, so no need to flip
+qBut = logical(rem(floor(code*pow2(1-length(buts):0)),2));
+[buts(qBut).Value] = deal(1);
+if nargin>2 && qDeactivateOthers
+    [buts(~qBut).Value] = deal(0);
+end
+end
+
+function disableCodingStreamInPanel(hm,stream)
+[hm.UserData.ui.coding.subpanel(stream).Children.Enable]= deal('off');
+hm.UserData.ui.coding.subpanel(stream).ForegroundColor  = deal([.6 .6 .6]);
+hm.UserData.ui.coding.subpanel(stream).HighlightColor   = deal([.6 .6 .6]);
+% if all disabled, close panel
+if all(strcmp({hm.UserData.ui.coding.buttons.Enable},'off'))
+    hm.UserData.ui.coding.panel.obj.Visible = 'off';
+end
+end
+
+function updateCoderStream(hm,stream)
+if stream==hm.UserData.ui.coding.currentStream
+    return
+end
+hm.UserData.ui.coding.currentStream = stream;
+
+% update marks and coded extent
+updateCodedShadeAndMarks(hm);
+
+% update arrow indicating which stream is active
+qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
+hm.UserData.plot.ax(~qAx).YTick = hm.UserData.ui.coding.currentStream-.4;
+
+% highlight background of stream being shown in coding panel
+baseColor = hm.UserData.ui.coding.panel.obj.BackgroundColor;
+[hm.UserData.ui.coding.subpanel.BackgroundColor] = deal(baseColor);
+opacity = .12;
+highlight = baseColor.*(1-opacity)+[1 0 0].*opacity;
+hm.UserData.ui.coding.subpanel(stream).BackgroundColor = highlight;
+end
+
+function updateCodedShadeAndMarks(hm)
+% TODO: use event coloring to color background instead of just gray
+marks   = markToTime(hm,hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream});
+qAx     = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
+% coded shade
+[hm.UserData.plot.codedShade(qAx).XData] = deal(marks([1 end end 1]));
+% marks
+xMark = nan(1,length(marks)*3);
+xMark(1:3:end) = marks;
+xMark(2:3:end) = marks;
+for iAx=find(qAx)
+    yMark = nan(1,length(marks)*3);
+    yMark(1:3:end) = -10^5;
+    yMark(2:3:end) =  10^5;
+    set(hm.UserData.plot.coderMarks(iAx),'XData',xMark,'YData',yMark);
+end
+end
+
+function moveMarker(hm,stream,mark,markers,markerIdx)
+% update if needed
+for p=1:length(stream)
+    if mark(p) ~= hm.UserData.coding.mark{stream(p)}(markerIdx(p))
+        % update store
+        hm.UserData.coding.mark{stream(p)}(markerIdx(p)) = mark(p);
+        
+        % update graphics
+        time = markToTime(hm,mark(p));
+        qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
+        if stream(p)==hm.UserData.ui.coding.currentStream
+            % if dragging rightmost, updated coded shades
+            if markerIdx(p)==length(markers{p})
+                [hm.UserData.plot.codedShade(qAx).XData] = deal([0 time time 0]);
+            end
+            % always update the dragged marker
+            for iAx=find(qAx)
+                hm.UserData.plot.coderMarks(iAx).XData((markerIdx-1)*3+[1 2]) = time;
+            end
+        end
+        % update scarf
+        if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,1))
+            % update tag
+            hm.UserData.ui.coding.grabbedScarfElement(p,1).Tag = sprintf('code%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0]));
+            % update graphics
+            hm.UserData.ui.coding.grabbedScarfElement(p,1).XData(2:3) = time;
+        end
+        if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,2))
+            % update tag
+            hm.UserData.ui.coding.grabbedScarfElement(p,2).Tag = sprintf('code%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1]));
+            % update graphics
+            hm.UserData.ui.coding.grabbedScarfElement(p,2).XData([1 4]) = time;
+        end
+    end
+end
+end
+
+function updateScarf(hm)
+ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
+% get which element we should expect given coded events
+expect = {};
+for p=1:length(hm.UserData.coding.type)
+    toAdd = [hm.UserData.coding.type{p}; hm.UserData.coding.mark{p}(1:end-1); hm.UserData.coding.mark{p}(2:end)];
+    toAdd = [repmat(p,1,size(toAdd,2)); toAdd];
+    expect = [expect; cellfun(@(x)sprintf('code%d,%d,%d,%d',x),num2cell(toAdd,1),'uni',false).'];
+end
+% get which elements we have
+kids = findall(ax.Children,'Type','Patch');
+timeIndicator = findall(ax.Children,'Type','Line');
+have = {};
+if ~isempty(kids)
+    have = {kids.Tag};
+end
+% find which should be removed and which added
+add = expect(~ismember(expect,have));
+qRem = ~ismember(have,expect);
+% remove unneeded
+delete(kids(qRem));
+% add new ones
+for p=1:length(add)
+    info = sscanf(add{p},'code%d,%d,%d,%d');
+    % for color, get first set bit (flags are highest bits)
+    bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
+    clrIdx = find(bits,1);
+    clr = {repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+    if sum(bits)>1
+        clr{1}(1,:) = clr{1}(1,:)/2;
+        clr{1}(2,:) = clr{1}(2,:)/2+.5;
+        clr{3} = 'interp';
+    end
+    markTimes = markToTime(hm,info([3 4]));
+    patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),'FaceVertexCData',clr{:},'LineStyle','none','Parent',ax,'Tag',add{p});
+end
+% make sure time indicator is on top
+qTI = ax.Children==timeIndicator;
+ax.Children = [timeIndicator; ax.Children(~qTI)];
 end
 
 function createSettings(hm)
@@ -1019,12 +1486,14 @@ for a=1:nVisible
 end
 
 % reorder handles and other plot attributes
-assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','zoom'})),'added new fields, check if need to reorder')
+assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','codedShade','coderMarks','zoom'})),'added new fields, check if need to reorder')
 hm.UserData.plot.ax                 = hm.UserData.plot.ax(newOrder);
 hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
 hm.UserData.plot.axPos              = hm.UserData.plot.axPos(newOrder,:);
 hm.UserData.plot.axRect             = hm.UserData.plot.axRect(newOrder,:);
+hm.UserData.plot.codedShade         = hm.UserData.plot.codedShade(newOrder);
+hm.UserData.plot.coderMarks         = hm.UserData.plot.coderMarks(newOrder);
 
 % update this listbox and its selection
 listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
@@ -1039,7 +1508,6 @@ function resetPlotValueLimits(hm)
 for p=1:length(hm.UserData.plot.ax)
     if hm.UserData.plot.ax(p).YLim ~= hm.UserData.plot.defaultValueScale(:,p)
         hm.UserData.plot.ax(p).YLim = hm.UserData.plot.defaultValueScale(:,p);
-        repositionFullHeightAxisAnnotations(hm,p);
     end
 end
 end
@@ -1051,6 +1519,12 @@ startStopPlay(hm,0);
 p = evt.getPoint();
 h=hndl.Height;
 newVal = hndl.UI.valueForXPosition(p.x);
+
+% when this callback is executed, the normal matlab figure callback isn't.
+% manually check that coding panel isn't open
+if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+    hm.UserData.ui.coding.panel.obj.Visible = 'off';
+end
 
 % DEBUG check that i got figuring out of left and right edge of slider
 % correct (Need to put hm into the function!)
@@ -1103,6 +1577,9 @@ jFrame = get(gcf,'JavaFrame');
 j=handle(jFrame.fHG2Client.getAxisComponent, 'CallbackProperties');
 j.MouseWheelMovedCallback = @(hndl,evt) scrollFunc(hm,hndl,evt);
 
+% install property listener for current object. Gets invoked upon click
+addlistener(hm,'CurrentObject','PostSet',@(~,~) focusChange(hm));
+
 % UI for zooming. Create zoom object now. If doing it before the above,
 % then, for some reason the MouseWheelMovedCallback and all other callbacks
 % are not available...
@@ -1110,6 +1587,9 @@ hm.UserData.plot.zoom.obj                   = zoom();
 hm.UserData.plot.zoom.obj.ActionPostCallback= @(~,evt)doZoom(hm,evt);
 % disallow zoom for legend
 setAllowAxesZoom(hm.UserData.plot.zoom.obj,hm.UserData.ui.signalLegend,false);
+% allow only horizontal zoom for scarf plot
+qAx = strcmp({hm.UserData.plot.ax.Tag},'scarf');
+setAxesZoomConstraint(hm.UserData.plot.zoom.obj,hm.UserData.plot.ax(qAx),'x');
 % timer for switching zoom mode back off
 hm.UserData.plot.zoom.timer = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) startZoom(hm), 'StartDelay', 10/1000);
 
@@ -1146,11 +1626,38 @@ pos = num2cell(pos,2);
 [yl.Position] = pos{:};
 end
 
+function focusChange(hm)
+if isempty(hm.UserData)
+    % happens when closing figure window
+    return;
+end
+% close coder panel if it is open now
+if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+    panel = hitTestType(hm,'uipanel');
+    if isempty(panel) || ~any(panel==[hm.UserData.ui.coding.panel.obj hm.UserData.ui.coding.subpanel])
+        hm.UserData.ui.coding.panel.obj.Visible = 'off';
+    end
+end
+% cancel adding intervening event, if started
+if hm.UserData.ui.coding.addingIntervening
+    ax = hitTestType(hm,'axes');
+    if isempty(ax) || ~any(ax==hm.UserData.plot.ax)
+        endAddingInterveningEvt(hm);
+    end
+end
+end
+
 function KillCallback(hm,~)
 % delete timers
 try
     stop(hm.UserData.time.mainTimer);
     delete(hm.UserData.time.mainTimer);
+catch
+    % carry on
+end
+try
+    stop(hm.UserData.time.doubleClickTimer);
+    delete(hm.UserData.time.doubleClickTimer);
 catch
     % carry on
 end
@@ -1179,6 +1686,18 @@ hm.UserData = [];
 
 % execute default
 closereq();
+end
+
+function addToLog(hm,ID,info,time)
+if nargin<4 || isempty(time)
+    time=GetSecs;
+end
+if nargin<3
+    info = [];
+end
+hm.UserData.coding.log(end+1,:)  = {time,ID,info};
+% DEBUG: print msg
+% fprintf('%s\n',ID);
 end
 
 function KeyPress(hm,evt,evt2)
@@ -1210,6 +1729,10 @@ else
     modifiers   = evt.Modifier;
 end
 if ~isempty(theChar)
+    % close coder panel if it is open
+    if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+        hm.UserData.ui.coding.panel.obj.Visible = 'off';
+    end
     switch double(theChar)
         case 27
             % escape
@@ -1217,6 +1740,17 @@ if ~isempty(theChar)
                 % if dragging time, cancel it
                 hm.UserData.time.currentTime = hm.UserData.ui.grabbedTimeLoc;
                 endDrag(hm);
+            elseif hm.UserData.ui.coding.grabbedMarker
+                % if dragging marker, cancel it
+                for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+                    hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = hm.UserData.ui.coding.grabbedMarkerLoc(p,3);
+                end
+                addToLog(hm,'CancelledMarkerDrag',struct('stream',hm.UserData.ui.coding.grabbedMarkerLoc(:,1),'idx',hm.UserData.ui.coding.grabbedMarkerLoc(:,2),'mark',hm.UserData.ui.coding.grabbedMarkerLoc(:,3)));
+                endDrag(hm);
+                updateCodedShadeAndMarks(hm);
+            elseif hm.UserData.ui.coding.addingIntervening
+                % if adding intervening event, cancel it
+                endAddingInterveningEvt(hm);
             elseif strcmp(hm.UserData.plot.zoom.obj.Enable,'on')
                 % if in zoom mode, exit
                 hm.UserData.plot.zoom.obj.Enable = 'off';
@@ -1279,17 +1813,36 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
         % and now vertically
         vertOff = mPosXY(2)-hm.UserData.ui.scrollRef(2);
         hm.UserData.ui.scrollRefAx.YLim = hm.UserData.ui.scrollRefAx.YLim-vertOff;
-        repositionFullHeightAxisAnnotations(hm,[],hm.UserData.ui.scrollRefAx);
     elseif hm.UserData.ui.grabbedTime
         % dragging, move timelines
         setCurrentTime(hm,mPosX,true,false);    % don't do a full time update, loading in new video frames is too slow
         updateTimeLines(hm);
-    elseif isempty(lineHndl) && hm.UserData.ui.hoveringTime
+    elseif hm.UserData.ui.coding.grabbedMarker
+        % dragging, move marker
+        newMark     = repmat(timeToMark(hm,mPosX),size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
+        markers     = hm.UserData.coding.mark(hm.UserData.ui.coding.grabbedMarkerLoc(:,1));
+        markerIdx   = hm.UserData.ui.coding.grabbedMarkerLoc(:,2);
+        for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+            % make sure we dont run beyond surrounding markers, clamp to one before
+            % next, or one after previous. NB: we never move the first marker, so we
+            % don't have to check for whether we have a previous
+            % also don't have to worry marker is outside of time axis, as then we
+            % wouldn't be in this function
+            prevMark = markers{p}(markerIdx(p)-1);
+            nextMark = inf;
+            if markerIdx(p)<length(markers{p})
+                nextMark = markers{p}(markerIdx(p)+1);
+            end
+            newMark(p) = max(min(newMark(p),nextMark-1),prevMark+1);    % stay one sample away from the previous or next
+        end
+        % update marker store and corresponding graphics
+        moveMarker(hm,hm.UserData.ui.coding.grabbedMarkerLoc(:,1),newMark,markers,markerIdx);
+    elseif isempty(lineHndl) && (hm.UserData.ui.hoveringTime || hm.UserData.ui.coding.hoveringMarker)
         % we're no longer hovering time line or marker
-        checkCursorHover(hm,lineHndl);
-    elseif ~isempty(lineHndl) && contains(lineHndl.Tag,'timeIndicator')
-        % we're hovering time line
-        checkCursorHover(hm,lineHndl);
+        checkCursorHover(hm,lineHndl,mPosX);
+    elseif ~isempty(lineHndl) && (contains(lineHndl.Tag,'timeIndicator') || contains(lineHndl.Tag,'codeMark'))
+        % we're hovering time line or a coding marker
+        checkCursorHover(hm,lineHndl,mPosX);
     end
 else
     if ~isnan(hm.UserData.ui.scrollRef(1))
@@ -1303,10 +1856,10 @@ else
         % and now vertically
         vertOff = mPosXY(2)-hm.UserData.ui.scrollRef(2);
         hm.UserData.ui.scrollRefAx.YLim = hm.UserData.ui.scrollRefAx.YLim-vertOff;
-        repositionFullHeightAxisAnnotations(hm,[],hm.UserData.ui.scrollRefAx);
     elseif hm.UserData.ui.hoveringTime
         % exited axes, remove hover cursor
         hm.UserData.ui.hoveringTime = false;
+        hm.UserData.ui.coding.hoveringMarker = false;
         setHoverCursor(hm);
     elseif hm.UserData.ui.grabbedTime
         % find if to left or to right of axis
@@ -1320,58 +1873,200 @@ else
             setCurrentTime(hm,hm.UserData.plot.ax(1).XLim(2),true);
         end
         endDrag(hm);
+    elseif hm.UserData.ui.coding.grabbedMarker
+        % find if to left or to right of axis
+        mPosX = hm.CurrentPoint(1); % this in now in pixels in the figure window
+        % since all axes are aligned, check against any left bound
+        if mPosX<hm.UserData.plot.axRect(1,1)
+            % on left of axis, as first one is never moved, we know we have
+            % a marker left of this one. place this one one right of the
+            % marker left of it, or at the time window border, which ever
+            % is later
+            for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+                prevMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)-1);
+                newMark = max(timeToMark(hm,hm.UserData.plot.ax(1).XLim(1)),prevMark+1);
+                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark;
+            end
+        else
+            % on right of axis. if marker after it, make sure we stay one
+            % before it, or at end of time window, whichever is closer
+            for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+                nextMark = inf;
+                if hm.UserData.ui.coding.grabbedMarkerLoc(p,2) < length(hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)})
+                    nextMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)+1);
+                end
+                newMark = min(timeToMark(hm,hm.UserData.plot.ax(1).XLim(2)),nextMark-1);
+                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark;
+            end
+        end
+        endDrag(hm);
+        updateCodedShadeAndMarks(hm);
+        updateScarf(hm);
     end
 end
 end
 
 function setHoverCursor(hm)
-if hm.UserData.ui.hoveringTime
+if hm.UserData.ui.hoveringTime || hm.UserData.ui.coding.hoveringMarker
     setptr(hm,'lrdrag');
 else
     setptr(hm,'arrow');
 end
 end
 
-function checkCursorHover(hm,lineHndl)
+function checkCursorHover(hm,lineHndl,mPosX)
 if nargin<2
     lineHndl = hitTestType(hm,'line');
+end
+if nargin<3
+    axisHndl = hitTestType(hm,'axes');
+    if ~isempty(axisHndl)
+        mPosX = axisHndl.CurrentPoint(1);
+    else
+        mPosX = [];
+    end
 end
 
 if ~isempty(lineHndl) && contains(lineHndl.Tag,'timeIndicator')
     % we're hovering time line
     hm.UserData.ui.hoveringTime = true;
+elseif ~isempty(lineHndl) && contains(lineHndl.Tag,'codeMark')
+    hm.UserData.ui.coding.hoveringMarker = true;
+    % find which marker
+    marker = timeToMark(hm,mPosX);
+    [~,i] = min(abs(hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}-marker));
+    hm.UserData.ui.coding.hoveringWhichMarker = i;
 else
     % no hovering at all
     hm.UserData.ui.hoveringTime = false;
+    hm.UserData.ui.coding.hoveringMarker = false;
 end
 % change cursor
 setHoverCursor(hm);
 end
 
 function MouseClick(hm,~)
+% end adding intervening object if any click other than shift click
+if hm.UserData.ui.coding.addingIntervening && ~strcmp(hm.SelectionType,'extend')
+    endAddingInterveningEvt(hm);
+end
+
 if strcmp(hm.SelectionType,'normal')
     if hm.UserData.ui.hoveringTime
         % start drag time line
         hm.UserData.ui.grabbedTime      = true;
         hm.UserData.ui.grabbedTimeLoc   = hm.UserData.time.currentTime;
+    elseif hm.UserData.ui.coding.hoveringMarker
+        % start drag marker
+        startMarkerDrag(hm,false);
+    else
+        ax = hitTestType(hm,'axes');
+        if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+            acp = ax.CurrentPoint(1,1:2);
+            if all(acp>=[ax.XLim(1) ax.YLim(1)] & acp<=[ax.XLim(2) ax.YLim(2)])
+                % click on axis, restart click timer
+                hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint;
+                hm.UserData.ui.coding.panel.mPosAx = acp;
+                hm.UserData.ui.coding.panel.clickedAx = ax;
+                stop(hm.UserData.ui.doubleClickTimer);
+                start(hm.UserData.ui.doubleClickTimer);
+            end
+        end
     end
 elseif strcmp(hm.SelectionType,'extend')
-    % nothing for shift-click
-elseif strcmp(hm.SelectionType,'alt')
-    % control-click or right mouse click: scroll time axis
+    % if clicking on event, start or finish adding in the middle of it
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
-        hm.UserData.ui.scrollRef    = ax.CurrentPoint(1,1:2);
-        hm.UserData.ui.scrollRefAx  = ax;
-        % if we were, now we're no longer hovering time line
-        if hm.UserData.ui.hoveringTime
-            hm.UserData.ui.hoveringTime = false;
-            % change cursor
-            setHoverCursor(hm);
+        mark = timeToMark(hm,ax.CurrentPoint(1,1));
+        if ~hm.UserData.ui.coding.addingIntervening
+            % check which, if any, event is pressed on
+            for s=1:length(hm.UserData.coding.mark)
+                % pressed in already coded area. see which event tag was selected
+                evtTagIdx = find(mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end));
+                if ~isempty(evtTagIdx)
+                    hm.UserData.ui.coding.addingInterveningEvt = [hm.UserData.ui.coding.addingInterveningEvt; s evtTagIdx hm.UserData.coding.mark{s}(evtTagIdx+[0 1])];
+                end
+            end
+            % pressed on any event, then yes, we're starting to add an
+            % intervening event
+            hm.UserData.ui.coding.addingIntervening = ~isempty(hm.UserData.ui.coding.addingInterveningEvt);
+            if hm.UserData.ui.coding.addingIntervening
+                % draw the temp marker
+                hm.UserData.ui.coding.interveningTempLoc    = mark;
+                for p=1:length(hm.UserData.plot.ax)
+                    if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
+                        t = markToTime(hm,mark);
+                        hm.UserData.ui.coding.interveningTempElem(p) = plot([t t],hm.UserData.plot.ax(p).YLim,'Color','b','Parent',hm.UserData.plot.ax(p));
+                    end
+                end
+            end
+        else
+            % adding second marker, closing off event if placed well
+            if hm.UserData.ui.coding.interveningTempLoc==mark
+                % clicked same location twice, pretend second didn't happen
+                % as likely in error
+                return;
+            end
+            marks = sort([hm.UserData.ui.coding.interveningTempLoc mark]);
+            % per stream, check if both new marks are within bound of
+            % existing event (one sample offset, note the larger than
+            % and smaller than
+            for p=size(hm.UserData.ui.coding.addingInterveningEvt,1):-1:1   % go backwards so we can remove things we did not add, and then append info about added to the log
+                if all(marks>hm.UserData.ui.coding.addingInterveningEvt(p,3) & marks<hm.UserData.ui.coding.addingInterveningEvt(p,4))
+                    % ok, add new event, init to code 1, the default,
+                    % to start with
+                    % see what to add and where
+                    stream  = hm.UserData.ui.coding.addingInterveningEvt(p,1);
+                    idx     = hm.UserData.ui.coding.addingInterveningEvt(p,2);
+                    addType = 1;
+                    if hm.UserData.coding.type{stream}(idx)==1
+                        % ensure we don't insert same event as the event
+                        % we're splitting
+                        addType = 2;
+                    end
+                    % add event
+                    hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
+                    hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
+                else
+                    hm.UserData.ui.coding.addingInterveningEvt(p,:) = [];
+                end
+            end
+            % if added event, update graphics and open menu
+            if ~isempty(hm.UserData.ui.coding.addingInterveningEvt)
+                addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningEvt(:,1),'idx',hm.UserData.ui.coding.addingInterveningEvt(:,2)+1,'marks',marks));
+                updateCodedShadeAndMarks(hm);
+                updateScarf(hm);
+                hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint(1,1:2);
+                hm.UserData.ui.coding.panel.mPosAx(1) = markToTime(hm,marks(2));
+                initAndOpenCodingPanel(hm,hm.UserData.ui.coding.addingInterveningEvt(1,1));
+            end
+            % clean up
+            endAddingInterveningEvt(hm);
+        end
+    end
+elseif strcmp(hm.SelectionType,'alt')
+    % control-click or right mouse click, 
+    % 1: if hovering marker, start drag of all aligned markers accross streams
+    % 2: else, if on axis: scroll time axis
+    if hm.UserData.ui.coding.hoveringMarker
+        % start drag marker
+        startMarkerDrag(hm,true);
+    else
+        ax = hitTestType(hm,'axes');
+        if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+            hm.UserData.ui.scrollRef    = ax.CurrentPoint(1,1:2);
+            hm.UserData.ui.scrollRefAx  = ax;
+            % if we were, now we're no longer hovering time line
+            if hm.UserData.ui.hoveringTime
+                hm.UserData.ui.hoveringTime = false;
+                % change cursor
+                setHoverCursor(hm);
+            end
         end
     end
 elseif strcmp(hm.SelectionType,'open')
     % double click: set current time to clicked location
+    stop(hm.UserData.ui.doubleClickTimer);
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mPosX = ax.CurrentPoint(1);
@@ -1388,12 +2083,65 @@ end
 end
 
 function MouseRelease(hm,~)
-if hm.UserData.ui.grabbedTime
+if hm.UserData.ui.grabbedTime || hm.UserData.ui.coding.grabbedMarker
+    if hm.UserData.ui.coding.grabbedMarker
+        addToLog(hm,'FinishedMarkerDrag',struct('stream',hm.UserData.ui.coding.grabbedMarkerLoc(:,1),'idx',hm.UserData.ui.coding.grabbedMarkerLoc(:,2),'mark',hm.UserData.ui.coding.grabbedMarkerLoc(:,3)));
+    end
     endDrag(hm);
 elseif ~isnan(hm.UserData.ui.scrollRef(1))
     hm.UserData.ui.scrollRef = [nan nan];
     hm.UserData.ui.scrollRefAx = matlab.graphics.GraphicsPlaceholder;
 end
+end
+
+function endAddingInterveningEvt(hm)
+hm.UserData.ui.coding.addingIntervening     = false;
+hm.UserData.ui.coding.addingInterveningEvt  = [];
+hm.UserData.ui.coding.interveningTempLoc    = nan;
+delete(hm.UserData.ui.coding.interveningTempElem);
+hm.UserData.ui.coding.interveningTempElem   = matlab.graphics.GraphicsPlaceholder;
+end
+
+function startMarkerDrag(hm,qAlignedMarkersAlso)
+if hm.UserData.ui.coding.hoveringWhichMarker==1
+    % never move first marker
+    return;
+end
+
+cs = hm.UserData.ui.coding.currentStream;
+wm = hm.UserData.ui.coding.hoveringWhichMarker;
+mark = hm.UserData.coding.mark{cs}(wm);
+hm.UserData.ui.coding.grabbedMarker         = true;
+hm.UserData.ui.coding.grabbedMarkerLoc      = [cs wm mark];
+% get corresponding scarf element
+hm.UserData.ui.coding.grabbedScarfElement(1,1)  = getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm-1), hm.UserData.coding.mark{cs}(wm+[-1 0]));
+if wm<length(hm.UserData.coding.mark{cs})
+    % the marker is part of two scarf elements
+    hm.UserData.ui.coding.grabbedScarfElement(1,2)= getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
+end
+
+% is also dragging aligned, check other streams for marker at same location
+if qAlignedMarkersAlso
+    otherStream = 1:length(hm.UserData.ui.coding.subpanel);
+    otherStream(otherStream==hm.UserData.ui.coding.currentStream) = [];
+    for p=1:length(otherStream)
+        % have same event in this stream?
+        if any(hm.UserData.coding.mark{otherStream(p)}==mark)
+            iMark = find(hm.UserData.coding.mark{otherStream(p)}==mark);
+            hm.UserData.ui.coding.grabbedMarkerLoc = [hm.UserData.ui.coding.grabbedMarkerLoc; otherStream(p) iMark mark];
+            hm.UserData.ui.coding.grabbedScarfElement(end+1,1)  = getScarfElement(hm,otherStream(p),hm.UserData.coding.type{otherStream(p)}(iMark-1), hm.UserData.coding.mark{otherStream(p)}(iMark+[-1 0]));
+            if iMark<length(hm.UserData.coding.mark{otherStream(p)})
+                % the marker is part of two scarf elements
+                hm.UserData.ui.coding.grabbedScarfElement(end,2)= getScarfElement(hm,otherStream(p),hm.UserData.coding.type{otherStream(p)}(iMark), hm.UserData.coding.mark{otherStream(p)}(iMark+[0 1]));
+            end
+        end
+    end
+end
+end
+
+function obj = getScarfElement(hm,varargin)
+tag = sprintf('code%d,%d,%d,%d',varargin{:});
+obj = findobj(hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children,'Tag',tag);
 end
 
 function endDrag(hm,doFullUpdate)
@@ -1405,6 +2153,13 @@ if hm.UserData.ui.grabbedTime
     % do full time update
     if nargin<2 || doFullUpdate
         updateTime(hm);
+    end
+else
+    hm.UserData.ui.coding.grabbedMarker         = false;
+    hm.UserData.ui.coding.grabbedMarkerLoc      = [];
+    hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
+    if nargin<2 || doFullUpdate
+        updateScarf(hm);
     end
 end
 % update cursors (check for hovers and adjusts cursor if needed)
@@ -1448,6 +2203,8 @@ if desiredState
     start(hm.UserData.time.mainTimer);
     % cancel any drag (also cancels hover)
     endDrag(hm,false);
+    % cancel any event insertion
+    endAddingInterveningEvt(hm);
 else
     % stop playing
     stop(hm.UserData.time.mainTimer);
@@ -1664,6 +2421,16 @@ function time = clampTime(hm,time)
 time = min(max(round(time*hm.UserData.data.eye.fs)/hm.UserData.data.eye.fs,0),hm.UserData.time.endTime);
 end
 
+function time = markToTime(hm,mark)
+% marks are 1-based, corresponding to t=0s
+time = (mark-1)./hm.UserData.data.eye.fs;
+end
+
+function mark = timeToMark(hm,time)
+% marks are 1-based, corresponding to t=0s
+mark = round(time*hm.UserData.data.eye.fs)+1;
+end
+
 function setTimeWindow(hm,newTime,qCallSetPlotView)
 % allow window to change in steps of 1 sample, and be minimum 2 samples
 % wide
@@ -1721,5 +2488,10 @@ end
 timeWindow = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','TWSpinner');
 if timeWindow.Value~=hm.UserData.settings.plot.timeWindow
     timeWindow.Value = hm.UserData.settings.plot.timeWindow;
+end
+
+% if coding panel open, close
+if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+    hm.UserData.ui.coding.panel.obj.Visible = 'off';
 end
 end

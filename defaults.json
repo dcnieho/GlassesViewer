@@ -4,12 +4,44 @@
         "removeAccDC"     : true,
         "SGWindowVelocity": 20,
         "timeWindow"      : 2,
-        "initPanelOrder"  : ["azi","ele","vel","pup","gyro","acc"],
+        "initPanelOrder"  : ["azi","scarf","ele","vel","pup","gyro","acc"],
         "aziLim"          : 45,
         "eleLim"          : 30,
         "velLim"          : 400,
         "gyroLim"         : 150,
         "lineWidth"       : 1,
         "scarfHeight"     : 10
+    },
+    "coding": {
+        "streams":[
+        {"lbl": "naam1", "locked": false, "categories":
+        {"none":20, "fix":1, "sac":2}},
+        {"lbl": "gets2", "locked": false, "categories":
+        {"none":20, "fix":1, "sac":2}},
+        {"lbl": "fileStream", "locked": true, "categories":
+        {"none":20, "fix":1, "sac":2, "sp":3}}
+        ],
+        "colors": [
+        [230,25,75],
+        [60,180,75],
+        [255,225,25],
+        [0,130,200],
+        [245,130,48],
+        [145,30,180],
+        [70,240,240],
+        [240,50,230],
+        [210,245,60],
+        [250,190,190],
+        [0,128,128],
+        [230,190,255],
+        [170,110,40],
+        [255,250,200],
+        [128,0,0],
+        [170,255,195],
+        [128,128,0],
+        [255,215,180],
+        [0,0,128],
+        [128,128,128]
+        ]
     }
 }
