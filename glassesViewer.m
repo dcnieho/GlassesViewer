@@ -258,6 +258,9 @@ text(.25,heightEach*5.5,'Y',tcommon{:});
 plot([.05 0.20],heightEach*6.5.*[1 1],'g',lcommon{:})
 text(.25,heightEach*6.5,'Z',tcommon{:});
 
+% settings button
+butPos = [axPos(1) sum( axPos([2 4]))+10 100 30];
+hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
 
 
 %% load videos
@@ -1351,6 +1354,15 @@ comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',Lbl
 
 
 hm.UserData.ui.setting.panel.UserData.comps = comps;
+hm.UserData.ui.setting.panel.Visible = 'off';
+end
+
+function toggleSettingsPanel(hm,hndl)
+if hndl.Value
+    hm.UserData.ui.setting.panel.Visible = 'on';
+else
+    hm.UserData.ui.setting.panel.Visible = 'off';
+end
 end
 
 function changeSGCallback(hm,hndl,~)
