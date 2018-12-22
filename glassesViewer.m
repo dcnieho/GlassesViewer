@@ -72,7 +72,9 @@ hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 % TODO: load or gen coding data
 % TODO: when loading, check for case where user changed coding streams in
 % some way
-hm.UserData.coding = getCodingData(filedir,'',settings.coding);
+% TODO: when all streams locked, disable coding? Or is everything disabled
+% already fine (menu still acts as legend, so still of use)
+hm.UserData.coding = getCodingData(filedir, '', settings.coding, hm.UserData.data);
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 

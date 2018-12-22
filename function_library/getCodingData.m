@@ -1,4 +1,4 @@
-function coding = getCodingData(filedir,fname,codeSettings)
+function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
 if isempty(fname)
     fname = 'handCoding.mat';
 end
@@ -23,9 +23,9 @@ end
 
 % parse type of each stream, and other info
 type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
-locked  = true(size(type));
-qButtonPress = strcmpi(type,'buttonPress');
-locked(~qButtonPress) = cellfun(@(x) x.locked, codeSettings.streams(~qButtonPress));
+locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
+qSyncEvents = ismember(lower(type),{'syncin','syncout'});
+locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
 lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
 options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories'}), codeSettings.streams, 'uni', false);
 
@@ -54,6 +54,53 @@ else
     coding.stream.lbls      = lbls;
     coding.stream.isLocked  = locked;
     coding.stream.options   = options;
+end
+
+% process some streams
+for p=1:nStream
+    switch lower(coding.stream.type{p})
+        case {'syncin','syncout'}
+            % load sync channel data from Tobii data
+            if strcmpi(coding.stream.type{p},'syncin')
+                ts  = timeToMark(tobiiData.syncPort.in.ts(:).',tobiiData.eye.fs);
+                type= tobiiData.syncPort.in.state(:).'+1;
+            else
+                ts  = timeToMark(tobiiData.syncPort.out.ts(:).',tobiiData.eye.fs);
+                type= tobiiData.syncPort.out.state(:).'+1;
+            end
+            % sometimes multiple times same event in a row, merge
+            iSame = find(diff(type)==0);
+            ts(iSame+1)     = [];
+            type(iSame+1)   = [];
+            % add start of time
+            if ts(1)>1
+                if type(1) == 1
+                    ts(1) = 1;
+                else
+                    ts  = [1 ts];
+                    type= [1 type];
+                end
+            end
+            % add end
+            if isfield(tobiiData.videoSync,'eye')
+                endT = min([tobiiData.videoSync.scene.fts(end) tobiiData.videoSync.eye.fts(end)]);
+            else
+                endT = min([tobiiData.videoSync.scene.fts(end)]);
+            end
+            endT = timeToMark(endT,tobiiData.eye.fs);
+            if ts(end)==endT
+                ts = [ts endT];
+            else
+                type(end) = [];
+            end
+            % store
+            coding.mark{p} = ts;
+            coding.type{p} = type;
+        case 'handstream'
+            % nothing to do
+        case 'filestream'
+            % if nothing there yet, load from file
+    end
 end
 
 % add log entry indicated new session started
