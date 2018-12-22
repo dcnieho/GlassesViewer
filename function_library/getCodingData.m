@@ -7,7 +7,7 @@ end
 % 1. get categories for all streams
 categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
 % 2. transform into lookup table
-categories = cellfun(@(x) [fieldnames(x) struct2cell(x)], categories, 'uni', false);
+categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
 % 3. remove color info, that's just cosmetic
 theCats = cellfun(@(x) x(:,1),categories,'uni',false).';
 nStream = length(theCats);
@@ -57,6 +57,12 @@ else
 end
 
 % process some streams
+if isfield(tobiiData.videoSync,'eye')
+    endT = min([tobiiData.videoSync.scene.fts(end) tobiiData.videoSync.eye.fts(end)]);
+else
+    endT = min([tobiiData.videoSync.scene.fts(end)]);
+end
+endT = timeToMark(endT,tobiiData.eye.fs);
 for p=1:nStream
     switch lower(coding.stream.type{p})
         case {'syncin','syncout'}
@@ -74,28 +80,22 @@ for p=1:nStream
             type(iSame+1)   = [];
             % add start of time
             if ts(1)>1
-                if type(1) == 1
-                    ts(1) = 1;
+                ts  = [1 ts];
+                if type(1)==1
+                    type= [2 type];
                 else
-                    ts  = [1 ts];
-                    if type(1)==1
-                        type= [2 type];
-                    else
-                        type= [1 type];
-                    end
+                    type= [1 type];
                 end
             end
             % add end
-            if isfield(tobiiData.videoSync,'eye')
-                endT = min([tobiiData.videoSync.scene.fts(end) tobiiData.videoSync.eye.fts(end)]);
-            else
-                endT = min([tobiiData.videoSync.scene.fts(end)]);
-            end
-            endT = timeToMark(endT,tobiiData.eye.fs);
-            if ts(end)==endT
-                ts = [ts endT];
-            else
+            if ts(end)>=endT
+                % last mark at last sample: this does not start a new
+                % event anymore (always one more mark than type as
+                % marks also needed to close off events)
                 type(end) = [];
+                ts(end) = endT; % ensure end not beyond data
+            else
+                ts = [ts endT];
             end
             % store
             coding.mark{p} = ts;
@@ -106,8 +106,56 @@ for p=1:nStream
             % if nothing there yet, or always reload option set, load from
             % file
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
-                fname = getFullPath(coding.stream.options{p}.file);
+                fname   = getFullPath(coding.stream.options{p}.file);
+                codeF   = fileread(fname);
+                codeF   = reshape(sscanf(codeF,'%f'),2,[]);     % format: lines with [event start, event type]. this is sufficient as assumption of this code is that every sample is tagged with an event type. use event "none" or "other" for things that are not of interest to you
+                ts      = codeF(1,:);
+                type    = codeF(2,:);
+                % add start of time
+                if ts(1)>1
+                    ts  = [1 ts];
+                    if type(1)==1
+                        type= [2 type];
+                    else
+                        type= [1 type];
+                    end
+                end
+                % add end
+                if ts(end)>=endT
+                    % last mark at last sample: this does not start a new
+                    % event anymore (always one more mark than type as
+                    % marks also needed to close off events)
+                    type(end) = [];
+                    ts(end) = endT; % ensure end not beyond data
+                else
+                    ts = [ts endT];
+                end
+                % store
+                coding.mark{p} = ts;
+                coding.type{p} = type;
             end
+    end
+    
+    % check if types are valid (flag bits are set only if that
+    % bit is marked as flag)
+    % how flags work: an event whose name is suffixed with '+' can take as
+    % flag an event whose name is prefixed with '*'. These are then
+    % bit-anded together to make a special code
+    vals        = cat(1,coding.codeCats{p}{:,2});
+    qIsFlag     = cellfun(@(x) x( 1 )=='*',coding.codeCats{p}(:,1));
+    assert(sum(qIsFlag)<=1,'Error in code category definition for stream %d: User can only define up to a single flag code category per stream',p);
+    qTakesFlag  = cellfun(@(x) x(end)=='+',coding.codeCats{p}(:,1));
+    assert(~xor(any(qIsFlag),any(qTakesFlag)),'Error in code category definition for stream %d: User must define either no flag events (''*'' prefix) and flag-accepting events (''+'' suffix) or both a flag event and at least one flag-accepting event',p);
+    typeBits    = arrayfun(@(x) bitget(x,vals),coding.type{p},'uni',false);
+    typeBits    = [typeBits{:}];
+    % check 1: more than one bit set for any coded event even though no
+    % flags or flag-acceptors defined?
+    qMulti      = sum(typeBits,1)>1;
+    assert(~any(qMulti)||(any(qIsFlag)&&any(qTakesFlag)),'invalid event code found in stream %d: at least one event does not have a power-of-two (e.g. 1, 2, 4, etc) code, but no flag-events defined, impossible',p);
+    % check 2: if any event codes have multiple bits set, check if its a
+    % valid combination
+    for i=find(qMulti)
+        assert(~any(typeBits(~(qIsFlag|qTakesFlag),i)),'event code for event %d in stream %d invalid: event code has multiple bits set, but at least one of these bits is not for a flag event or a flag-accepting event',i,p)
     end
 end
 

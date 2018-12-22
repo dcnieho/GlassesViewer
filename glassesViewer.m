@@ -72,8 +72,6 @@ hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 % TODO: load or gen coding data
 % TODO: when loading, check for case where user changed coding streams in
 % some way
-% TODO: when all streams locked, disable coding? Or is everything disabled
-% already fine (menu still acts as legend, so still of use)
 hm.UserData.coding = getCodingData(filedir, '', settings.coding, hm.UserData.data);
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
@@ -258,8 +256,12 @@ plot([.05 0.20],heightEach*6.5.*[1 1],'g',lcommon{:})
 text(.25,heightEach*6.5,'Z',tcommon{:});
 
 % settings button
-butPos = [axPos(1) sum( axPos([2 4]))+10 100 30];
+butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
 hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
+
+% reset plot limits button
+butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
+hm.UserData.ui.resetPlotLimitsButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding files','Tag','reloadDataButton','Callback',@(~,~,~) 1);
 
 
 %% load videos

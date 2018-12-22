@@ -15,13 +15,13 @@
     "coding": {
         "streams":[
         {"type": "syncOut", "lbl": "knopDruk",
-            "categories": {"up":null, "down":20}
+            "categories": ["up", null, "down", 20]
         },
         {"type": "handStream", "lbl": "gets2", "locked": false,
-             "categories": {"none":20, "fix":1, "sac":2}
+             "categories": ["none", 20, "fix", 1, "sac", 2]
         },
-        {"type": "fileStream", "lbl": "fileStream", "locked": false, "file": "test.txt", "alwaysReload": true,
-             "categories": {"none":20, "fix":1, "sac":2, "sp":3}
+        {"type": "fileStream", "lbl": "fileStream", "locked": false, "file": "testCodingFile.txt", "alwaysReload": true,
+             "categories": ["none", 20, "fix", 1, "sac", 2, "sp", 3]
         }
         ],
         "colors": [
