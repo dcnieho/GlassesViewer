@@ -259,10 +259,24 @@ text(.25,heightEach*6.5,'Z',tcommon{:});
 butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
 hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
 
-% reset plot limits button
-butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-hm.UserData.ui.resetPlotLimitsButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding files','Tag','reloadDataButton','Callback',@(~,~,~) 1);
+% reload coding button
+if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
+    butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
+    hm.UserData.ui.reloadDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(~,~,~) 1);
+end
 
+% classifiers button
+if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
+    butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
+    hm.UserData.ui.classifierSettingButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','reloadDataButton','Callback',@(~,~,~) 1);
+end
+
+% crap data tick
+if ~isfield(hm.UserData.data,'isCrap')
+    hm.UserData.data.isCrap = false;
+end
+checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
+hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.data.isCrap,'Callback',@(~,~,~) toggleCrapData(hm));
 
 %% load videos
 segments = FolderFromFolder(fullfile(filedir,'segments'));
@@ -1376,6 +1390,10 @@ if hndl.Value
 else
     hm.UserData.ui.setting.panel.Visible = 'off';
 end
+end
+
+function toggleCrapData(hm)
+hm.UserData.data.isCrap = ~hm.UserData.data.isCrap;
 end
 
 function changeSGCallback(hm,hndl,~)
