@@ -268,7 +268,7 @@ end
 % classifiers button
 if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
     butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.classifierSettingButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','reloadDataButton','Callback',@(~,~,~) 1);
+    hm.UserData.ui.classifierSettingButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
 end
 
 % crap data tick
@@ -1386,9 +1386,19 @@ end
 
 function toggleSettingsPanel(hm,hndl)
 if hndl.Value
+    %hm.UserData.ui.classifierSetting.panel.Visible = 'off';
     hm.UserData.ui.setting.panel.Visible = 'on';
 else
     hm.UserData.ui.setting.panel.Visible = 'off';
+end
+end
+
+function toggleClassifierSettingPanel(hm,hndl)
+if hndl.Value
+    hm.UserData.ui.setting.panel.Visible = 'off';
+    %hm.UserData.ui.classifierSetting.panel.Visible = 'on';
+else
+    %hm.UserData.ui.classifierSetting.panel.Visible = 'off';
 end
 end
 
