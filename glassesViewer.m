@@ -2041,7 +2041,7 @@ end
 if ~isempty(lineHndl) && contains(lineHndl.Tag,'timeIndicator')
     % we're hovering time line
     hm.UserData.ui.hoveringTime = true;
-elseif ~isempty(lineHndl) && contains(lineHndl.Tag,'codeMark')
+elseif ~isempty(lineHndl) && contains(lineHndl.Tag,'codeMark') && ~hm.UserData.coding.stream.isLocked(hm.UserData.ui.coding.currentStream)
     hm.UserData.ui.coding.hoveringMarker = true;
     % find which marker
     marker = timeToMark(mPosX,hm.UserData.data.eye.fs);
@@ -2237,6 +2237,11 @@ if hm.UserData.ui.coding.hoveringWhichMarker==1
     % never move first marker
     return;
 end
+if hm.UserData.coding.stream.isLocked(hm.UserData.ui.coding.currentStream)
+    % can't drag locked stream (shouldn't be able to hover it either, but
+    % check here too to be safe)
+    return;
+end
 
 cs = hm.UserData.ui.coding.currentStream;
 wm = hm.UserData.ui.coding.hoveringWhichMarker;
@@ -2257,6 +2262,10 @@ if qAlignedMarkersAlso
     otherStream = 1:length(hm.UserData.ui.coding.subpanel);
     otherStream(otherStream==hm.UserData.ui.coding.currentStream) = [];
     for p=1:length(otherStream)
+        if hm.UserData.coding.stream.isLocked(otherStream(p))
+            % can't co-drag locked stream
+            continue;
+        end
         % have same event in this stream?
         if any(hm.UserData.coding.mark{otherStream(p)}==mark)
             iMark = find(hm.UserData.coding.mark{otherStream(p)}==mark);
