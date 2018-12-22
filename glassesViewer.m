@@ -2099,7 +2099,7 @@ elseif hasShift && ~hasCtrl && ~hasAlt
             for s=1:length(hm.UserData.coding.mark)
                 % pressed in already coded area. see which event tag was selected
                 evtTagIdx = find(mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end));
-                if ~isempty(evtTagIdx)
+                if ~isempty(evtTagIdx) && ~hm.UserData.coding.stream.isLocked(s)
                     hm.UserData.ui.coding.addingInterveningEvt = [hm.UserData.ui.coding.addingInterveningEvt; s evtTagIdx hm.UserData.coding.mark{s}(evtTagIdx+[0 1])];
                 end
             end
