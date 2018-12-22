@@ -200,9 +200,6 @@ makeCoderPanel(hm);
 hm.UserData.ui.coding.currentStream = nan;
 changeCoderStream(hm,1);
 updateScarf(hm);
-% TODO: logica klopt ergens niet: begin met lege coding. klik ergens op
-% tijd en zet een code erin. druk dan weer op de knop om die code weg te
-% halen. de stream waar je net op drukte wordt dan gedeactiveerd...
 
 % plot UI for dragging time and scrolling the whole window
 hm.UserData.ui.hoveringTime                 = false;
@@ -1027,7 +1024,7 @@ for p=1:length(stream)
         if stream(p)==hm.UserData.ui.coding.currentStream
             % always update the dragged marker
             for iAx=find(qAx)
-                hm.UserData.plot.coderMarks(iAx).XData((markerIdx-1)*3+[1 2]) = time;
+                hm.UserData.plot.coderMarks(iAx).XData((markerIdx(p)-1)*3+[1 2]) = time;
             end
         end
         if stream(p)==hm.UserData.ui.coding.currentStream
@@ -1892,6 +1889,9 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
         newMark     = repmat(timeToMark(hm,mPosX),size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
         markers     = hm.UserData.coding.mark(hm.UserData.ui.coding.grabbedMarkerLoc(:,1));
         markerIdx   = hm.UserData.ui.coding.grabbedMarkerLoc(:,2);
+        % TODO: als meerdere aligned aan het slepen, constrain to eerste
+        % limiet waar we tegenaan lopen in alle gesleepte streams? of zo
+        % houden als nu? Ik denk eerste
         for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
             % make sure we dont run beyond surrounding markers, clamp to one before
             % next, or one after previous. NB: we never move the first marker, so we
