@@ -99,7 +99,11 @@ for p=1:nStream
         case 'handstream'
             % nothing to do
         case 'filestream'
-            % if nothing there yet, load from file
+            % if nothing there yet, or always reload option set, load from
+            % file
+            if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
+                fname = getFullPath(coding.stream.options{p}.file);
+            end
     end
 end
 
