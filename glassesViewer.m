@@ -1690,6 +1690,9 @@ end
 
 % fix all y-axis labels to same distance
 fixupAxisLabels(hm);
+
+% make sure coder panel pops on top
+uistack(hm.UserData.ui.coding.panel.obj,'top');
 end
 
 function fixupAxisLabels(hm)
