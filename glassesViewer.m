@@ -922,7 +922,8 @@ if mPosXAx<=markToTime(hm.UserData.coding.mark{stream}(end),hm.UserData.data.eye
             iEvt = find(marksO==marks(evtTagIdx));
             activateCodingButtons(hm.UserData.ui.coding.subpanel(otherStream(p)).Children, hm.UserData.coding.type{otherStream(p)}(iEvt));
             hm.UserData.ui.coding.panel.evtTagIdx(otherStream(p)) = iEvt;
-        else
+        elseif mPosXAx<marksO(end)
+            % clicked during already coded intervals, disable
             disableCodingStreamInPanel(hm,otherStream(p));
         end
     end
@@ -933,6 +934,13 @@ else
         if mPosXAx<=markToTime(hm.UserData.coding.mark{otherStream(p)}(end),hm.UserData.data.eye.fs)
             disableCodingStreamInPanel(hm,otherStream(p));
         end
+    end
+end
+
+% disable locked streams
+for p=1:length(hm.UserData.coding.stream.isLocked)
+    if hm.UserData.coding.stream.isLocked(p)
+        disableCodingStreamInPanel(hm,p);
     end
 end
 
@@ -948,12 +956,6 @@ function enableAllCodingStreams(hm)
 [hm.UserData.ui.coding.buttons.Enable] = deal('on');
 [hm.UserData.ui.coding.subpanel.ForegroundColor] = deal([0 0 0]);
 [hm.UserData.ui.coding.subpanel.HighlightColor]  = deal([0 0 0]);
-% disable locked streams again immediately
-for p=1:length(hm.UserData.coding.stream.isLocked)
-    if hm.UserData.coding.stream.isLocked(p)
-        disableCodingStreamInPanel(hm,p);
-    end
-end
 end
 
 function activateCodingButtons(buts,code,qDeactivateOthers)
