@@ -78,7 +78,11 @@ for p=1:nStream
                     ts(1) = 1;
                 else
                     ts  = [1 ts];
-                    type= [1 type];
+                    if type(1)==1
+                        type= [2 type];
+                    else
+                        type= [1 type];
+                    end
                 end
             end
             % add end
