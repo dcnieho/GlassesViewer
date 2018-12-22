@@ -1889,9 +1889,9 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
         newMark     = repmat(timeToMark(hm,mPosX),size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
         markers     = hm.UserData.coding.mark(hm.UserData.ui.coding.grabbedMarkerLoc(:,1));
         markerIdx   = hm.UserData.ui.coding.grabbedMarkerLoc(:,2);
-        % TODO: als meerdere aligned aan het slepen, constrain to eerste
-        % limiet waar we tegenaan lopen in alle gesleepte streams? of zo
-        % houden als nu? Ik denk eerste
+        % also make sure that if dragging multiple streams, we stop all
+        % streams at the first limit we hit
+        [qLeft,qRight] = deal(false);
         for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
             % make sure we dont run beyond surrounding markers, clamp to one before
             % next, or one after previous. NB: we never move the first marker, so we
@@ -1903,7 +1903,14 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
             if markerIdx(p)<length(markers{p})
                 nextMark = markers{p}(markerIdx(p)+1);
             end
+            qRight = qRight | newMark(p)>nextMark-1;
+            qLeft  = qLeft  | newMark(p)<prevMark+1;
             newMark(p) = max(min(newMark(p),nextMark-1),prevMark+1);    % stay one sample away from the previous or next
+        end
+        if qLeft
+            newMark(:) = max(newMark);
+        elseif qRight
+            newMark(:) = min(newMark);
         end
         % update marker store and corresponding graphics
         moveMarker(hm,hm.UserData.ui.coding.grabbedMarkerLoc(:,1),newMark,markerIdx);
@@ -1952,21 +1959,35 @@ else
             % a marker left of this one. place this one one right of the
             % marker left of it, or at the time window border, which ever
             % is later
+            % 1. check for first limit we hit across streams in going
+            % leftward
+            newMark = zeros(size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
             for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
                 prevMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)-1);
-                newMark = max(timeToMark(hm,hm.UserData.plot.ax(1).XLim(1)),prevMark+1);
-                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark;
+                newMark(p) = max(timeToMark(hm,hm.UserData.plot.ax(1).XLim(1)),prevMark+1);
+            end
+            newMark(:) = max(newMark);
+            % 2. update marks
+            for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark(p);
             end
         else
             % on right of axis. if marker after it, make sure we stay one
             % before it, or at end of time window, whichever is closer
+            % 1. check for first limit we hit across streams in going
+            % rightward
+            newMark = zeros(size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
             for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
                 nextMark = inf;
                 if hm.UserData.ui.coding.grabbedMarkerLoc(p,2) < length(hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)})
                     nextMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)+1);
                 end
-                newMark = min(timeToMark(hm,hm.UserData.plot.ax(1).XLim(2)),nextMark-1);
-                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark;
+                newMark(p) = min(timeToMark(hm,hm.UserData.plot.ax(1).XLim(2)),nextMark-1);
+            end
+            newMark(:) = min(newMark);
+            % 2. update marks
+            for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
+                hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)) = newMark(p);
             end
         end
         endDrag(hm);
