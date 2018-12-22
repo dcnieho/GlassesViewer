@@ -695,7 +695,7 @@ parent.UserData.jObj.setBorder(javax.swing.BorderFactory.createLineBorder(java.a
 % create subpanels
 for s=1:nStream
     p = nStream-s;
-    hm.UserData.ui.coding.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) subPanelHeight*p+(p*2+1)*marginsP(2) subPanelWidth subPanelHeight],'Parent',parent,'title',hm.UserData.coding.streamLbls{s});
+    hm.UserData.ui.coding.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) subPanelHeight*p+(p*2+1)*marginsP(2) subPanelWidth subPanelHeight],'Parent',parent,'title',hm.UserData.coding.stream.lbls{s});
     hm.UserData.ui.coding.subpanel(s).ForegroundColor = [0 0 0];
     hm.UserData.ui.coding.subpanel(s).HighlightColor = [0 0 0];
 end
@@ -725,7 +725,7 @@ for p=1:length(buttons)
             start(1) = subPanelSz(1)-7+marginsB(1)-buttonSz(1);
         else
             if isempty(colors{p}{q})
-                clr = baseColor*.98;
+                clr = baseColor;
             else
                 clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
             end
@@ -947,8 +947,8 @@ function enableAllCodingStreams(hm)
 [hm.UserData.ui.coding.subpanel.ForegroundColor] = deal([0 0 0]);
 [hm.UserData.ui.coding.subpanel.HighlightColor]  = deal([0 0 0]);
 % disable locked streams again immediately
-for p=1:length(hm.UserData.coding.streamIsLocked)
-    if hm.UserData.coding.streamIsLocked(p)
+for p=1:length(hm.UserData.coding.stream.isLocked)
+    if hm.UserData.coding.stream.isLocked(p)
         disableCodingStreamInPanel(hm,p);
     end
 end
@@ -1091,15 +1091,21 @@ for p=1:length(add)
     % for color, get first set bit (flags are highest bits)
     bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
     clrIdx = find(bits,1);
-    clr = {repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
-    if sum(bits)>1
-        clr{1}(1,:) = clr{1}(1,:)/2;
-        clr{1}(2,:) = clr{1}(2,:)/2+.5;
-        clr{3} = 'interp';
+    if isempty(hm.UserData.coding.codeColors{info(1)}{clrIdx})
+        clr = {};
+        alpha = 0.0;
+    else
+        clr = {'FaceVertexCData',repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+        if sum(bits)>1
+            clr{2}(1,:) = clr{2}(1,:)/2;
+            clr{2}(2,:) = clr{2}(2,:)/2+.5;
+            clr{4} = 'interp';
+        end
+        alpha = 0.3;
     end
     markTimes = markToTime(hm,info([3 4]));
     for a=1:length(axs)
-        patch('XData',markTimes([1 2 2 1]),'YData', [10^6 10^6 -10^5 -10^5],'FaceVertexCData',clr{:},'FaceAlpha',.3,'LineStyle','none','Parent',axs(a),'Tag',add{p});
+        patch('XData',markTimes([1 2 2 1]),'YData', [10^6 10^6 -10^5 -10^5],clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',axs(a),'Tag',add{p});
     end
 end
 % make sure all shades are on the bottom
@@ -1137,14 +1143,20 @@ for p=1:length(add)
     % for color, get first set bit (flags are highest bits)
     bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
     clrIdx = find(bits,1);
-    clr = {repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
-    if sum(bits)>1
-        clr{1}(1,:) = clr{1}(1,:)/2;
-        clr{1}(2,:) = clr{1}(2,:)/2+.5;
-        clr{3} = 'interp';
+    if isempty(hm.UserData.coding.codeColors{info(1)}{clrIdx})
+        clr = {};
+        alpha = 0.0;
+    else
+        clr = {'FaceVertexCData',repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+        if sum(bits)>1
+            clr{2}(1,:) = clr{2}(1,:)/2;
+            clr{2}(2,:) = clr{2}(2,:)/2+.5;
+            clr{4} = 'interp';
+        end
+        alpha = 1.0;
     end
     markTimes = markToTime(hm,info([3 4]));
-    patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),'FaceVertexCData',clr{:},'LineStyle','none','Parent',ax,'Tag',add{p});
+    patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',ax,'Tag',add{p});
 end
 % make sure time indicator is on top
 if any(qRem) || ~isempty(add)

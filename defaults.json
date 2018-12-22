@@ -14,12 +14,15 @@
     },
     "coding": {
         "streams":[
-        {"lbl": "naam1", "locked": false, "categories":
-        {"none":20, "fix":1, "sac":2}},
-        {"lbl": "gets2", "locked": false, "categories":
-        {"none":20, "fix":1, "sac":2}},
-        {"lbl": "fileStream", "locked": true, "categories":
-        {"none":20, "fix":1, "sac":2, "sp":3}}
+        {"type": "buttonPress", "lbl": "knopDruk",
+            "categories": {"up":null, "down":20}
+        },
+        {"type": "handStream", "lbl": "gets2", "locked": false,
+             "categories": {"none":20, "fix":1, "sac":2}
+        },
+        {"type": "fileStream", "lbl": "fileStream", "locked": false, "file": "test.txt", "alwaysReload": true,
+             "categories": {"none":20, "fix":1, "sac":2, "sp":3}
+        }
         ],
         "colors": [
         [230,25,75],
