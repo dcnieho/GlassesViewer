@@ -716,7 +716,7 @@ for p=1:length(buttons)
     end
 end
 alpha = .5;
-b=1;
+butIdx= 1;
 for p=1:length(buttons)
     % calc width of button row
     start = [3+marginsB(1) (hm.UserData.ui.coding.subpanel(p).InnerPosition(4)-buttonSz(2))./2+2];
@@ -733,7 +733,7 @@ for p=1:length(buttons)
             end
             btnLbl = buttons{p}{q,1};
             btnLbl(btnLbl=='*'|btnLbl=='+') = [];
-            hm.UserData.ui.coding.buttons(b) = uicontrol(...
+            hm.UserData.ui.coding.buttons(butIdx) = uicontrol(...
                 'Style','togglebutton','Tag',sprintf('%s',buttons{p}{q,1}),'Position',[start buttonSz],...
                 'Callback',@(hBut,~) codingButtonCallback(hBut,hm,p,buttons{p}{q,:}),'String',btnLbl,...
                 'Parent',hm.UserData.ui.coding.subpanel(p),...
@@ -741,15 +741,13 @@ for p=1:length(buttons)
             
             % advance to next pos
             start(1) = start(1)+buttonSz(1)+marginsB(2);
-            b=b+1;
+            butIdx=butIdx+1;
         end
     end
 end
-
 end
 
 function codingButtonCallback(hBut,hm,stream,butLbl,evtCode)
-
 mark = timeToMark(hm.UserData.ui.coding.panel.mPosAx(1),hm.UserData.data.eye.fs);
 % see if editing current code or adding new
 if mark>hm.UserData.coding.mark{stream}(end)
