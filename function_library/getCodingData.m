@@ -134,6 +134,7 @@ for p=1:nStream
                 coding.mark{p} = ts;
                 coding.type{p} = type;
             end
+        case 'classifier'
     end
     
     % check if types are valid (flag bits are set only if that
