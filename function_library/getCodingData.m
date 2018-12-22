@@ -137,5 +137,30 @@ for p=1:nStream
     end
 end
 
+% store back up of file and classifier streams
+if ~isfield(coding,'original')
+    [coding.original.mark,coding.original.type] = deal(cell(size(coding.stream.type)));
+end
+qStoreOriginal              = false(size(coding.stream.type));
+coding.isManuallyChanged    = false(size(coding.stream.type));
+for p=1:length(coding.stream.type)
+    % only relevant for 'classifier' and 'filestream'
+    switch lower(coding.stream.type{p})
+        case 'classifier'
+            qStoreOriginal(p) = isempty(coding.original.mark{p});
+        case 'filestream'
+            qStoreOriginal(p) = isempty(coding.original.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload);
+    end
+    if qStoreOriginal(p)
+        coding.original.mark{p} = coding.mark{p};
+        coding.original.type{p} = coding.type{p};
+    end
+    % mark streams as dirty
+    if ismember(lower(coding.stream.type{p}),{'classifier','filestream'})
+        coding.isManuallyChanged(p) = ~isequal(coding.mark{p},coding.original.mark{p}) || ~isequal(coding.type{p},coding.original.type{p});
+    end
+end
+
+
 % add log entry indicated new session started
 coding.log(end+1,:) = {GetSecs,'SessionStarted',[]};
