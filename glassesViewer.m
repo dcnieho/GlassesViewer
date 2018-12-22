@@ -727,7 +727,7 @@ for p=1:length(buttons)
             start(1) = subPanelSz(1)-7+marginsB(1)-buttonSz(1);
         else
             if isempty(colors{p}{q})
-                clr = baseColor;
+                clr = baseColor*.999;   % set color explicitly slightly different, else visually acts quite differently
             else
                 clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
             end
