@@ -42,9 +42,15 @@ hm.WindowButtonUpFcn = @MouseRelease;
 hm.MenuBar = 'none';
 
 % set figure to near full screen
-ws          = get(0,'ScreenSize');
-hmmar       = [0 0 0 40];    % left right top bottom
-hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
+if isfield(hm,'WindowState')
+    hm.WindowState = 'Maximized';
+    pos = hm.OuterPosition;
+    set(hm,'WindowState','normal','OuterPosition',pos);
+else
+    ws          = get(0,'ScreenSize');
+    hmmar       = [0 0 0 40];    % left right top bottom
+    hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
+end
 
 % need to figure out if any DPI scaling active, some components work in
 % original screen space
