@@ -21,7 +21,7 @@ if 0
     filedir = uigetdir('','Select recording folder');
 else
     % for easy use, hardcode a folder. 
-    filedir = 'C:\dat\projects\headmounted event classification\data\Exported data\P09\ytrqjkq';
+    filedir = 'C:\dat\projects\headmounted event classification\data\extra test\TG2-switch2';
 end
 if ~filedir
     return
@@ -268,7 +268,8 @@ hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Paren
 % reload coding button
 if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
     butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.reloadDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(~,~,~) 1);
+    hm.UserData.ui.reloadDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(~,~,~) showReloadPopup(hm));
+    createReloadPopup(hm);
 end
 
 % classifiers button
@@ -746,7 +747,7 @@ for p=1:length(buttons)
         if strcmp(buttons{p}{q,1},'||')
             % flush right (assume only one button left)
             assert(q==size(buttons{p},1)-1)
-            start(1) = subPanelSz(1)-7+marginsB(1)-buttonSz(1);
+            start(1) = max(rowWidths)-7+marginsB(1)-buttonSz(1);
         else
             if isempty(colors{p}{q})
                 clr = baseColor*.999;   % set color explicitly slightly different, else visually acts quite differently
@@ -1408,6 +1409,152 @@ else
 end
 end
 
+function createReloadPopup(hm)
+% see which types this applies to
+qStream = ismember(hm.UserData.coding.stream.type,{'fileStream','classifier'});
+if ~any(qStream)
+    hm.UserData.ui.coding.reloadPopup = [];
+end
+
+hm.UserData.ui.coding.reloadPopup.obj = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Reload coding','Visible','off');
+
+% create panel
+marginsP = [3 3];
+marginsB = [2 5];   % horizontal: [margin from left edge, margin between checkboxes]
+buttonSz = [60 24];
+
+iStream = find(qStream);
+nStream = length(iStream);
+
+% temp uipanel because we need to figure out size of margins
+temp    = uipanel('Units','pixels','Position',[10 10 100 100],'title','Xxj');
+drawnow
+off     = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
+delete(temp);
+
+% temp checkbox and label because we need their sizes too
+h= uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.obj,'Units','pixels','Position',[10 10 400 100], 'String',' reload');
+drawnow
+relExt = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
+h.FontWeight = 'bold';
+h.String = 'manually changed!';
+drawnow
+changedExt = h.Extent;
+delete(h);
+
+% determine size of popup
+rowWidth    = marginsB(1)*2+marginsB(2)+relExt(3)+changedExt(3);
+panelWidth  = rowWidth+ceil(off(3));
+popUpWidth  = panelWidth+marginsP(1)*2;
+panelHeight = max(relExt(4),changedExt(4))+ ceil(off(4));
+popUpHeight = panelHeight*nStream + (nStream*2+1)*marginsP(2) + buttonSz(2); % *2 because between panel margin on both sides of each panel, +2 because button, -1 because not at top
+
+% determine position and create in right size
+scrSz = get(0,'ScreenSize');
+pos = [(scrSz(3)-popUpWidth)/2 (scrSz(4)-popUpHeight)/2 popUpWidth popUpHeight];
+hm.UserData.ui.coding.reloadPopup.obj.Position = pos;
+
+hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) reloadCloseFnc(gcf);
+hm.UserData.ui.coding.reloadPopup.jFig = get(handle(hm.UserData.ui.coding.reloadPopup.obj), 'JavaFrame');
+
+% create button
+hm.UserData.ui.coding.reloadPopup.button = uicontrol(...
+    'Style','pushbutton','Tag','executeReload','Position',[3+marginsB(1) marginsP(2) buttonSz],...
+    'Callback',@(hBut,~) executeReloadButtonFnc(hm),'String','Do reload',...
+    'Parent',hm.UserData.ui.coding.reloadPopup.obj);
+
+% create panels
+for s=1:nStream
+    p = nStream-s;
+    hm.UserData.ui.coding.reloadPopup.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) panelHeight*p+(p*2+3)*marginsP(2)+buttonSz(2) panelWidth panelHeight],'Parent',hm.UserData.ui.coding.reloadPopup.obj,'title',hm.UserData.coding.stream.lbls{iStream(s)});
+end
+
+% make items in each
+for s=1:nStream
+    hm.UserData.ui.coding.reloadPopup.checks(s)     = uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3                        0 200 20], 'String',' reload'          ,'Tag',sprintf('reloadStream%d'   ,iStream(s)),'Value',false, 'Callback',@(~,~,~) reloadCheckFnc(hm));
+    hm.UserData.ui.coding.reloadPopup.manualLbl(s)  = uicomponent('Style','text'    , 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3+relExt(3)+marginsB(1) -4 200 20], 'String','manually changed!','Tag',sprintf('reloadStreamLbL%d',iStream(s)),'FontWeight','bold','ForegroundColor',[1 0 0],'HorizontalAlignment','left');
+end
+end
+
+function reloadCloseFnc(hndl)
+if strcmp(hndl.Visible,'off')
+    % calling close when figure hidden, must be GUI closing down or user
+    % issuing close all
+    delete(hndl)
+else
+    hndl.Visible = 'off';
+end
+end
+
+function reloadCheckFnc(hm)
+vals = cat(1,hm.UserData.ui.coding.reloadPopup.checks.Value);
+if any(vals)
+    hm.UserData.ui.coding.reloadPopup.button.Enable = 'on';
+else
+    hm.UserData.ui.coding.reloadPopup.button.Enable = 'off';
+end
+end
+
+function executeReloadButtonFnc(hm)
+hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
+vals = cat(1,hm.UserData.ui.coding.reloadPopup.checks.Value);
+if ~any(vals)
+    return
+end
+for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
+    if vals(s)
+        stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
+        % load file
+        tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+        % replace coding
+        hm.UserData.coding.mark{stream} = tempCoding.mark;
+        hm.UserData.coding.type{stream} = tempCoding.type;
+        % make back up (e.g. for manual change detection)
+        hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
+        hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
+    end
+end
+% refresh codings shown in GUI
+updateCodeMarks(hm);
+updateCodingShades(hm)
+updateScarf(hm);
+end
+
+function showReloadPopup(hm)
+if isempty(hm.UserData.ui.coding.reloadPopup.obj)
+    % no popup to show. shouldn't get here as reload button shouldn't be
+    % shown in this case, but better safe than sorry
+    return
+end
+
+% prepare state of checkbox, manually changed text, and button
+hm.UserData.ui.coding.reloadPopup.button.Enable = 'off';
+[hm.UserData.ui.coding.reloadPopup.checks.Value] = deal(false);
+[hm.UserData.ui.coding.reloadPopup.manualLbl.Visible] = deal('off');
+% check if stream was manually changed, if so, notify user
+for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
+    stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
+    isManuallyChanged = ~isequal(hm.UserData.coding.mark{stream},hm.UserData.coding.original.mark{stream}) || ~isequal(hm.UserData.coding.type{stream},hm.UserData.coding.original.type{stream});
+    if isManuallyChanged
+        hm.UserData.ui.coding.reloadPopup.manualLbl(s).Visible = 'on';
+    end
+end
+
+% ready, show
+hm.UserData.ui.coding.reloadPopup.obj.Visible = 'on';
+drawnow
+
+% if was minimized by user, unminimize
+if hm.UserData.ui.coding.reloadPopup.jFig.isMinimized
+    if isfield(hm.UserData.ui.coding.reloadPopup.obj,'WindowState')
+        hm.UserData.ui.coding.reloadPopup.obj.WindowState = 'normal';
+    else
+        % this is not perfect: it flashes before it comes up. Ah well.
+        hm.UserData.ui.coding.reloadPopup.jFig.setMinimized(0);
+    end
+end
+end
+
 function toggleCrapData(hm)
 hm.UserData.data.isCrap = ~hm.UserData.data.isCrap;
 end
@@ -1748,6 +1895,10 @@ function focusChange(hm)
 if isempty(hm.UserData)
     % happens when closing figure window
     return;
+end
+% close reloadPopUp if its open
+if ~isempty(hm.UserData.ui.coding.reloadPopup.obj) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
+    hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
 end
 % close coder panel if it is open now
 if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
