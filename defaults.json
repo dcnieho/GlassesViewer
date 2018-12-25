@@ -14,7 +14,7 @@
     },
     "coding": {
         "streams":[
-        {"type": "syncOut", "lbl": "knopDruk",
+        {"type": "syncIn", "lbl": "knopDruk",
             "categories": ["up", null, "down", 20]
         },
         {"type": "handStream", "lbl": "gets2", "locked": false,
