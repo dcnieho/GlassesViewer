@@ -137,12 +137,12 @@ for p=1:nStream
     end
 end
 
-% store back up of file and classifier streams
+% store back up of file and classifier streams. Allows checking if coding
+% is manually changed
 if ~isfield(coding,'original')
     [coding.original.mark,coding.original.type] = deal(cell(size(coding.stream.type)));
 end
 qStoreOriginal              = false(size(coding.stream.type));
-coding.isManuallyChanged    = false(size(coding.stream.type));
 for p=1:length(coding.stream.type)
     % only relevant for 'classifier' and 'filestream'
     switch lower(coding.stream.type{p})
@@ -154,10 +154,6 @@ for p=1:length(coding.stream.type)
     if qStoreOriginal(p)
         coding.original.mark{p} = coding.mark{p};
         coding.original.type{p} = coding.type{p};
-    end
-    % mark streams as dirty
-    if ismember(lower(coding.stream.type{p}),{'classifier','filestream'})
-        coding.isManuallyChanged(p) = ~isequal(coding.mark{p},coding.original.mark{p}) || ~isequal(coding.type{p},coding.original.type{p});
     end
 end
 
