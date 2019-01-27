@@ -78,25 +78,7 @@ for p=1:nStream
             iSame = find(diff(type)==0);
             ts(iSame+1)     = [];
             type(iSame+1)   = [];
-            % add start of time
-            if ts(1)>1
-                ts  = [1 ts];
-                if type(1)==1
-                    type= [2 type];
-                else
-                    type= [1 type];
-                end
-            end
-            % add end
-            if ts(end)>=endT
-                % last mark at last sample: this does not start a new
-                % event anymore (always one more mark than type as
-                % marks also needed to close off events)
-                type(end) = [];
-                ts(end) = endT; % ensure end not beyond data
-            else
-                ts = [ts endT];
-            end
+            [ts,type]       = addStartEndCoding(ts,type,endT);
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
