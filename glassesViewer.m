@@ -268,7 +268,7 @@ hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Paren
 % reload coding button
 if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
     butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.reloadDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(~,~,~) showReloadPopup(hm));
+    hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
     createReloadPopup(hm);
 end
 
@@ -1520,11 +1520,17 @@ updateCodingShades(hm)
 updateScarf(hm);
 end
 
-function showReloadPopup(hm)
+function toggleReloadPopup(hm,hndl)
 if isempty(hm.UserData.ui.coding.reloadPopup.obj)
     % no popup to show. shouldn't get here as reload button shouldn't be
     % shown in this case, but better safe than sorry
     return
+end
+
+if ~hndl.Value
+    % focusChange handler already closes popup, so don't need to do it
+    % here. Just stop executing this function
+    return;
 end
 
 % prepare state of checkbox, manually changed text, and button
@@ -1899,6 +1905,7 @@ end
 % close reloadPopUp if its open
 if ~isempty(hm.UserData.ui.coding.reloadPopup.obj) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
     hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
+    hm.UserData.ui.reloadDataButton.Value = 0;
 end
 % close coder panel if it is open now
 if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
