@@ -94,6 +94,36 @@ for p=1:nStream
                 coding.type{p} = tempCoding.type;
             end
         case 'classifier'
+            % Determine settings:
+            % 1. default values are always reloaded from json, so user can
+            %    change those without affecting anything else. These are
+            %    loaded when user clicks "reset to defaults" (TODO)
+            % 2. currentSettings stores settings used for the currently
+            %    stored event coding, may be equal to defaults.
+            coding.stream.classifier.defaults{p}        = coding.stream.options{p}.parameters;
+            if ~isfield(coding.stream.classifier,'currentSettings') || isempty(coding.stream.classifier.currentSettings{p})
+                coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
+            end
+            % if nothing there yet, or always recalculate option set,
+            % reclassify. This always uses defaults
+            if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate)
+                if 0
+                    % TODO: below function needs to change marks so that
+                    % GUI starttime is also 1 in marks (we may have data
+                    % earlier, and thus classifications starting earlier,
+                    % need to deal with that case)
+                    tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
+                    % store
+                    coding.mark{p} = tempCoding.mark;
+                    coding.type{p} = tempCoding.type;
+                else
+                    coding.mark{p} = 1;
+                    coding.type{p} = [];
+                end
+                % update currentSettings to make sure they reflect the
+                % coding
+                coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
+            end
     end
     
     % check if types are valid (flag bits are set only if that
@@ -129,7 +159,7 @@ for p=1:length(coding.stream.type)
     % only relevant for 'classifier' and 'filestream'
     switch lower(coding.stream.type{p})
         case 'classifier'
-            qStoreOriginal(p) = isempty(coding.original.mark{p});
+            qStoreOriginal(p) = isempty(coding.original.mark{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate);
         case 'filestream'
             qStoreOriginal(p) = isempty(coding.original.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload);
     end
