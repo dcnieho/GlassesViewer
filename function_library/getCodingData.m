@@ -94,6 +94,7 @@ for p=1:nStream
                 coding.type{p} = tempCoding.type;
             end
         case 'classifier'
+            [coding.stream.classifier.defaults{p}, coding.stream.classifier.currentSettings{p}] = deal([]);
             % Determine settings:
             % 1. default values are always reloaded from json, so user can
             %    change those without affecting anything else. These are
