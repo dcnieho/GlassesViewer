@@ -1417,14 +1417,19 @@ end
 hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'on';
 drawnow
 
+unMinimizePopup(hm.UserData.ui.coding.classifierPopup.select);
+end
+
+function unMinimizePopup(elem)
 % if was minimized by user, unminimize
-if hm.UserData.ui.coding.classifierPopup.select.jFig.isMinimized
-    if isfield(hm.UserData.ui.coding.classifierPopup.select.obj,'WindowState')
-        hm.UserData.ui.coding.classifierPopup.select.obj.WindowState = 'normal';
+if elem.jFig.isMinimized
+    if isfield(elem.obj,'WindowState')
+        elem.obj.WindowState = 'normal';
     else
         % this is not perfect: it flashes before it comes up. Ah well.
-        hm.UserData.ui.coding.classifierPopup.select.jFig.setMinimized(0);
+        elem.jFig.setMinimized(0);
     end
+end
 end
 end
 
@@ -1636,15 +1641,7 @@ end
 hm.UserData.ui.coding.reloadPopup.obj.Visible = 'on';
 drawnow
 
-% if was minimized by user, unminimize
-if hm.UserData.ui.coding.reloadPopup.jFig.isMinimized
-    if isfield(hm.UserData.ui.coding.reloadPopup.obj,'WindowState')
-        hm.UserData.ui.coding.reloadPopup.obj.WindowState = 'normal';
-    else
-        % this is not perfect: it flashes before it comes up. Ah well.
-        hm.UserData.ui.coding.reloadPopup.jFig.setMinimized(0);
-    end
-end
+unMinimizePopup(hm.UserData.ui.coding.reloadPopup.select);
 end
 
 function toggleCrapData(hm)
