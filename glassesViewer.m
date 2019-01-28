@@ -1193,12 +1193,18 @@ end
 end
 
 function createSettings(hm)
+% panel at max spans between right of VCR and right of reset plot limits
+% button
+left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
+right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
+top     = hm.UserData.ui.VCR.but(1).Position(2);
+bottom  = hm.UserData.plot.axRect(end,2);
 % settings area
-width = min(335,hm.UserData.vid.ax(1).Position(3)-20);
-height= min(230,hm.UserData.ui.VCR.but(1).Position(2)-20);
+width   = min(335,right-left-20);
+height  = min(230,top-bottom-20);
 % center it
-off = [hm.UserData.vid.ax(1).Position(3) hm.UserData.ui.VCR.but(1).Position(2)-hm.UserData.plot.axRect(end,2)]./2-[width height]./2 + [0 hm.UserData.plot.axRect(end,2)];
-panelPos = [hm.UserData.vid.ax(1).Position(1)+off(1) off(2) width height];
+leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
+panelPos = [leftBot width height];
 hm.UserData.ui.setting.panel = uipanel('Units','pixels','Position',panelPos, 'title','Settings');
 % pos is wanted innerPosition. scale outerPosition
 off = panelPos-hm.UserData.ui.setting.panel.InnerPosition;
