@@ -275,7 +275,8 @@ end
 % classifiers button
 if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
     butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.classifierSettingButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
+    hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
+    createClassifierPopups(hm);
 end
 
 % crap data tick
@@ -1393,7 +1394,6 @@ end
 
 function toggleSettingsPanel(hm,hndl)
 if hndl.Value
-    %hm.UserData.ui.classifierSetting.panel.Visible = 'off';
     hm.UserData.ui.setting.panel.Visible = 'on';
 else
     hm.UserData.ui.setting.panel.Visible = 'off';
@@ -1401,12 +1401,85 @@ end
 end
 
 function toggleClassifierSettingPanel(hm,hndl)
-if hndl.Value
-    hm.UserData.ui.setting.panel.Visible = 'off';
-    %hm.UserData.ui.classifierSetting.panel.Visible = 'on';
-else
-    %hm.UserData.ui.classifierSetting.panel.Visible = 'off';
+if isempty(hm.UserData.ui.coding.classifierPopup.select.obj)
+    % no popup to show. shouldn't get here as reload button shouldn't be
+    % shown in this case, but better safe than sorry
+    return
 end
+
+if ~hndl.Value
+    % focusChange handler already closes popup, so don't need to do it
+    % here. Just stop executing this function
+    return;
+end
+
+% ready, show
+hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'on';
+drawnow
+
+% if was minimized by user, unminimize
+if hm.UserData.ui.coding.classifierPopup.select.jFig.isMinimized
+    if isfield(hm.UserData.ui.coding.classifierPopup.select.obj,'WindowState')
+        hm.UserData.ui.coding.classifierPopup.select.obj.WindowState = 'normal';
+    else
+        % this is not perfect: it flashes before it comes up. Ah well.
+        hm.UserData.ui.coding.classifierPopup.select.jFig.setMinimized(0);
+    end
+end
+end
+
+function createClassifierPopups(hm)
+% see which types this applies to
+qStream = ismember(hm.UserData.coding.stream.type,'classifier');
+if ~any(qStream)
+    hm.UserData.ui.coding.reloadPopup = [];
+end
+iStream = find(qStream);
+nStream = length(iStream);
+
+% if more than one classifier stream, create popup to select which
+% classifier stream to set settings for
+if nStream>1 || 1
+    hm.UserData.ui.coding.classifierPopup.select.obj = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Select classifier stream','Visible','off');
+    % temp button to figure out sizes
+    temp = uicontrol('Style','pushbutton','String','xx','Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
+    sz = nan(nStream,2);
+    for s=1:nStream
+        temp.String = sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)});
+        drawnow
+        sz(s,:) = temp.Extent(3:4); % this gets tight extent of string
+    end
+    szPad = temp.Position(4)-sz(:,2); % this is size of button. horizontal is useless as it doesn't scale with text, vertical tells us about padding
+    delete(temp);
+    
+    % create proper popup: determine size, create buttons
+    margin = [15 5];    % [around buttons, between buttons]
+    widths = sz(:,1)+szPad;
+    heights= sz(:,2)+szPad;
+    assert(isscalar(unique(heights)))
+    heights= heights(1);
+    popUpHeight = margin(1)*2+heights*nStream+margin(2)*(nStream-1);
+    popUpWidth  = margin(1)*2+max(widths);
+    
+    % determine position and create in right size
+    scrSz = get(0,'ScreenSize');
+    pos = [(scrSz(3)-popUpWidth)/2 (scrSz(4)-popUpHeight)/2 popUpWidth popUpHeight];
+    hm.UserData.ui.coding.classifierPopup.select.obj.Position = pos;
+    hm.UserData.ui.coding.classifierPopup.select.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
+    hm.UserData.ui.coding.classifierPopup.select.jFig = get(handle(hm.UserData.ui.coding.classifierPopup.select.obj), 'JavaFrame');
+    
+    % create buttons
+    for s=1:nStream
+        p = nStream-s;
+        hm.UserData.ui.coding.classifierPopup.select.buttons(s) = uicontrol(...
+            'Style','pushbutton','Tag',sprintf('openStream%dSettings',iStream(s)),'Position',[margin(1) margin(1)+p*(heights+margin(2)) widths(s) heights],...
+            'Callback',@(hBut,~) todo(hm),'String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),...
+            'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
+    end
+else
+    hm.UserData.ui.coding.classifierPopup.select.obj = [];
+end
+
 end
 
 function createReloadPopup(hm)
@@ -1415,6 +1488,8 @@ qStream = ismember(hm.UserData.coding.stream.type,{'fileStream','classifier'});
 if ~any(qStream)
     hm.UserData.ui.coding.reloadPopup = [];
 end
+iStream = find(qStream);
+nStream = length(iStream);
 
 hm.UserData.ui.coding.reloadPopup.obj = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Reload coding','Visible','off');
 
@@ -1423,8 +1498,6 @@ marginsP = [3 3];
 marginsB = [2 5];   % horizontal: [margin from left edge, margin between checkboxes]
 buttonSz = [60 24];
 
-iStream = find(qStream);
-nStream = length(iStream);
 
 % temp uipanel because we need to figure out size of margins
 temp    = uipanel('Units','pixels','Position',[10 10 100 100],'title','Xxj');
@@ -1455,7 +1528,7 @@ scrSz = get(0,'ScreenSize');
 pos = [(scrSz(3)-popUpWidth)/2 (scrSz(4)-popUpHeight)/2 popUpWidth popUpHeight];
 hm.UserData.ui.coding.reloadPopup.obj.Position = pos;
 
-hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) reloadCloseFnc(gcf);
+hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
 hm.UserData.ui.coding.reloadPopup.jFig = get(handle(hm.UserData.ui.coding.reloadPopup.obj), 'JavaFrame');
 
 % create button
@@ -1467,7 +1540,7 @@ hm.UserData.ui.coding.reloadPopup.button = uicontrol(...
 % create panels
 for s=1:nStream
     p = nStream-s;
-    hm.UserData.ui.coding.reloadPopup.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) panelHeight*p+(p*2+3)*marginsP(2)+buttonSz(2) panelWidth panelHeight],'Parent',hm.UserData.ui.coding.reloadPopup.obj,'title',hm.UserData.coding.stream.lbls{iStream(s)});
+    hm.UserData.ui.coding.reloadPopup.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) panelHeight*p+(p*2+3)*marginsP(2)+buttonSz(2) panelWidth panelHeight],'Parent',hm.UserData.ui.coding.reloadPopup.obj,'title',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}));
 end
 
 % make items in each
@@ -1482,7 +1555,7 @@ for s=1:nStream
 end
 end
 
-function reloadCloseFnc(hndl)
+function popupCloseFnc(hndl)
 if strcmp(hndl.Visible,'off')
     % calling close when figure hidden, must be GUI closing down or user
     % issuing close all
@@ -1915,10 +1988,14 @@ if isempty(hm.UserData)
     % happens when closing figure window
     return;
 end
-% close reloadPopUp if its open
+% close popups if any are open
 if ~isempty(hm.UserData.ui.coding.reloadPopup.obj) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
     hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
     hm.UserData.ui.reloadDataButton.Value = 0;
+end
+if ~isempty(hm.UserData.ui.coding.classifierPopup.select.obj) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
+    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
+    hm.UserData.ui.classifierSettingButton.Value = 0;
 end
 % close coder panel if it is open now
 if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
