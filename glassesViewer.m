@@ -1433,7 +1433,8 @@ off     = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.In
 delete(temp);
 
 % temp checkbox and label because we need their sizes too
-h= uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.obj,'Units','pixels','Position',[10 10 400 100], 'String',' reload');
+% use largest label
+h= uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.obj,'Units','pixels','Position',[10 10 400 100], 'String',' recompute classification');
 drawnow
 relExt = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
 h.FontWeight = 'bold';
@@ -1471,7 +1472,12 @@ end
 
 % make items in each
 for s=1:nStream
-    hm.UserData.ui.coding.reloadPopup.checks(s)     = uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3                        0 200 20], 'String',' reload'          ,'Tag',sprintf('reloadStream%d'   ,iStream(s)),'Value',false, 'Callback',@(~,~,~) reloadCheckFnc(hm));
+    if strcmp(hm.UserData.coding.stream.type{iStream(s)},'fileStream')
+        lbl = ' reload file';
+    else
+        lbl = ' recompute classification';
+    end
+    hm.UserData.ui.coding.reloadPopup.checks(s)     = uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3                        0 200 20], 'String',lbl                ,'Tag',sprintf('reloadStream%d'   ,iStream(s)),'Value',false, 'Callback',@(~,~,~) reloadCheckFnc(hm));
     hm.UserData.ui.coding.reloadPopup.manualLbl(s)  = uicomponent('Style','text'    , 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3+relExt(3)+marginsB(1) -4 200 20], 'String','manually changed!','Tag',sprintf('reloadStreamLbL%d',iStream(s)),'FontWeight','bold','ForegroundColor',[1 0 0],'HorizontalAlignment','left');
 end
 end
@@ -1497,6 +1503,7 @@ end
 
 function executeReloadButtonFnc(hm)
 hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
+hm.UserData.ui.reloadDataButton.Value = 0;
 vals = cat(1,hm.UserData.ui.coding.reloadPopup.checks.Value);
 if ~any(vals)
     return
@@ -1505,7 +1512,13 @@ for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
     if vals(s)
         stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
         % load file
-        tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+        if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')
+            tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+        else
+            % TODO
+            % tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
+            continue;
+        end
         % replace coding
         hm.UserData.coding.mark{stream} = tempCoding.mark;
         hm.UserData.coding.type{stream} = tempCoding.type;
