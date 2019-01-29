@@ -41,6 +41,7 @@
         "parameters": [
           {
             "name": "velThresh",
+            "label": "velocity threshold (deg/s)",
             "type": "double",
             "value": 34.0,
             "range": [ 0, 1000 ],
@@ -48,11 +49,12 @@
           },
           {
             "name": "allowNaN",
+            "label": "allow missing data during slow phase?",
             "type": "bool",
             "value": true
           }
         ],
-        "categories": ["none", 20, "slow", 4, "fast", 5]
+        "categories": [ "none", 20, "slow", 4, "fast", 5 ]
       }
     ],
     "colors": [
