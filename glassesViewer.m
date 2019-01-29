@@ -1408,13 +1408,13 @@ end
 
 function toggleClassifierSettingPanel(hm,hndl)
 if isempty(hm.UserData.ui.coding.classifierPopup.select.obj)
-    % no popup to show. shouldn't get here as reload button shouldn't be
-    % shown in this case, but better safe than sorry
+    % no popup to show. shouldn't get here as classifier settings button
+    % shouldn't be shown in this case, but better safe than sorry
     return
 end
 
 if ~hndl.Value
-    % focusChange handler already closes popup, so don't need to do it
+    % focusChange handler already closes popups, so don't need to do it
     % here. Just stop executing this function
     return;
 end
@@ -1426,16 +1426,29 @@ drawnow
 unMinimizePopup(hm.UserData.ui.coding.classifierPopup.select);
 end
 
-function unMinimizePopup(elem)
+function unMinimizePopup(elem,idx)
+if nargin<2
+    idx = 1;
+end
 % if was minimized by user, unminimize
-if elem.jFig.isMinimized
-    if isfield(elem.obj,'WindowState')
-        elem.obj.WindowState = 'normal';
+if elem(idx).jFig.isMinimized
+    if isfield(elem(idx).obj,'WindowState')
+        elem(idx).obj.WindowState = 'normal';
     else
         % this is not perfect: it flashes before it comes up. Ah well.
-        elem.jFig.setMinimized(0);
+        elem(idx).jFig.setMinimized(0);
     end
 end
+end
+
+function openClassifierSettingsPanel(hm,idx)
+hm.UserData.ui.coding.classifierPopup.setting(idx).obj.Visible = 'on';
+if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
+    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
+end
+drawnow
+
+unMinimizePopup(hm.UserData.ui.coding.classifierPopup.setting,idx);
 end
 
 function createClassifierPopups(hm)
@@ -1485,13 +1498,17 @@ if nStream>1
         p = nStream-s;
         hm.UserData.ui.coding.classifierPopup.select.buttons(s) = uicontrol(...
             'Style','pushbutton','Tag',sprintf('openStream%dSettings',iStream(s)),'Position',[margin(1) margin(1)+p*(heights+margin(2)) widths(s) heights],...
-            'Callback',@(hBut,~) todo(hm),'String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),...
+            'Callback',@(hBut,~) openClassifierSettingsPanel(hm,s),'String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),...
             'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
     end
-else
-    hm.UserData.ui.coding.classifierPopup.select.obj = [];
 end
 
+% per stream, create a settings dialogue
+for s=1:nStream
+    hm.UserData.ui.coding.classifierPopup.setting(s).obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Visible','off');
+    hm.UserData.ui.coding.classifierPopup.setting(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
+    hm.UserData.ui.coding.classifierPopup.setting(s).jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.setting(s).obj), 'JavaFrame');
+end
 end
 
 function createReloadPopup(hm)
@@ -1992,13 +2009,20 @@ if isempty(hm.UserData)
     return;
 end
 % close popups if any are open
-if ~isempty(hm.UserData.ui.coding.reloadPopup.obj) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
+if ~isempty(hm.UserData.ui.coding.reloadPopup) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
     hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
     hm.UserData.ui.reloadDataButton.Value = 0;
 end
-if ~isempty(hm.UserData.ui.coding.classifierPopup.select.obj) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
+if ~isempty(hm.UserData.ui.coding.classifierPopup.select) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
     hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
     hm.UserData.ui.classifierSettingButton.Value = 0;
+end
+if ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
+    for s=1:length(hm.UserData.ui.coding.classifierPopup.setting)
+        strcmp(hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible,'on')
+        hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible = 'off';
+        hm.UserData.ui.classifierSettingButton.Value = 0;
+    end
 end
 % close coder panel if it is open now
 if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
