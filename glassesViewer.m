@@ -1407,23 +1407,24 @@ end
 end
 
 function toggleClassifierSettingPanel(hm,hndl)
-if isempty(hm.UserData.ui.coding.classifierPopup.select.obj)
-    % no popup to show. shouldn't get here as classifier settings button
-    % shouldn't be shown in this case, but better safe than sorry
-    return
-end
-
 if ~hndl.Value
     % focusChange handler already closes popups, so don't need to do it
     % here. Just stop executing this function
     return;
 end
 
-% ready, show
-hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'on';
+% show, selection panel if more than one classifier stream, or classifier
+% stream settings directly if there is only one
+if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
+    which = hm.UserData.ui.coding.classifierPopup.select;
+else
+    assert(isscalar(hm.UserData.ui.coding.classifierPopup.setting))
+    which = hm.UserData.ui.coding.classifierPopup.setting;
+end
+which.obj.Visible = 'on';
 drawnow
 
-unMinimizePopup(hm.UserData.ui.coding.classifierPopup.select);
+unMinimizePopup(which);
 end
 
 function unMinimizePopup(elem,idx)
@@ -1457,6 +1458,7 @@ qStream = ismember(hm.UserData.coding.stream.type,'classifier');
 if ~any(qStream)
     hm.UserData.ui.coding.classifierPopup.select = [];
     hm.UserData.ui.coding.classifierPopup.setting = [];
+    return;
 end
 iStream = find(qStream);
 nStream = length(iStream);
@@ -1501,6 +1503,8 @@ if nStream>1
             'Callback',@(hBut,~) openClassifierSettingsPanel(hm,s),'String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),...
             'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
     end
+else
+    hm.UserData.ui.coding.classifierPopup.select = [];
 end
 
 % per stream, create a settings dialogue
@@ -1516,6 +1520,7 @@ function createReloadPopup(hm)
 qStream = ismember(hm.UserData.coding.stream.type,{'fileStream','classifier'});
 if ~any(qStream)
     hm.UserData.ui.coding.reloadPopup = [];
+    return;
 end
 iStream = find(qStream);
 nStream = length(iStream);
@@ -1664,7 +1669,7 @@ end
 hm.UserData.ui.coding.reloadPopup.obj.Visible = 'on';
 drawnow
 
-unMinimizePopup(hm.UserData.ui.coding.reloadPopup.select);
+unMinimizePopup(hm.UserData.ui.coding.reloadPopup);
 end
 
 function toggleCrapData(hm)
