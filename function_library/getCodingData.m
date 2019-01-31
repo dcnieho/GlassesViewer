@@ -78,7 +78,12 @@ for p=1:nStream
             iSame = find(diff(type)==0);
             ts(iSame+1)     = [];
             type(iSame+1)   = [];
-            [ts,type]       = addStartEndCoding(ts,type,endT);
+            if isempty(ts)
+                ts = 1; % we always have a start mark, code expects that
+                warning('glassesViewer: no %s events found for stream %d',coding.stream.type{p},p);
+            else
+                [ts,type]       = addStartEndCoding(ts,type,endT);
+            end
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
