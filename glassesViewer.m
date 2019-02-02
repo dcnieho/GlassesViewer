@@ -60,11 +60,9 @@ hm.UserData.ui.DPIScale = getDPIScale();
 hm.UserData.settings = settings;
 
 %% setup time
-% TODO at least stepMultiplier should be in settings json
 % setup main time and timer for smooth playback
 hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
 hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
-hm.UserData.time.stepMultiplier     = 0.01; % timestep per 1 unit of button press (we have buttons for moving by 1 and by 10 units)
 hm.UserData.time.currentTime        = 0;
 hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
 hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
@@ -75,9 +73,6 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 % read glasses data
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
-% TODO: load or gen coding data
-% TODO: when loading, check for case where user changed coding streams in
-% some way
 hm.UserData.coding = getCodingData(filedir, '', settings.coding, hm.UserData.data);
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
@@ -432,17 +427,19 @@ hm.UserData.ui.VCR.slider.jComp.MinorTickSpacing = steps(2)/5*hm.UserData.ui.VCR
 % usual VCR buttons, and a few special ones
 butSz = [30 30];
 gfx = load('icons');
+seekShort   = hm.UserData.settings.VCR.seekShort/hm.UserData.data.eye.fs;
+seekLong    = hm.UserData.settings.VCR.seekLong /hm.UserData.data.eye.fs;
 buttons = {
     'pushbutton','PrevWindow','|jump_to','Previous window',@(~,~,~) jumpWin(hm,-1),{}
     'pushbutton','NextWindow','jump_to','Next window',@(~,~,~) jumpWin(hm, 1),{}
     'space','','','','',''
     'pushbutton','GotoStart','goto_start_default','Go to start',@(~,~,~) seek(hm,-inf),{}
-    'pushbutton','Rewind','rewind_default','Jump back (1 s)',@(~,~,~) seek(hm,-1),{}
-    'pushbutton','StepBack','step_back','Step back (1 sample)',@(~,~,~) seek(hm,-1/hm.UserData.data.eye.fs),{}
+    'pushbutton','Rewind','rewind_default','Jump back (1 s)',@(~,~,~) seek(hm,-seekLong),{}
+    'pushbutton','StepBack','step_back','Step back (1 sample)',@(~,~,~) seek(hm,-seekShort),{}
     %'Stop',{'stop_default'}
     'pushbutton','Play',{'play_on', 'pause_default'},{'Play','Pause'},@(src,~,~) startStopPlay(hm,-1,src),{}
-    'pushbutton','StepFwd','step_fwd', 'Step forward (1 sample)',@(~,~,~) seek(hm,1/hm.UserData.data.eye.fs),{}
-    'pushbutton','FFwd','ffwd_default', 'Jump forward (1 s)',@(~,~,~) seek(hm,1),{}
+    'pushbutton','StepFwd','step_fwd', 'Step forward (1 sample)',@(~,~,~) seek(hm,seekShort),{}
+    'pushbutton','FFwd','ffwd_default', 'Jump forward (1 s)',@(~,~,~) seek(hm,seekLong),{}
     'pushbutton','GotoEnd','goto_end_default', 'Go to end',@(~,~,~) seek(hm,inf),{}
     'space','','','','',''
     'togglebutton','Cycle','repeat_on', {'Cycle in time window','Play normally'},@(src,~,~) toggleCycle(hm,src),{}

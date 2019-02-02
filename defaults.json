@@ -11,6 +11,10 @@
     "lineWidth": 1,
     "scarfHeight": 10
   },
+  "VCR": {
+    "seekShort": 1,
+    "seekLong": 50
+  },
   "coding": {
     "streams": [
       {
