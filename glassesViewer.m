@@ -67,6 +67,11 @@ hm.UserData.time.currentTime        = 0;
 hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
 hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
 hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
+if isempty(hm.UserData.ui.doubleClickInterval)
+    % it seems the java call sometimes returns nothing, then hardcode to
+    % 550 ms.
+    hm.UserData.ui.doubleClickInterval = 550;
+end
 hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
 
 %% load data
