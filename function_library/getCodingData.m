@@ -109,21 +109,13 @@ for p=1:nStream
                 coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
             end
             % if nothing there yet, or always recalculate option set,
-            % reclassify. This always uses defaults
+            % reclassify: always use default settings and recalculate
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate)
-                if 0
-                    % TODO: below function needs to change marks so that
-                    % GUI starttime is also 1 in marks (we may have data
-                    % earlier, and thus classifications starting earlier,
-                    % need to deal with that case)
-                    tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
-                    % store
-                    coding.mark{p} = tempCoding.mark;
-                    coding.type{p} = tempCoding.type;
-                else
-                    coding.mark{p} = 1;
-                    coding.type{p} = [];
-                end
+                % run classification
+                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
+                % store
+                coding.mark{p} = tempCoding.mark;
+                coding.type{p} = tempCoding.type;
                 % update currentSettings to make sure they reflect the
                 % coding
                 coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};

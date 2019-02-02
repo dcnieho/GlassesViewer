@@ -1621,9 +1621,7 @@ for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
         if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')
             tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
         else
-            % TODO
-            % tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
-            continue;
+            tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.coding.stream.classifier.currentSettings{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
         end
         % replace coding
         hm.UserData.coding.mark{stream} = tempCoding.mark;
