@@ -536,10 +536,16 @@ if isfield(hm.UserData.ui,'savedCoding')
     if isequal(rmfield(hm.UserData.ui.savedCoding,'log'),rmfield(hm.UserData.coding,'log'))
         hm.UserData.ui.saveCodingDataButton.Enable = 'off';
         hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
+        clr = [0 1 0];
     else
         hm.UserData.ui.saveCodingDataButton.Enable = 'on';
         hm.UserData.ui.saveCodingDataButton.String = 'save coding';
+        clr = [1 0 0];
     end
+    opacity = .12;
+    baseColor = hm.UserData.ui.toggleSettingsButton.BackgroundColor;
+    highlight = baseColor.*(1-opacity)+clr.*opacity;
+    hm.UserData.ui.saveCodingDataButton.BackgroundColor = highlight;
 end
 end
 
