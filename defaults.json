@@ -15,18 +15,18 @@
     "streams": [
       {
         "type": "syncIn",
-        "lbl": "knopDruk",
+        "lbl": "button state",
         "categories": [ "up", null, "down", 20 ]
       },
       {
         "type": "handStream",
-        "lbl": "gets2",
+        "lbl": "example hand code stream",
         "locked": false,
         "categories": [ "none", 20, "fix", 1, "sac", 2 ]
       },
       {
         "type": "fileStream",
-        "lbl": "fileStream",
+        "lbl": "example file stream",
         "locked": false,
         "file": "testCodingFile.txt",
         "alwaysReload": true,
