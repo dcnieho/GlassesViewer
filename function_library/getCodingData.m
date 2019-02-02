@@ -8,6 +8,9 @@ if isempty(fname)
 end
 
 % deal with coding tags for each stream
+if ~iscell(codeSettings.streams)
+    codeSettings.streams = num2cell(codeSettings.streams);
+end
 % 1. get categories for all streams
 categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
 % 2. transform into lookup table
