@@ -146,7 +146,7 @@ for p=1:nStream
     % check 1: more than one bit set for any coded event even though no
     % flags or flag-acceptors defined?
     qMulti      = sum(typeBits,1)>1;
-    assert(~any(qMulti)||(any(qIsFlag)&&any(qTakesFlag)),'invalid event code found in stream %d: at least one event does not have a power-of-two (e.g. 1, 2, 4, etc) code, but no flag-events defined, impossible',p);
+    assert(~any(qMulti)||(any(qIsFlag)&&any(qTakesFlag)),'invalid event code found in stream %d (''%s''): at least one event does not have a power-of-two (e.g. 1, 2, 4, etc) code, but no flag-events defined, impossible',p,coding.stream.lbls{p});
     % check 2: if any event codes have multiple bits set, check if its a
     % valid combination
     for i=find(qMulti)
