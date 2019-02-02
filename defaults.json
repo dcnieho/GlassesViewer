@@ -15,6 +15,9 @@
     "seekShort": 1,
     "seekLong": 50
   },
+  "dataQuality": {
+    "windowLength": 300
+  },
   "coding": {
     "streams": [
       {

@@ -79,8 +79,9 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 %% load data
 % read glasses data
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
+computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
-hm.UserData.coding = getCodingData(filedir, '', settings.coding, hm.UserData.data);
+hm.UserData.coding = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 
