@@ -34,24 +34,43 @@
       },
       {
         "type": "classifier",
-        "lbl": "slow/fast",
+        "lbl": "Hooge & Camps, 2013: slow/fast",
         "locked": false,
-        "function": "testClassifier",
+        "function": "HC13",
         "alwaysRecalculate": true,
         "parameters": [
           {
-            "name": "velThresh",
-            "label": "velocity threshold (deg/s)",
+            "name": "thr",
+            "label": "start velocity threshold (deg/s)",
             "type": "double",
-            "value": 34.0,
-            "range": [ 0, 1000 ],
-            "granularity": 0
+            "value": 5000.0,
+            "range": [ 0, 100000 ],
+            "granularity": 0,
+            "settable": true
           },
           {
-            "name": "allowNaN",
-            "label": "allow missing data during slow phase?",
-            "type": "bool",
-            "value": true
+            "name": "counter",
+            "label": "maximum number of iterations",
+            "type": "int",
+            "value": 200
+          },
+          {
+            "name": "minfix",
+            "label": "minimum fixation duration",
+            "type": "double",
+            "value": 60,
+            "range": [ 0, 10000 ],
+            "granularity": 0,
+            "settable": true
+          },
+          {
+            "name": "lambda",
+            "label": "lambda: slow/fast separation threshold",
+            "type": "double",
+            "value": 4,
+            "range": [ 0, 10 ],
+            "granularity": 0,
+            "settable": true
           }
         ],
         "categories": [ "none", 20, "slow", 4, "fast", 5 ]

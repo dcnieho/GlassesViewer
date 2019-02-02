@@ -11,7 +11,7 @@ if nargin<1 || isempty(settings)
     settings  = jsondecode(fileread(fullfile(myDir,'defaults.json')));
 end
 
-addpath(genpath('function_library'))
+addpath(genpath('function_library'),genpath('user_functions'))
 
 % select the folder of a recording to display. This needs to point to a
 % specific recording's folder. if "projects" is the project folder on the
