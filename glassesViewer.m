@@ -1,8 +1,6 @@
 function hm = glassesViewer(settings)
 close all
 
-% TODO: test what code does if no coding streams defined
-
 qDEBUG = true;
 if qDEBUG
     dbstop if error
