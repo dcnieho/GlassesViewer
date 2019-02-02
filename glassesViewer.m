@@ -287,6 +287,8 @@ if hm.UserData.coding.hasCoding
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
         hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
         createReloadPopup(hm);
+    else
+        hm.UserData.ui.coding.reloadPopup = [];
     end
     
     % classifier settings button
@@ -294,6 +296,9 @@ if hm.UserData.coding.hasCoding
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
         hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
         createClassifierPopups(hm);
+    else
+        hm.UserData.ui.coding.classifierPopup.select = [];
+        hm.UserData.ui.coding.classifierPopup.setting = [];
     end
 end
 
@@ -1534,11 +1539,6 @@ end
 function createClassifierPopups(hm)
 % see which types this applies to
 qStream = ismember(hm.UserData.coding.stream.type,'classifier');
-if ~any(qStream)
-    hm.UserData.ui.coding.classifierPopup.select = [];
-    hm.UserData.ui.coding.classifierPopup.setting = [];
-    return;
-end
 iStream = find(qStream);
 nStream = length(iStream);
 
@@ -1597,10 +1597,6 @@ end
 function createReloadPopup(hm)
 % see which types this applies to
 qStream = ismember(hm.UserData.coding.stream.type,{'fileStream','classifier'});
-if ~any(qStream)
-    hm.UserData.ui.coding.reloadPopup = [];
-    return;
-end
 iStream = find(qStream);
 nStream = length(iStream);
 
@@ -2104,9 +2100,10 @@ if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopu
 end
 if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
     for s=1:length(hm.UserData.ui.coding.classifierPopup.setting)
-        strcmp(hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible,'on')
-        hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible = 'off';
-        hm.UserData.ui.classifierSettingButton.Value = 0;
+        if strcmp(hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible,'on')
+            hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible = 'off';
+            hm.UserData.ui.classifierSettingButton.Value = 0;
+        end
     end
 end
 % close coder panel if it is open now
