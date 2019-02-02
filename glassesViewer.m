@@ -1,6 +1,8 @@
 function hm = glassesViewer(settings)
 close all
 
+% TODO: test what code does if no coding streams defined
+
 qDEBUG = true;
 if qDEBUG
     dbstop if error
@@ -639,6 +641,9 @@ setPlotView(hm,ax.XLim(1));
 end
 
 function scrollFunc(hm,~,evt)
+% scroll wheel was spun:
+% 1. if control held down: zoom the time axis
+% 2. if shift held down: zoom value axis
 if evt.isControlDown || evt.isShiftDown
     ax = hitTestType(hm,'axes');    % works because we have a WindowButtonMotionFcn installed
     
@@ -2013,11 +2018,11 @@ setAxesZoomConstraint(hm.UserData.plot.zoom.obj,hm.UserData.plot.ax(qAx),'x');
 % timer for switching zoom mode back off
 hm.UserData.plot.zoom.timer = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) startZoom(hm), 'StartDelay', 10/1000);
 
-% jail axes and order plots based on defaults
+% jail axes and order plots based on settings
 unknown = hm.UserData.settings.plot.initPanelOrder(~ismember(hm.UserData.settings.plot.initPanelOrder,panels));
 if ~isempty(unknown)
     str = sprintf('\n  ''%s''',unknown{:});
-    error('The following data panels are not understood:%s',str);
+    error('The following data panels listed in your settings file are not understood:%s',str);
 end
 [~,pOrder] = ismember(hm.UserData.settings.plot.initPanelOrder,panels);
 toJail = find(~ismember(panels,hm.UserData.settings.plot.initPanelOrder));
@@ -2412,6 +2417,23 @@ setHoverCursor(hm);
 end
 
 function MouseClick(hm,~)
+% understood actions:
+% 1. normal click on axis:
+%    a. if on time indicator, start drag of time indicator
+%    b. if on coding marker, start drag of coding marker
+%    c. else start timer that will open coding panel if second click does
+%       not occur before double click period (timer duration) expires.
+% 2. shift-click: only operates when clicking on already coded interval.
+%    Start or finish adding an intervening event: so need to make two
+%    shift-clicks in a row to add an event inside an already coded interval
+%    (e.g. to add a missed saccade during a fixation interval)
+% 3. control-click: if hovering on coding marker, start drag of coding
+%    markers. Will drag markers in all streams that are aligned with the
+%    currently selected ones.
+% 4. right click: start panning plot along time and/or value axis by means
+%    of drag
+% 5. double-click: set current time to double-clicked location
+
 % get modifiers
 hasCtrl     = any(strcmp('control',hm.CurrentModifier));
 hasShift    = any(strcmp('shift',hm.CurrentModifier));
@@ -2422,7 +2444,8 @@ if hm.UserData.ui.coding.addingIntervening && ~hasShift
     endAddingInterveningEvt(hm);
 end
 
-if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt % normal to get only left clicks
+if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt
+    % left click without modifiers ('normal' restricts to left clicks)
     if hm.UserData.ui.hoveringTime
         % start drag time line
         hm.UserData.ui.grabbedTime      = true;
@@ -2445,6 +2468,7 @@ if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt % norma
         end
     end
 elseif hasShift && ~hasCtrl && ~hasAlt
+    % shift click with either mouse button
     % if clicking on event, start or finish adding in the middle of it
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
@@ -2485,7 +2509,7 @@ elseif hasCtrl && ~hasShift && ~hasAlt
         startMarkerDrag(hm,true);
     end
 elseif strcmp(hm.SelectionType,'alt') && ~hasCtrl % alt also triggers for control+click, exclude that
-    % right click: scroll time axis
+    % right click: scroll time or value axis
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         hm.UserData.ui.scrollRef    = ax.CurrentPoint(1,1:2);
