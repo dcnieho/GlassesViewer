@@ -1,4 +1,8 @@
 function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
+if isempty(codeSettings.streams)
+    return;
+end
+
 if isempty(fname)
     fname = 'coding.mat';
 end
@@ -36,7 +40,7 @@ qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
 if qHaveExistingCoding
     % we have a cache file, check its file version
     coding = load(fullfile(filedir,fname),'fileVersion','codeCats');
-    qHaveExistingCoding = coding.fileVersion==fileVersion && isequal(coding.codeCats,theCats);
+    qHaveExistingCoding = isfield(coding,'fileVersion') && coding.fileVersion==fileVersion && isequal(coding.codeCats,theCats);
 end
 
 if qHaveExistingCoding
@@ -46,7 +50,7 @@ else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
     coding.mark             = repmat({1},nStream,1);            % we code all samples, so always start with a mark at first sample
-    coding.type             = cell(nStream,1);                  % always one less elements than in mark, as two marks define one event
+    coding.type             = repmat({zeros(1,0)},nStream,1);   % always one less elements than in mark, as two marks define one event
     coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
     coding.codeColors       = theColors;                        % just cosmetics, can be ignored, but good to have in easy format
     coding.fileVersion      = fileVersion;

@@ -71,7 +71,9 @@ hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPerio
 hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
 if isempty(hm.UserData.ui.doubleClickInterval)
     % it seems the java call sometimes returns nothing, then hardcode to
-    % 550 ms.
+    % 550 ms, which is its value on my machine. If its set to something
+    % longer on a user's machine, the experience would not be optimal, but
+    % so be it.
     hm.UserData.ui.doubleClickInterval = 550;
 end
 hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
@@ -81,7 +83,12 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
 computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
-hm.UserData.coding = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
+if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
+    hm.UserData.coding = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
+    hm.UserData.coding.hasCoding = true;
+else
+    hm.UserData.coding.hasCoding = false;
+end
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 
@@ -111,6 +118,10 @@ hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
 panels = {'azi','scarf','ele','vel','pup','gyro','acc'};
+if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf panel is not in list of panels that can be shown, nor in user setup
+    panels(strcmp(panels,'scarf')) = [];
+    hm.UserData.settings.plot.initPanelOrder(strcmp(hm.UserData.settings.plot.initPanelOrder,'scarf')) = [];
+end
 setupPlots(hm,panels);
 
 % make axes and plot data
@@ -202,13 +213,15 @@ for p=1:length(hm.UserData.plot.ax)
     end
 end
 
-% prepare coder popup panel
-makeCoderPanel(hm);
-
-% draw actual coding, if any
-hm.UserData.ui.coding.currentStream = nan;
-changeCoderStream(hm,1);
-updateScarf(hm);
+if hm.UserData.coding.hasCoding
+    % prepare coder popup panel
+    makeCoderPanel(hm);
+    
+    % draw actual coding, if any
+    hm.UserData.ui.coding.currentStream = nan;
+    changeCoderStream(hm,1);
+    updateScarf(hm);
+end
 
 % plot UI for dragging time and scrolling the whole window
 hm.UserData.ui.hoveringTime                 = false;
@@ -268,18 +281,20 @@ text(.25,heightEach*6.5,'Z',tcommon{:});
 butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
 hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
 
-% reload coding button
-if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
-    butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
-    createReloadPopup(hm);
-end
-
-% classifier settings button
-if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
-    butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-    hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
-    createClassifierPopups(hm);
+if hm.UserData.coding.hasCoding
+    % reload coding button
+    if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
+        butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
+        hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
+        createReloadPopup(hm);
+    end
+    
+    % classifier settings button
+    if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
+        butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
+        hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
+        createClassifierPopups(hm);
+    end
 end
 
 % crap data tick
@@ -526,7 +541,7 @@ end
 
 %% helpers etc
 function saveCodingData(hm,filedir)
-coding = hm.UserData.coding;
+coding = rmfield(hm.UserData.coding,'hasCoding');
 fname = 'coding.mat';
 save(fullfile(filedir,fname),'-struct', 'coding');
 % store copy of what we just saved, so we can check if new save is needed
@@ -538,7 +553,7 @@ end
 function updateSaveButtonState(hm)
 if isfield(hm.UserData.ui,'savedCoding')
     % ignore log when checking for equality
-    if isequal(rmfield(hm.UserData.ui.savedCoding,'log'),rmfield(hm.UserData.coding,'log'))
+    if isequal(rmFieldOrContinue(hm.UserData.ui.savedCoding,'log'),rmFieldOrContinue(hm.UserData.coding,{'log','hasCoding'}))
         hm.UserData.ui.saveCodingDataButton.Enable = 'off';
         hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
         clr = [0 1 0];
@@ -567,7 +582,11 @@ if hm.UserData.ui.haveEyeVideo
 else
     widthFac = .6;
 end
-scarfHeight = hm.UserData.settings.plot.scarfHeight*length(hm.UserData.coding.codeCats);
+if qHaveScarf
+    scarfHeight = hm.UserData.settings.plot.scarfHeight*length(hm.UserData.coding.codeCats);
+else
+    scarfHeight = 0;
+end
 
 width   = widthFac*hm.Position(3)-hm.UserData.plot.margin.base(1)-hm.UserData.plot.margin.y(1);   % half of window width, but leave space left of axis for tick labels and axis label
 height  = (hm.Position(4) -(nPanel-1)*hm.UserData.plot.margin.between -hm.UserData.plot.margin.base(2)-hm.UserData.plot.margin.xy(2) -scarfHeight*qHaveScarf)/nFullPanel; % vertical height of window, minus nPanel-1 times space between panels, minus space below axis for tick labels and axis label
@@ -948,6 +967,9 @@ end
 end
 
 function initAndOpenCodingPanel(hm,stream)
+if ~hm.UserData.coding.hasCoding
+    return
+end
 if nargin<2
     % allow caller to override stream w.r.t. panel is set up (needed when
     % adding intervening event that is past last mark in active stream but
@@ -1067,6 +1089,9 @@ hm.UserData.ui.coding.subpanel(stream).BackgroundColor = highlight;
 end
 
 function updateCodeMarks(hm)
+if ~hm.UserData.coding.hasCoding
+    return
+end
 marks   = markToTime(hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream},hm.UserData.data.eye.fs);
 qAx     = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
 % marks
@@ -1134,6 +1159,9 @@ end
 end
 
 function updateCodingShades(hm)
+if ~hm.UserData.coding.hasCoding
+    return;
+end
 axs = hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf'));
 % get which element we should expect given coded events
 toAdd = [hm.UserData.coding.type{hm.UserData.ui.coding.currentStream}; hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(1:end-1); hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(2:end)];
@@ -1189,6 +1217,9 @@ end
 
 function updateScarf(hm)
 ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
+if isempty(ax)
+    return
+end
 % get which element we should expect given coded events
 expect = {};
 for p=1:length(hm.UserData.coding.type)
@@ -1948,7 +1979,7 @@ newVal = hndl.UI.valueForXPosition(p.x);
 
 % when this callback is executed, the normal matlab figure callback isn't.
 % manually check that coding panel isn't open
-if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+if hm.UserData.coding.hasCoding && strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
     hm.UserData.ui.coding.panel.obj.Visible = 'off';
 end
 
@@ -2041,7 +2072,9 @@ end
 fixupAxisLabels(hm);
 
 % make sure coder panel pops on top
-uistack(hm.UserData.ui.coding.panel.obj,'top');
+if isfield(hm.UserData.ui.coding,'panel')
+    uistack(hm.UserData.ui.coding.panel.obj,'top');
+end
 end
 
 function fixupAxisLabels(hm)
@@ -2061,15 +2094,15 @@ if isempty(hm.UserData)
     return;
 end
 % close popups if any are open
-if ~isempty(hm.UserData.ui.coding.reloadPopup) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
+if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.reloadPopup) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
     hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
     hm.UserData.ui.reloadDataButton.Value = 0;
 end
-if ~isempty(hm.UserData.ui.coding.classifierPopup.select) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
+if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopup.select) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
     hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
     hm.UserData.ui.classifierSettingButton.Value = 0;
 end
-if ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
+if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
     for s=1:length(hm.UserData.ui.coding.classifierPopup.setting)
         strcmp(hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible,'on')
         hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible = 'off';
@@ -2077,14 +2110,14 @@ if ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
     end
 end
 % close coder panel if it is open now
-if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+if hm.UserData.coding.hasCoding && strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
     panel = hitTestType(hm,'uipanel');
     if isempty(panel) || ~any(panel==[hm.UserData.ui.coding.panel.obj hm.UserData.ui.coding.subpanel])
         hm.UserData.ui.coding.panel.obj.Visible = 'off';
     end
 end
 % cancel adding intervening event, if started
-if hm.UserData.ui.coding.addingIntervening
+if hm.UserData.coding.hasCoding && hm.UserData.ui.coding.addingIntervening
     ax = hitTestType(hm,'axes');
     if isempty(ax) || ~any(ax==hm.UserData.plot.ax)
         endAddingInterveningEvt(hm);
@@ -2175,7 +2208,7 @@ else
 end
 if ~isempty(theChar)
     % close coder panel if it is open
-    if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+    if hm.UserData.coding.hasCoding && strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
         hm.UserData.ui.coding.panel.obj.Visible = 'off';
     end
     switch double(theChar)
@@ -2472,7 +2505,7 @@ elseif hasShift && ~hasCtrl && ~hasAlt
     % shift click with either mouse button
     % if clicking on event, start or finish adding in the middle of it
     ax = hitTestType(hm,'axes');
-    if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+    if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
         if ~hm.UserData.ui.coding.addingIntervening
             % check which, if any, event is pressed on
@@ -2509,7 +2542,7 @@ elseif hasCtrl && ~hasShift && ~hasAlt
         % start drag marker
         startMarkerDrag(hm,true);
     end
-elseif strcmp(hm.SelectionType,'alt') && ~hasCtrl % alt also triggers for control+click, exclude that
+elseif strcmp(hm.SelectionType,'alt') && ~hasCtrl % alt also triggers for control+click, but that's excluded due to the check on hasCtrl above
     % right click: scroll time or value axis
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
@@ -3005,7 +3038,7 @@ if timeWindow.Value~=hm.UserData.settings.plot.timeWindow
 end
 
 % if coding panel open, close
-if strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
+if hm.UserData.coding.hasCoding && strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
     hm.UserData.ui.coding.panel.obj.Visible = 'off';
 end
 end
