@@ -1,6 +1,6 @@
 function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
 if isempty(fname)
-    fname = 'handCoding.mat';
+    fname = 'coding.mat';
 end
 
 % deal with coding tags for each stream
@@ -97,11 +97,13 @@ for p=1:nStream
                 coding.type{p} = tempCoding.type;
             end
         case 'classifier'
-            [coding.stream.classifier.defaults{p}, coding.stream.classifier.currentSettings{p}] = deal([]);
+            if ~isfield(coding.stream,'classifier') || ~isfield(coding.stream.classifier,'defaults') || length(coding.stream.classifier.defaults)<p
+                [coding.stream.classifier.defaults{p}, coding.stream.classifier.currentSettings{p}] = deal([]);
+            end
             % Determine settings:
             % 1. default values are always reloaded from json, so user can
             %    change those without affecting anything else. These are
-            %    loaded when user clicks "reset to defaults" (TODO)
+            %    loaded when user clicks "reset to defaults"
             % 2. currentSettings stores settings used for the currently
             %    stored event coding, may be equal to defaults.
             coding.stream.classifier.defaults{p}        = coding.stream.options{p}.parameters;

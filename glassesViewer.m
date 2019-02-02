@@ -494,6 +494,13 @@ end
 % make settings panel
 createSettings(hm);
 
+% save coding data button
+butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(end,2) 100 30];
+hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm,filedir));
+hm.UserData.ui.savedCoding = [];
+saveCodingData(hm,filedir); % save starting point
+
+
 %% all done, make sure GUI is shown
 hm.Visible = 'on';
 drawnow;
@@ -513,6 +520,29 @@ end
 
 
 %% helpers etc
+function saveCodingData(hm,filedir)
+coding = hm.UserData.coding;
+fname = 'coding.mat';
+save(fullfile(filedir,fname),'-struct', 'coding');
+% store copy of what we just saved, so we can check if new save is needed
+% by user
+hm.UserData.ui.savedCoding = coding;
+updateSaveButtonState(hm);
+end
+
+function updateSaveButtonState(hm)
+if isfield(hm.UserData.ui,'savedCoding')
+    % ignore log when checking for equality
+    if isequal(rmfield(hm.UserData.ui.savedCoding,'log'),rmfield(hm.UserData.coding,'log'))
+        hm.UserData.ui.saveCodingDataButton.Enable = 'off';
+        hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
+    else
+        hm.UserData.ui.saveCodingDataButton.Enable = 'on';
+        hm.UserData.ui.saveCodingDataButton.String = 'save coding';
+    end
+end
+end
+
 function setupPlots(hm,plotOrder,nTotal)
 nPanel  = length(plotOrder);
 iScarf  = find(strcmp(plotOrder,'scarf'));
@@ -1190,6 +1220,10 @@ if any(qRem) || ~isempty(add)
     qTI = ax.Children==timeIndicator;
     ax.Children = [timeIndicator; ax.Children(~qTI)];
 end
+
+% this function is always called when some coding is changed, so this is
+% the right place to check if coding needs to be saved
+updateSaveButtonState(hm);
 end
 
 function createSettings(hm)
@@ -2619,6 +2653,8 @@ else
     hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
     if nargin<2 || doFullUpdate
         updateScarf(hm);
+    else
+        hm.UserData.ui.savedCoding
     end
 end
 % update cursors (check for hovers and adjusts cursor if needed)
