@@ -280,11 +280,11 @@ if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
 end
 
 % crap data tick
-if ~isfield(hm.UserData.data,'isCrap')
-    hm.UserData.data.isCrap = false;
+if ~isfield(hm.UserData.coding,'dataIsCrap')
+    hm.UserData.coding.dataIsCrap = false;
 end
 checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
-hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.data.isCrap,'Callback',@(~,~,~) toggleCrapData(hm));
+hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.coding.dataIsCrap,'Callback',@(hndl,~,~) setCrapData(hm,hndl));
 
 %% load videos
 segments = FolderFromFolder(fullfile(filedir,'segments'));
@@ -1710,8 +1710,9 @@ drawnow
 unMinimizePopup(hm.UserData.ui.coding.reloadPopup);
 end
 
-function toggleCrapData(hm)
-hm.UserData.data.isCrap = ~hm.UserData.data.isCrap;
+function setCrapData(hm,hndl)
+hm.UserData.coding.dataIsCrap = ~~hndl.Value;
+updateSaveButtonState(hm);
 end
 
 function changeSGCallback(hm,hndl,~)
