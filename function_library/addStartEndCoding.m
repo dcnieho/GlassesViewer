@@ -1,4 +1,12 @@
 function [ts,type] = addStartEndCoding(ts,type,endT)
+if isempty(ts)
+    % if no marks, add start one. We always have a start mark, code expects
+    % that
+    ts = 1;
+    type = [];
+    return;
+end
+
 % add start of time
 if ts(1)>1
     ts  = [1 ts];
