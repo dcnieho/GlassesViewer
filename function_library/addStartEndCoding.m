@@ -17,16 +17,12 @@ if ts(1)>1
     end
 end
 % add end
-if nargin>2
-    if ts(end)>=endT
-        % last mark at last sample: this does not start a new
-        % event anymore (always one more mark than type as
-        % marks also needed to close off events)
-        type(end) = [];
-        ts(end) = endT; % ensure end not beyond data
-    else
-        ts = [ts endT];
-    end
-else
+if length(type)==length(ts)
     type(end) = [];
+end
+if ts(end)>=endT
+    % last mark at last sample: this does not start a new
+    % event anymore (always one more mark than type as
+    % marks also needed to close off events)
+    ts(end) = endT; % ensure end not beyond data end
 end
