@@ -1048,7 +1048,7 @@ hm.UserData.plot.ax(~qAx).YTick = hm.UserData.ui.coding.currentStream-.4;
 baseColor = hm.UserData.ui.coding.panel.obj.BackgroundColor;
 [hm.UserData.ui.coding.subpanel.BackgroundColor] = deal(baseColor);
 opacity = .12;
-highlight = baseColor.*(1-opacity)+[1 0 0].*opacity;
+highlight = baseColor.*(1-opacity)+[0 0 0].*opacity;
 hm.UserData.ui.coding.subpanel(stream).BackgroundColor = highlight;
 end
 
