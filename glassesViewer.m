@@ -80,6 +80,9 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 % read glasses data
 hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
 computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
+% TODO: make second panel in place of settings panel where this info is
+% output when settings are not shown. I guess swing or awt has a table
+% element? use it
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
     hm.UserData.coding = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
@@ -528,6 +531,8 @@ saveCodingData(hm,filedir); % save starting point
 hm.Visible = 'on';
 drawnow;
 % do some inits only possible when figure is visible
+% TODO: is this true? would be great to at least draw video frames before
+% issuing drawnow.
 doPostInit(hm,panels);
 updateTime(hm);
 drawnow;
@@ -751,6 +756,10 @@ end
 end
 
 function makeCoderPanel(hm)
+% TODO: not in this function but in others, avoid as many drawnow as
+% possible
+% TODO: don't hardcode button size, determine max width needed given all
+% labels, make it that width
 % create panel
 marginsP = [3 2];
 marginsB = [2 5];   % horizontal: [margin from left edge, margin between buttons]
