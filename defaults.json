@@ -41,7 +41,7 @@
       },
       {
         "type": "classifier",
-        "lbl": "Hooge & Camps, 2013: slow/fast",
+        "lbl": "Hooge & Camps (2013): slow/fast",
         "locked": false,
         "function": "HC13",
         "alwaysRecalculate": true,
