@@ -95,9 +95,9 @@ hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName '
 
 
 %% setup data axes
-% make test axis to see how much margins are
+% make test axis to see how much the margins are
 temp    = axes('Units','pixels','OuterPosition',[0 floor(hm.Position(4)/2) floor(hm.Position(3)/2) floor(hm.Position(4)/6)],'YLim',[-200 200]);
-drawnow % TODO: make into single drawnow
+drawnow
 opos    = temp.OuterPosition;
 pos     = temp.Position;
 temp.YLabel.String = 'azi (deg)';
@@ -1569,21 +1569,20 @@ if nStream>1
     hm.UserData.ui.coding.classifierPopup.select.jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.select.obj), 'JavaFrame');
     
     % temp button to figure out sizes
-    temp = uicontrol('Style','pushbutton','String','xx','Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
-    sz = nan(nStream,2);
+    strs = gobjects(nStream,1);
     for s=1:nStream
-        temp.String = sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)});
-        % TODO take this drawnow out of the loop
-        drawnow
-        sz(s,:) = temp.Extent(3:4); % this gets tight extent of string
+        strs(s) = uicontrol('Style','pushbutton','String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
     end
-    szPad = temp.Position(4)-sz(:,2); % this is size of button. horizontal is useless as it doesn't scale with text, vertical tells us about padding
-    delete(temp);
+    drawnow
+    sz      = cat(1,strs.Extent);   % this gets tight extent of strings
+    pos     = cat(1,strs.Position);
+    szPad   = pos(:,4)-sz(:,4);     % this is size of button. horizontal is useless as it doesn't scale with text, vertical tells us about padding
+    delete(strs);
     
     % create proper popup: determine size, create buttons
     margin = [15 5];    % [around buttons, between buttons]
-    widths = sz(:,1)+szPad;
-    heights= sz(:,2)+szPad;
+    widths = sz(:,3)+szPad;
+    heights= sz(:,4)+szPad;
     assert(isscalar(unique(heights)))
     heights= heights(1);
     popUpHeight = margin(1)*2+heights*nStream+margin(2)*(nStream-1);
@@ -1631,21 +1630,19 @@ buttonSz = [60 24];
 
 
 % temp uipanel because we need to figure out size of margins
-temp    = uipanel('Units','pixels','Position',[10 10 100 100],'title','Xxj');
-drawnow
-off     = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
-delete(temp);
+temp    = uipanel('Units','pixels','Position',[10 10 400 400],'title','Xxj');
 
 % temp checkbox and label because we need their sizes too
 % use largest label
-h= uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.obj,'Units','pixels','Position',[10 10 400 100], 'String',' recompute classification');
+h= uicomponent('Style','checkbox', 'Parent', temp,'Units','pixels','Position',[10 10 400 100], 'String',' recompute classification');
 drawnow
-relExt = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
-h.FontWeight = 'bold';
-h.String = 'manually changed!';
-drawnow % TODO merge this one with the above drawnow
-changedExt = h.Extent;
-delete(h);
+% get sizes, delete
+relExt      = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
+h.FontWeight= 'bold';
+h.String    = 'manually changed!';
+off         = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
+changedExt  = h.Extent;
+delete(temp);
 
 % determine size of popup
 rowWidth    = marginsB(1)*2+marginsB(2)+relExt(3)+changedExt(3);
