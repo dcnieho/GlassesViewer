@@ -97,7 +97,7 @@ hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName '
 %% setup data axes
 % make test axis to see how much margins are
 temp    = axes('Units','pixels','OuterPosition',[0 floor(hm.Position(4)/2) floor(hm.Position(3)/2) floor(hm.Position(4)/6)],'YLim',[-200 200]);
-drawnow
+drawnow % TODO: make into single drawnow
 opos    = temp.OuterPosition;
 pos     = temp.Position;
 temp.YLabel.String = 'azi (deg)';
@@ -530,9 +530,6 @@ saveCodingData(hm,filedir); % save starting point
 %% all done, make sure GUI is shown
 hm.Visible = 'on';
 drawnow;
-% do some inits only possible when figure is visible
-% TODO: is this true? would be great to at least draw video frames before
-% issuing drawnow.
 doPostInit(hm,panels);
 updateTime(hm);
 drawnow;
@@ -756,11 +753,6 @@ end
 end
 
 function makeCoderPanel(hm)
-% TODO: not in this function but in others, avoid as many drawnow as
-% possible
-% TODO: don't hardcode button size, determine max width needed given all
-% labels, make it that width
-% create panel
 marginsP = [3 2];
 marginsB = [5 5];   % horizontal: [margin from left edge, margin between buttons]
 buttonSz = [40 24];
@@ -1581,6 +1573,7 @@ if nStream>1
     sz = nan(nStream,2);
     for s=1:nStream
         temp.String = sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)});
+        % TODO take this drawnow out of the loop
         drawnow
         sz(s,:) = temp.Extent(3:4); % this gets tight extent of string
     end
@@ -1650,7 +1643,7 @@ drawnow
 relExt = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
 h.FontWeight = 'bold';
 h.String = 'manually changed!';
-drawnow
+drawnow % TODO merge this one with the above drawnow
 changedExt = h.Extent;
 delete(h);
 
@@ -2051,7 +2044,7 @@ px2 = arrayfun(@(x) hm.UserData.ui.VCR.slider.jComp.UI.valueForXPosition(x),w-[5
 hm.UserData.ui.VCR.slider.right= (w-find(diff(px2),1)-5+1)/hm.UserData.ui.DPIScale;
 
 % lets install our own mouse scroll listener. Yeah, done in a tricky way as
-% i want the java event which gives axes to modifiers and cursor location.
+% i want the java event which gives acces to modifiers and cursor location.
 % the matlab event from the figure is useless for me here
 jFrame = get(gcf,'JavaFrame');
 j=handle(jFrame.fHG2Client.getAxisComponent, 'CallbackProperties');
