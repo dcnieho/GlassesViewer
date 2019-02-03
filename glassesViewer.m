@@ -762,23 +762,46 @@ function makeCoderPanel(hm)
 % labels, make it that width
 % create panel
 marginsP = [3 2];
-marginsB = [2 5];   % horizontal: [margin from left edge, margin between buttons]
+marginsB = [5 5];   % horizontal: [margin from left edge, margin between buttons]
 buttonSz = [40 24];
+nStream = length(hm.UserData.coding.codeCats);
+buttons = hm.UserData.coding.codeCats;
+colors  = hm.UserData.coding.codeColors;
 
 % temp uipanel because we need to figure out size of margins
-temp    = uipanel('Units','pixels','Position',[10 10 100 100],'title','Xxj');
+temp    = uipanel('Units','pixels','Position',[10 10 400 400],'title','Xxj');
+% same for buttons, see what widest text is
+butH    = cell(nStream,max(cellfun(@length,buttons)));
+for s=1:nStream
+    for q=1:size(buttons{s},1)
+        btnLbl = buttons{s}{q,1};
+        btnLbl(btnLbl=='*'|btnLbl=='+') = [];
+        butH{s,q} = uicontrol('Style','togglebutton','String',btnLbl,'Parent',temp);
+    end
+end
 drawnow
+butExts = cellfun(@(x) x.Extent(3),butH,'ErrorHandler',@(~,~,~)0);
+buttonSz(1) = max(buttonSz(1),max(butExts(:))+10);  % if required size is larger than configured minimum size, update
 off     = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
 delete(temp);
 
 % figure out width/height of each coding stream
-nStream = length(hm.UserData.coding.codeCats);
 rowWidths = nan(nStream,1);
 rowHeight = buttonSz(2);
 for s=1:nStream
-    nBut = size(hm.UserData.coding.codeCats{s},1);
+    nBut = size(buttons{s},1);
     rowWidths(s,1) = 2*marginsB(1)+nBut*buttonSz(1)+(nBut-1)*marginsB(2);
 end
+% see if there are rows with flags, and if there is a flag in the widest
+% row, create some extra space
+qFlag = false(nStream,max(cellfun(@(x) size(x,1),buttons)));
+for s=1:nStream
+    q = cellfun(@(x)x(1)=='*',buttons{s}(:,1));
+    qFlag(s,1:length(q)) = q;
+end
+assert(all(ismember(sum(qFlag,2),[0 1])),'there can only be 0 or 1 flag buttons per stream')
+assert(~any(any(qFlag(:,1:end-1))),'flag buttons must be last in the list of categories of a stream') 
+rowWidths(qFlag(:,end)) = rowWidths(qFlag(:,end))+4*marginsB(2);
 subPanelWidth   = max(rowWidths)+ceil(off(3));
 subPanelHeight  = rowHeight+ceil(off(4));
 panelWidth      = subPanelWidth+marginsP(1)*2;
@@ -803,13 +826,10 @@ end
 
 % make buttons in each
 baseColor = hm.UserData.ui.coding.subpanel(1).BackgroundColor;
-buttons = hm.UserData.coding.codeCats;
-colors  = hm.UserData.coding.codeColors;
 for p=1:length(buttons)
-    qFlag = cellfun(@(x)x(1)=='*',buttons{p}(:,1));
-    assert(sum(qFlag)==0||sum(qFlag)==1)
-    if any(qFlag)
-        iFlag = find(qFlag);
+    assert(sum(qFlag(p,:))==0||sum(qFlag(p,:))==1)
+    if any(qFlag(p,:))
+        iFlag = find(qFlag(p,:));
         buttons{p} = [buttons{p}(1:iFlag-1,:); {'||',0}; buttons{p}(iFlag:end,:)];
         colors{p}  = [ colors{p}(1:iFlag-1  ); { []   };  colors{p}(iFlag:end)];
     end
@@ -818,12 +838,12 @@ alpha = .5;
 butIdx= 1;
 for p=1:length(buttons)
     % calc width of button row
-    start = [3+marginsB(1) (hm.UserData.ui.coding.subpanel(p).InnerPosition(4)-buttonSz(2))./2+2];
+    start = [marginsB(1) (hm.UserData.ui.coding.subpanel(p).InnerPosition(4)-buttonSz(2))./2+2];
     for q=1:size(buttons{p},1)
         if strcmp(buttons{p}{q,1},'||')
             % flush right (assume only one button left)
             assert(q==size(buttons{p},1)-1)
-            start(1) = max(rowWidths)-7+marginsB(1)-buttonSz(1);
+            start(1) = max(rowWidths)-marginsB(1)-buttonSz(1);
         else
             if isempty(colors{p}{q})
                 clr = baseColor*.999;   % set color explicitly slightly different, else visually acts quite differently
