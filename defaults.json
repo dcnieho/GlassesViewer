@@ -29,7 +29,7 @@
         "type": "handStream",
         "lbl": "example hand code stream",
         "locked": false,
-        "categories": [ "none", 20, "fix", 1, "sac+", 2, "sp+", 3, "*vergence", null ]
+        "categories": [ "none", 20, "fix", 1, "sac+", 2, "sp+", 3, "*vergence", 12 ]
       },
       {
         "type": "fileStream",
