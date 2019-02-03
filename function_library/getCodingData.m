@@ -48,7 +48,11 @@ end
 
 if qHaveExistingCoding
     % load
-    coding = load(fullfile(filedir,fname));
+    coding                  = load(fullfile(filedir,fname));
+    % always replace some things by values from settings
+    coding.codeColors       = theColors;
+    coding.stream.lbls      = lbls;
+    coding.stream.isLocked  = locked;
 else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
