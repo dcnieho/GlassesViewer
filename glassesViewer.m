@@ -2866,6 +2866,8 @@ if newTime >= hm.UserData.time.endTime
     newTime = hm.UserData.time.endTime;
     startStopPlay(hm,0);
 end
+% TODO: something not right when reaching end of video: above should lead
+% timeline to stop at end of video, now seems to stop at last update
 
 % update current time and update display
 setCurrentTime(hm,newTime);
