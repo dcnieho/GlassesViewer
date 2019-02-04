@@ -2155,7 +2155,7 @@ catch
 end
 try
     stop(hm.UserData.plot.zoom.timer);
-    delete(hm.UserData.plot.zoom.time);
+    delete(hm.UserData.plot.zoom.timer);
 catch
     % carry on
 end
