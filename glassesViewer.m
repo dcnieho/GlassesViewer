@@ -1555,6 +1555,7 @@ unMinimizePopup(hm.UserData.ui.coding.classifierPopup.setting,idx);
 end
 
 function createClassifierPopups(hm)
+oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 % see which types this applies to
 qStream = ismember(hm.UserData.coding.stream.type,'classifier');
 iStream = find(qStream);
@@ -1610,6 +1611,7 @@ for s=1:nStream
     hm.UserData.ui.coding.classifierPopup.setting(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
     hm.UserData.ui.coding.classifierPopup.setting(s).jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.setting(s).obj), 'JavaFrame');
 end
+warning(oldWarn);
 end
 
 function createReloadPopup(hm)
@@ -1620,7 +1622,9 @@ nStream = length(iStream);
 
 hm.UserData.ui.coding.reloadPopup.obj   = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Reload coding','Visible','off');
 hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
+oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 hm.UserData.ui.coding.reloadPopup.jFig  = get(handle(hm.UserData.ui.coding.reloadPopup.obj), 'JavaFrame');
+warning(oldWarn);
 
 % create panel
 marginsP = [3 3];
@@ -2042,7 +2046,9 @@ hm.UserData.ui.VCR.slider.right= (w-find(diff(px2),1)-5+1)/hm.UserData.ui.DPISca
 % lets install our own mouse scroll listener. Yeah, done in a tricky way as
 % i want the java event which gives acces to modifiers and cursor location.
 % the matlab event from the figure is useless for me here
+oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 jFrame = get(gcf,'JavaFrame');
+warning(oldWarn);
 j=handle(jFrame.fHG2Client.getAxisComponent, 'CallbackProperties');
 j.MouseWheelMovedCallback = @(hndl,evt) scrollFunc(hm,hndl,evt);
 
