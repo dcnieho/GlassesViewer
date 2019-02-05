@@ -1684,12 +1684,14 @@ end
 end
 
 function popupCloseFnc(hndl)
-if strcmp(hndl.Visible,'off')
-    % calling close when figure hidden, must be GUI closing down or user
-    % issuing close all
-    delete(hndl)
-else
-    hndl.Visible = 'off';
+if ishghandle(hndl)
+    if strcmp(hndl.Visible,'off')
+        % calling close when figure hidden, must be GUI closing down or user
+        % issuing close all
+        delete(hndl)
+    else
+        hndl.Visible = 'off';
+    end
 end
 end
 
