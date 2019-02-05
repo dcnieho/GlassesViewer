@@ -78,14 +78,11 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 
 %% load data
 % read glasses data
-hm.UserData.data = getTobiiDataFromGlasses(filedir,qDEBUG);
-computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
-% TODO: make second panel in place of settings panel where this info is
-% output when settings are not shown. I guess swing or awt has a table
-% element? use it
+hm.UserData.data            = getTobiiDataFromGlasses(filedir,qDEBUG);
+hm.UserData.data.quality    = computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
-    hm.UserData.coding = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
+    hm.UserData.coding           = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
     hm.UserData.coding.hasCoding = true;
 else
     hm.UserData.coding.hasCoding = false;
@@ -1503,9 +1500,11 @@ end
 
 function toggleSettingsPanel(hm,hndl)
 if hndl.Value
-    hm.UserData.ui.setting.panel.Visible = 'on';
+    hm.UserData.ui.dataQuality.panel.Visible= 'off';
+    hm.UserData.ui.setting.panel.Visible    = 'on';
 else
-    hm.UserData.ui.setting.panel.Visible = 'off';
+    hm.UserData.ui.setting.panel.Visible    = 'off';
+    hm.UserData.ui.dataQuality.panel.Visible= 'on';
 end
 end
 
@@ -2088,6 +2087,8 @@ fixupAxisLabels(hm);
 if isfield(hm.UserData.ui.coding,'panel')
     uistack(hm.UserData.ui.coding.panel.obj,'top');
 end
+
+makeDataQualityPanel(hm);
 end
 
 function fixupAxisLabels(hm)
@@ -2099,6 +2100,65 @@ pos(:,1) = min(pos(:,1));                       % set to furthest
 pos(:,2) = hm.UserData.plot.axPos(1,end)/2;     % center vertically
 pos = num2cell(pos,2);
 [yl.Position] = pos{:};
+end
+
+function makeDataQualityPanel(hm)
+% make table to show data quality in GUI
+temp = hm.UserData.data.quality;
+temp = {'Left azi',temp.RMSS2S.azi(1),temp.dataLoss.azi(1); 'Left ele',temp.RMSS2S.ele(1),temp.dataLoss.ele(1); 'Right azi',temp.RMSS2S.azi(2),temp.dataLoss.azi(2); 'Right ele',temp.RMSS2S.ele(2),temp.dataLoss.ele(2)};
+hm.UserData.ui.dataQuality.table = uitable('Data',temp,'ColumnName',{' Signal   ',' RMS-S2S (deg) ',' Data loss (%) '},'Parent',hm);
+hm.UserData.ui.dataQuality.table.RowName={''};
+drawnow;
+jScroll = findjobj(hm.UserData.ui.dataQuality.table);
+% size as wanted
+% 1. get needed vertical size
+% 1.1 first get sizes of all components making up the table
+szs = nan(length(jScroll.getComponents),2);
+for p=1:length(jScroll.getComponents)
+    temp = jScroll.getComponent(p-1).size();
+    szs(p,:) = [temp.width temp.height];
+end
+% 1.2 the two widest viewports contain the table data and the table header
+% elements
+idx = find(szs(:,1)==max(szs(:,1)));
+% get their actual size from the viewports (NB: Java indexing is zero based)
+h = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getHeight,idx));
+% 1.3 the two tallest viewports contain the table data and the table row
+% header elements
+idx = find(szs(:,2)==max(szs(:,2)));
+% get their actual size from the viewports (NB: Java indexing is zero based)
+w = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getWidth,idx));
+% now set size of container (230 is a good width, note that Java sizes need to be corrected for DPI. extra pizel to prevent scrollbar from appearing)
+hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIScale)+1;
+% 3. to center column contents:
+% renderer = javax.swing.table.DefaultTableCellRenderer
+% renderer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER)
+% jTable.getColumnModel.getColumn(1).setCellRenderer(renderer)
+% jTable.getColumnModel.getColumn(2).setCellRenderer(renderer)
+
+% make UIpanel fitting it (create first, then reshape)
+left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
+right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
+top     = hm.UserData.ui.VCR.but(1).Position(2);
+bottom  = hm.UserData.plot.axRect(end,2);
+hm.UserData.ui.dataQuality.panel = uipanel('Units','pixels', 'title','Data quality','Parent',hm,'Position',[100 100 100 100]);
+hm.UserData.ui.dataQuality.string= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
+drawnow
+padding = hm.UserData.ui.dataQuality.panel.OuterPosition(3:4)-hm.UserData.ui.dataQuality.panel.InnerPosition(3:4);
+strWidth= hm.UserData.ui.dataQuality.string.Extent(3)+5;    % bit extra for safety
+% settings area
+width   = ceil(max(strWidth,hm.UserData.ui.dataQuality.table.Position(3))+padding(1));
+height  = ceil(hm.UserData.ui.dataQuality.string.Position(4)+5+hm.UserData.ui.dataQuality.table.Position(4)+padding(2));
+% center it
+leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
+% position
+hm.UserData.ui.dataQuality.panel.Position = [leftBot width height];
+% resize string
+hm.UserData.ui.dataQuality.string.Position(1:3) = [3 0 strWidth+3];
+% reparent table
+hm.UserData.ui.dataQuality.table.Parent = hm.UserData.ui.dataQuality.panel;
+h=(width-padding(1)-hm.UserData.ui.dataQuality.table.Position(3))/2;
+hm.UserData.ui.dataQuality.table.Position(1:2) = [h sum(hm.UserData.ui.dataQuality.string.Position([2 4]))+4];
 end
 
 function focusChange(hm)

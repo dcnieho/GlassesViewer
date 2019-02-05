@@ -1,4 +1,4 @@
-function computeDataQuality(data, windowLengthMs)
+function quality = computeDataQuality(data, windowLengthMs)
 % compute data quality measures for eye-tracking data from Tobii Pro
 % Glasses 2
 % data: data-struct as obtained from TobiiGlassesViewer
@@ -25,12 +25,20 @@ fprintf('<strong>Data quality:</strong>\n');
 fprintf('-------------------------------------\n');
 fprintf('Signal     RMS-S2S (deg)*   Data loss\n');
 fprintf('-------------------------------------\n');
-fprintf('Left ele       %.2f           %5.2f%%\n',RMSeleL,DLeleL*100);
 fprintf('Left azi       %.2f           %5.2f%%\n',RMSaziL,DLaziL*100);
-fprintf('Right ele      %.2f           %5.2f%%\n',RMSeleR,DLeleR*100);
+fprintf('Left ele       %.2f           %5.2f%%\n',RMSeleL,DLeleL*100);
 fprintf('Right azi      %.2f           %5.2f%%\n',RMSaziR,DLaziR*100);
+fprintf('Right ele      %.2f           %5.2f%%\n',RMSeleR,DLeleR*100);
 fprintf('-------------------------------------\n');
 
 % print RMS-S2S details
 fprintf('* Median RMS-S2S using %.0fms moving window\n', windowLengthMs);
 fprintf(' \n');
+
+if nargout>0
+    quality.RMSS2S  .azi = [RMSaziL RMSaziR];
+    quality.RMSS2S  .ele = [RMSeleL RMSeleR];
+    quality.dataLoss.azi = [DLaziL DLaziR]*100;
+    quality.dataLoss.ele = [DLeleL DLeleR]*100;
+    quality.windowMs     = windowLengthMs;
+end
