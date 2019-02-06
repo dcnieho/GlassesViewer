@@ -1116,7 +1116,7 @@ updateCodingShades(hm);
 
 % update arrow indicating which stream is active
 qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
-hm.UserData.plot.ax(~qAx).YTick = hm.UserData.ui.coding.currentStream-.4;
+hm.UserData.plot.ax(~qAx).YTick = hm.UserData.ui.coding.currentStream-.3;
 
 % highlight background of stream being shown in coding panel
 baseColor = hm.UserData.ui.coding.panel.obj.BackgroundColor;
