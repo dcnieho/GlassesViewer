@@ -1654,8 +1654,12 @@ for s=1:nStream
                     if granularity<0.001
                         granularity = 0.001;
                     end
-                    nDeci = min(0,floor(log10(granularity)));
-                    fmt = ['#####0.' repmat('0',1,abs(nDeci)) ' '];
+                    nDeci = abs(min(0,floor(log10(granularity))));
+                    fmt = '#####0';
+                    if nDeci>0
+                        fmt = [fmt '.' repmat('0',1,abs(nDeci))];
+                    end
+                    fmt = [fmt ' '];
                 else
                     typeFun = @int32;
                     if granularity==0
@@ -1704,7 +1708,7 @@ for s=1:nStream
     % layout the panel
     marginsH = [4 8];
     marginsV = [4 7]; % between label and spinner (and edges of window), between spinner and next option
-    buttonSz  = [60 24];
+    buttonSz  = [70 24];
     buttonSz2 = [100 24];
     
     % 1. get popup size

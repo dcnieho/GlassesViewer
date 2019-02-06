@@ -63,11 +63,11 @@
           },
           {
             "name": "minfix",
-            "label": "minimum fixation duration",
+            "label": "minimum fixation duration (ms)",
             "type": "double",
             "value": 60,
             "range": [ 0, 10000 ],
-            "granularity": 0,
+            "granularity": 1,
             "settable": true
           },
           {
@@ -76,7 +76,7 @@
             "type": "double",
             "value": 4,
             "range": [ 0, 10 ],
-            "granularity": 0,
+            "granularity": 0.1,
             "settable": true
           }
         ],
