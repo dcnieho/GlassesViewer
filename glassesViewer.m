@@ -1690,21 +1690,29 @@ for s=1:nStream
                 % TODO: implement
         end
         
-        % label
+        % label name
         jLabel = com.mathworks.mwswing.MJLabel(param.label);
         jLabel.setLabelFor(comp.JavaComponent);
         jLabel.setToolTipText(param.name);
         lbl = uicomponent(jLabel,'Parent',parent,'Units','pixels','Tag',[tag 'Label']);
+        % label range
+        if ismember(type,{'double','int'})
+            fmt = sprintf('%%.%df',nDeci);
+            lblRange = uicomponent('Style','text','Parent',parent,'Units','pixels','Tag',[tag 'LabelRange'],'String',sprintf(['[' fmt ', ' fmt ']'],param.range));
+        else
+            lblRange = gobjects(1);
+        end
          
         % store
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p) = comp;
         hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p) = lbl;
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p)= lblRange;
         hm.UserData.ui.coding.classifierPopup.setting(s).newParams   = params;
     end
     
     % drawnow so we get sizes, then organize and rescale parent to fit
     drawnow
-    % get tight extents of text labels
+    % get tight extents of text labels name
     lblSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels,'uni',false);
     lblSzs  = cellfun(@(x) [x.width x.height],lblSzs,'uni',false); lblSzs = cat(1,lblSzs{:})/hm.UserData.ui.DPIScale;
     lblPad  = lbl.Position(4)-lblSzs(1,2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
@@ -1715,6 +1723,12 @@ for s=1:nStream
     elePad  = comp.Position(4)-eleSzs(1,2);         % get how much padding there is vertically. Horizontal we can't recover, but thats fine
     eleFull = ceil(eleSzs+elePad);
     eleFull(:,1) = max(eleFull(:,1));
+    % get size of range labels if any
+    lblRSzs = zeros(size(lblSzs));
+    q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR);
+    temp(q) = arrayfun(@(x) x.Extent(3),hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(q),'uni',false);
+    lblRSzs(q,1) = ceil(cat(1,temp{:})+4);
+    lblRSzs(q,2) = lblFull(1,2);    % same height for these labels
     
     % layout the panel
     marginsH = [4 8];
@@ -1723,7 +1737,8 @@ for s=1:nStream
     buttonSz2 = [100 24];
     
     % 1. get popup size
-    width   = max(max([lblFull(:,1); eleFull(:,1)]),buttonSz(1)+buttonSz2(1)+marginsH(2))+2*marginsH(1);
+    addW    = sign(lblRSzs(:,1))*marginsH(2)+lblRSzs(:,1);
+    width   = max(max([lblFull(:,1); eleFull(:,1)+addW]),buttonSz(1)+buttonSz2(1)+marginsH(2))+2*marginsH(1);
     height  = marginsV(1)+sum(lblFull(:,2))+sum(eleFull(:,2))+(nParam)*marginsV(2)+buttonSz(2);
     % 2. position popup and make correct size
     pos = [(scrSz(3)-width)/2 (scrSz(4)-height)/2 width height];
@@ -1738,7 +1753,16 @@ for s=1:nStream
         szE = eleFull(p,:);
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position = [off szE];
         
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = [off+[0 szE(2)] lblFull(p,:)];
+        lblPos = [off+[0 szE(2)] lblFull(p,:)];
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = lblPos;
+        
+        if ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p))
+            lblPos    = [off 0 lblPos(4)];
+            lblPos(1) = lblPos(1)+hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position(3)+marginsH(2);
+            lblPos(3) = ceil(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p).Extent(3)+5);
+            lblPos(2) = lblPos(2)-2;
+            hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p).Position = lblPos;
+        end
     end
     
     % create buttons
