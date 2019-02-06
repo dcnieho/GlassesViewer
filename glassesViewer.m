@@ -290,11 +290,13 @@ if hm.UserData.coding.hasCoding
     end
     
     % classifier settings button
-    % TODO: no classifier settings button if it doesn't have settable settings
-    if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
+    iClass = find(strcmpi(hm.UserData.coding.stream.type,'classifier'));
+    qHasSettable = cellfun(@(p) any(cellfun(@(x) isfield(x,'settable') && x.settable,p)),hm.UserData.coding.stream.classifier.currentSettings(iClass));
+    iClass(~qHasSettable) = [];
+    if ~isempty(iClass)
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
         hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
-        createClassifierPopups(hm);
+        createClassifierPopups(hm,iClass);
     else
         hm.UserData.ui.coding.classifierPopup.select = [];
         hm.UserData.ui.coding.classifierPopup.setting = [];
@@ -1575,11 +1577,8 @@ for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
 end
 end
 
-function createClassifierPopups(hm)
+function createClassifierPopups(hm,iStream)
 oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
-% see which types this applies to
-qStream = ismember(hm.UserData.coding.stream.type,'classifier');
-iStream = find(qStream);
 nStream = length(iStream);
 
 % if more than one classifier stream, create popup to select which
