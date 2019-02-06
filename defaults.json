@@ -45,6 +45,7 @@
         "locked": false,
         "function": "HC13",
         "alwaysRecalculate": true,
+        "alwaysRecalculateUseStoredSettings": false,
         "parameters": [
           {
             "name": "thr",

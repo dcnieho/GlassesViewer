@@ -34,7 +34,7 @@ locked  = true(size(type)); % a stream is locked by default, for all except butt
 qSyncEvents = ismember(lower(type),{'syncin','syncout'});
 locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
 lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
-options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories'}), codeSettings.streams, 'uni', false);
+options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
 
 % set file format version. coding files older than this version are ignored
 fileVersion = 1;
@@ -53,6 +53,7 @@ if qHaveExistingCoding
     coding.codeColors       = theColors;
     coding.stream.lbls      = lbls;
     coding.stream.isLocked  = locked;
+    coding.stream.options   = options;
 else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
@@ -117,21 +118,34 @@ for p=1:nStream
             %    loaded when user clicks "reset to defaults"
             % 2. currentSettings stores settings used for the currently
             %    stored event coding, may be equal to defaults.
-            coding.stream.classifier.defaults{p}        = coding.stream.options{p}.parameters;
+            coding.stream.classifier.defaults{p} = codeSettings.streams{p}.parameters;
             if ~isfield(coding.stream.classifier,'currentSettings') || isempty(coding.stream.classifier.currentSettings{p})
                 coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
+            else
+                % copy over all parameter config except value, so that we
+                % can change labels, precision, etc. Keep value intact
+                for s=1:length(coding.stream.classifier.currentSettings{p})
+                    temp = coding.stream.classifier.defaults{p}{s};
+                    temp.value = coding.stream.classifier.currentSettings{p}{s}.value;
+                    coding.stream.classifier.currentSettings{p}{s} = temp;
+                end
             end
             % if nothing there yet, or always recalculate option set,
             % reclassify: always use default settings and recalculate
-            if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate)
+            if isempty(coding.type{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate)
                 % run classification
-                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,coding.stream.classifier.defaults{p},endT);
+                if isfield(coding.stream.options{p},'alwaysRecalculateUseStoredSettings') && coding.stream.options{p}.alwaysRecalculateUseStoredSettings
+                    settings = coding.stream.classifier.defaults{p};
+                else
+                    settings = coding.stream.classifier.currentSettings{p};
+                end
+                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,endT);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;
                 % update currentSettings to make sure they reflect the
                 % coding
-                coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
+                coding.stream.classifier.currentSettings{p} = settings;
             end
     end
     
