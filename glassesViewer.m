@@ -280,8 +280,9 @@ butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
 hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
 
 if hm.UserData.coding.hasCoding
+    hm.UserData.coding.fileOrClass = ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'});
     % reload coding button (in effect undoes manual changes)
-    if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
+    if any(hm.UserData.coding.fileOrClass)
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
         hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','<html>Remove manual<br>coding changes','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
         createReloadPopup(hm);
@@ -552,10 +553,11 @@ save(fullfile(filedir,fname),'-struct', 'coding');
 % store copy of what we just saved, so we can check if new save is needed
 % by user
 hm.UserData.ui.savedCoding = coding;
-updateSaveButtonState(hm);
+updateMainButtonStates(hm);
 end
 
-function updateSaveButtonState(hm)
+function updateMainButtonStates(hm)
+% save button
 if isfield(hm.UserData.ui,'savedCoding')
     % ignore log when checking for equality
     if isequal(rmFieldOrContinue(hm.UserData.ui.savedCoding,'log'),rmFieldOrContinue(hm.UserData.coding,{'log','hasCoding'}))
@@ -571,6 +573,18 @@ if isfield(hm.UserData.ui,'savedCoding')
     baseColor = hm.UserData.ui.toggleSettingsButton.BackgroundColor;
     highlight = baseColor.*(1-opacity)+clr.*opacity;
     hm.UserData.ui.saveCodingDataButton.BackgroundColor = highlight;
+end
+% reload button, if any
+if isfield(hm.UserData.ui,'reloadDataButton')
+    % check for file and classifier streams if manual changes have been
+    % made
+    idx = hm.UserData.coding.fileOrClass;
+    isManuallyChanged = ~isequal(hm.UserData.coding.mark(idx),hm.UserData.coding.original.mark(idx)) || ~isequal(hm.UserData.coding.type(idx),hm.UserData.coding.original.type(idx));
+    if isManuallyChanged
+        hm.UserData.ui.reloadDataButton.Enable = 'on';
+    else
+        hm.UserData.ui.reloadDataButton.Enable = 'off';
+    end
 end
 end
 
@@ -1292,7 +1306,7 @@ end
 
 % this function is always called when some coding is changed, so this is
 % the right place to check if coding needs to be saved
-updateSaveButtonState(hm);
+updateMainButtonStates(hm);
 end
 
 function createSettings(hm)
@@ -1959,7 +1973,7 @@ end
 
 function setCrapData(hm,hndl)
 hm.UserData.coding.dataIsCrap = ~~hndl.Value;
-updateSaveButtonState(hm);
+updateMainButtonStates(hm);
 end
 
 function changeSGCallback(hm,hndl,~)
