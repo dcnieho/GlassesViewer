@@ -1667,18 +1667,16 @@ for s=1:nStream
                     if granularity<0.001
                         granularity = 0.001;
                     end
-                    nDeci = abs(min(0,floor(log10(granularity))));
-                    fmt = '#####0';
-                    if nDeci>0
-                        fmt = [fmt '.' repmat('0',1,abs(nDeci))];
-                    end
-                    fmt = [fmt ' '];
                 else
                     typeFun = @int32;
                     if granularity==0
                         granularity = 1;
                     end
-                    fmt = '#####0 ';
+                end
+                nDeci = abs(min(0,floor(log10(granularity))));
+                fmt = '#####0';
+                if nDeci>0
+                    fmt = [fmt '.' repmat('0',1,abs(nDeci))];
                 end
                 % spinner
                 jModel      = javax.swing.SpinnerNumberModel(typeFun(param.value),typeFun(param.range(1)),typeFun(param.range(2)),typeFun(granularity));
