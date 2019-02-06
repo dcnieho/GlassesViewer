@@ -2828,8 +2828,9 @@ if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt
 elseif hasShift && ~hasCtrl && ~hasAlt
     % shift click with either mouse button
     % if clicking on event, start or finish adding in the middle of it
+    % make sure we are not hovering any event marker
     ax = hitTestType(hm,'axes');
-    if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+    if hm.UserData.coding.hasCoding && ~hm.UserData.ui.coding.hoveringMarker && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
         if ~hm.UserData.ui.coding.addingIntervening
             % check which, if any, event is pressed on
