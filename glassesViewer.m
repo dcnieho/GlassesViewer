@@ -2361,7 +2361,7 @@ h = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getHeight,idx));
 idx = find(szs(:,2)==max(szs(:,2)));
 % get their actual size from the viewports (NB: Java indexing is zero based)
 w = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getWidth,idx));
-% now set size of container (230 is a good width, note that Java sizes need to be corrected for DPI. extra pizel to prevent scrollbar from appearing)
+% now set size of container (note that Java sizes need to be corrected for DPI. Extra pixel to prevent scrollbar from appearing)
 hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIScale)+1;
 % 3. to center column contents:
 % renderer = javax.swing.table.DefaultTableCellRenderer
