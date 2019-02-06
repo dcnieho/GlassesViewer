@@ -1809,27 +1809,26 @@ function executeClassifierParamChangeFnc(hm,hndl)
 info    = sscanf(hndl.Tag,'Stream%dSetting%dRecalcExecute');
 stream  = info(1);
 iSet    = info(2);
+% check if there is anything to do
+if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
+    % rerun classifier
+    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+    % update parameter storage
+    hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
+    % replace coding
+    hm.UserData.coding.mark{stream} = tempCoding.mark;
+    hm.UserData.coding.type{stream} = tempCoding.type;
+    % make back up (e.g. for manual change detection)
+    hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
+    hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
+    % refresh codings shown in GUI
+    updateCodeMarks(hm);
+    updateCodingShades(hm)
+    updateScarf(hm);
+end
 % make popup invisible
 hm.UserData.ui.coding.classifierPopup.setting(iSet).obj.Visible = 'off';
 hm.UserData.ui.classifierSettingButton.Value = 0;
-% check if there is anything to do
-if isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
-    return
-end
-% rerun classifier
-tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
-% update parameter storage
-hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
-% replace coding
-hm.UserData.coding.mark{stream} = tempCoding.mark;
-hm.UserData.coding.type{stream} = tempCoding.type;
-% make back up (e.g. for manual change detection)
-hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
-hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
-% refresh codings shown in GUI
-updateCodeMarks(hm);
-updateCodingShades(hm)
-updateScarf(hm);
 end
 
 function executeClassifierParamResetFnc(hm,hndl)
