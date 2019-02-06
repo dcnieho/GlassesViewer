@@ -1655,7 +1655,7 @@ for s=1:nStream
                         granularity = 0.001;
                     end
                     nDeci = min(0,floor(log10(granularity)));
-                    fmt = ['#####0.' repmat('0',1,nDeci) ' '];
+                    fmt = ['#####0.' repmat('0',1,abs(nDeci)) ' '];
                 else
                     typeFun = @int32;
                     if granularity==0
