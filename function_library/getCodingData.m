@@ -102,6 +102,7 @@ for p=1:nStream
         case 'filestream'
             % if nothing there yet, or always reload option set, load from
             % file
+            coding.stream.options{p}.dataDir = filedir;
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
                 tempCoding = loadCodingFile(coding.stream.options{p},endT);
                 % store
