@@ -1568,7 +1568,7 @@ if nStream>1
     hm.UserData.ui.coding.classifierPopup.select.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
     hm.UserData.ui.coding.classifierPopup.select.jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.select.obj), 'JavaFrame');
     
-    % temp button to figure out sizes
+    % temp buttons to figure out sizes
     strs = gobjects(nStream,1);
     for s=1:nStream
         strs(s) = uicontrol('Style','pushbutton','String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
@@ -1606,10 +1606,100 @@ else
 end
 
 % per stream, create a settings dialogue
+scrSz = get(0,'ScreenSize');
 for s=1:nStream
     hm.UserData.ui.coding.classifierPopup.setting(s).obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Visible','off');
     hm.UserData.ui.coding.classifierPopup.setting(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
     hm.UserData.ui.coding.classifierPopup.setting(s).jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.setting(s).obj), 'JavaFrame');
+    
+    % collect settable parameters
+    params = hm.UserData.coding.stream.options{iStream(s)}.parameters;
+    iParam = find(cellfun(@(x) isfield(x,'settable') && x.settable,params));
+    nParam = length(iParam);
+    
+    % create spinngers and labels
+    parent = hm.UserData.ui.coding.classifierPopup.setting(s).obj;
+    for p=1:nParam
+        % spinner/checkbox
+        param = params{iParam(p)};
+        type  = lower(param.type);
+        tag   = sprintf('Str%dParam%dSpinner',iStream(s),iParam(p));
+        switch type
+            case {'double','int'}
+                granularity = param.granularity;
+                if strcmp(type,'double')
+                    typeFun = @double;
+                    if granularity<0.001
+                        granularity = 0.001;
+                    end
+                    nDeci = min(0,floor(log10(granularity)));
+                    fmt = ['#####0.' repmat('0',1,nDeci) ' '];
+                else
+                    typeFun = @int32;
+                    if granularity==0
+                        granularity = 1;
+                    end
+                    fmt = '#####0 ';
+                end
+                % spinner
+                jModel      = javax.swing.SpinnerNumberModel(typeFun(param.value),typeFun(param.range(1)),typeFun(param.range(2)),typeFun(granularity));
+                jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+                comp        = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Tag',tag);
+                comp.StateChangedCallback = @(hndl,evt) changeParamCallback(hm,hndl,evt);
+                jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, fmt);
+                comp.JavaComponent.setEditor(jEditor);
+            case 'bool'
+                % checkbox
+                % TODO: implement
+        end
+        
+        % label
+        jLabel = com.mathworks.mwswing.MJLabel(param.label);
+        jLabel.setLabelFor(comp.JavaComponent);
+        jLabel.setToolTipText(param.name);
+        lbl = uicomponent(jLabel,'Parent',parent,'Units','pixels','Tag',[tag 'Label']);
+         
+        % store
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p) = comp;
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p) = lbl;
+    end
+    
+    % drawnow so we get sizes, then organize and rescale parent to fit
+    drawnow
+    % get tight extents of text labels
+    lblSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels,'uni',false);
+    lblSzs  = cellfun(@(x) [x.width x.height],lblSzs,'uni',false); lblSzs = cat(1,lblSzs{:})/hm.UserData.ui.DPIScale;
+    lblPad  = lbl.Position(4)-lblSzs(1,2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
+    lblFull = ceil(lblSzs+lblPad);
+    % get size of spinners and check boxes
+    eleSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor,'uni',false);
+    eleSzs  = cellfun(@(x) [x.width x.height],eleSzs,'uni',false); eleSzs = cat(1,eleSzs{:})/hm.UserData.ui.DPIScale;
+    elePad  = comp.Position(4)-eleSzs(1,2);         % get how much padding there is vertically. Horizontal we can't recover, but thats fine
+    eleFull = ceil(eleSzs+elePad);
+    eleFull(:,1) = max(eleFull(:,1));
+    
+    % layout the panel
+    marginsH = 4;
+    marginsV = [4 7]; % between label and spinner (and edges of window), between spinner and next option
+    
+    % 1. get popup size
+    width   = max([lblFull(:,1); eleFull(:,1)])+2*marginsH(1);
+    height  = marginsV(1)+sum(lblFull(:,2))+sum(eleFull(:,2))+(nParam-1)*marginsV(2);
+    % 2. position popup and make correct size
+    pos = [(scrSz(3)-width)/2 (scrSz(4)-height)/2 width height];
+    parent.Position = pos;
+    % 3. determine positions of elements. as Children is a stack, lowest
+    % item (last created) is on top of it, so we can just iterate through
+    % it :)
+    for p=1:nParam
+        i=nParam-p;
+        off = [marginsH marginsV(1)]+[0 sum(lblFull(end-i+1:end,2))+sum(eleFull(end-i+1:end,2))]+[0 i*marginsV(2)];
+        
+        szE = eleFull(p,:);
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position = [off szE];
+        
+        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = [off+[0 szE(2)] lblFull(p,:)];
+    end
 end
 warning(oldWarn);
 end
