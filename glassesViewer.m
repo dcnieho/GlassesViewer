@@ -280,16 +280,17 @@ butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
 hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
 
 if hm.UserData.coding.hasCoding
-    % reload coding button
+    % reload coding button (in effect undoes manual changes)
     if any(ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'}))
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-        hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reload coding','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
+        hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','<html>Remove manual<br>coding changes','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
         createReloadPopup(hm);
     else
         hm.UserData.ui.coding.reloadPopup = [];
     end
     
     % classifier settings button
+    % TODO: no classifier settings button if it doesn't have settable settings
     if any(strcmpi(hm.UserData.coding.stream.type,'classifier'))
         butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
         hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
@@ -1518,15 +1519,13 @@ end
 % show, selection panel if more than one classifier stream, or classifier
 % stream settings directly if there is only one
 if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
-    which = hm.UserData.ui.coding.classifierPopup.select;
+    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'on';
+    drawnow
+    unMinimizePopup(hm.UserData.ui.coding.classifierPopup.select);
 else
     assert(isscalar(hm.UserData.ui.coding.classifierPopup.setting))
-    which = hm.UserData.ui.coding.classifierPopup.setting;
+    openClassifierSettingsPanel(hm,1);
 end
-which.obj.Visible = 'on';
-drawnow
-
-unMinimizePopup(which);
 end
 
 function unMinimizePopup(elem,idx)
@@ -1545,13 +1544,35 @@ end
 end
 
 function openClassifierSettingsPanel(hm,idx)
+% prep state - when opening, always show parameters for current coding
+stream = hm.UserData.ui.coding.classifierPopup.setting(idx).stream;
+params = hm.UserData.coding.stream.classifier.currentSettings{stream};
+hm.UserData.ui.coding.classifierPopup.setting(idx).newParams = params;
+resetClassifierParameters(hm,idx,params);
+hm.UserData.ui.coding.classifierPopup.setting(idx).execButton.Enable = 'off';
+if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(idx).newParams,hm.UserData.coding.stream.classifier.defaults{stream})
+    % activate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(idx).resetButton.Enable = 'on';
+else
+    % deactivate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(idx).resetButton.Enable = 'off';
+end
+% make visible
 hm.UserData.ui.coding.classifierPopup.setting(idx).obj.Visible = 'on';
+% hide classifier selector popup, if any
 if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
     hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
 end
 drawnow
 
 unMinimizePopup(hm.UserData.ui.coding.classifierPopup.setting,idx);
+end
+
+function resetClassifierParameters(hm,idx,params)
+for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
+    info = sscanf(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dSpinner');
+    hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+end
 end
 
 function createClassifierPopups(hm)
@@ -1611,9 +1632,10 @@ for s=1:nStream
     hm.UserData.ui.coding.classifierPopup.setting(s).obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Visible','off');
     hm.UserData.ui.coding.classifierPopup.setting(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
     hm.UserData.ui.coding.classifierPopup.setting(s).jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.setting(s).obj), 'JavaFrame');
+    hm.UserData.ui.coding.classifierPopup.setting(s).stream = iStream(s);
     
     % collect settable parameters
-    params = hm.UserData.coding.stream.options{iStream(s)}.parameters;
+    params = hm.UserData.coding.stream.classifier.currentSettings{iStream(s)};
     iParam = find(cellfun(@(x) isfield(x,'settable') && x.settable,params));
     nParam = length(iParam);
     
@@ -1623,7 +1645,7 @@ for s=1:nStream
         % spinner/checkbox
         param = params{iParam(p)};
         type  = lower(param.type);
-        tag   = sprintf('Str%dParam%dSpinner',iStream(s),iParam(p));
+        tag   = sprintf('Stream%dSetting%dParam%dSpinner',iStream(s),s,iParam(p));
         switch type
             case {'double','int'}
                 granularity = param.granularity;
@@ -1645,7 +1667,7 @@ for s=1:nStream
                 jModel      = javax.swing.SpinnerNumberModel(typeFun(param.value),typeFun(param.range(1)),typeFun(param.range(2)),typeFun(granularity));
                 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
                 comp        = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Tag',tag);
-                comp.StateChangedCallback = @(hndl,evt) changeParamCallback(hm,hndl,evt);
+                comp.StateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
                 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, fmt);
                 comp.JavaComponent.setEditor(jEditor);
             case 'bool'
@@ -1662,6 +1684,7 @@ for s=1:nStream
         % store
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p) = comp;
         hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p) = lbl;
+        hm.UserData.ui.coding.classifierPopup.setting(s).newParams   = params;
     end
     
     % drawnow so we get sizes, then organize and rescale parent to fit
@@ -1679,12 +1702,14 @@ for s=1:nStream
     eleFull(:,1) = max(eleFull(:,1));
     
     % layout the panel
-    marginsH = 4;
+    marginsH = [4 8];
     marginsV = [4 7]; % between label and spinner (and edges of window), between spinner and next option
+    buttonSz  = [60 24];
+    buttonSz2 = [100 24];
     
     % 1. get popup size
-    width   = max([lblFull(:,1); eleFull(:,1)])+2*marginsH(1);
-    height  = marginsV(1)+sum(lblFull(:,2))+sum(eleFull(:,2))+(nParam-1)*marginsV(2);
+    width   = max(max([lblFull(:,1); eleFull(:,1)]),buttonSz(1)+buttonSz2(1)+marginsH(2))+2*marginsH(1);
+    height  = marginsV(1)+sum(lblFull(:,2))+sum(eleFull(:,2))+(nParam)*marginsV(2)+buttonSz(2);
     % 2. position popup and make correct size
     pos = [(scrSz(3)-width)/2 (scrSz(4)-height)/2 width height];
     parent.Position = pos;
@@ -1693,15 +1718,87 @@ for s=1:nStream
     % it :)
     for p=1:nParam
         i=nParam-p;
-        off = [marginsH marginsV(1)]+[0 sum(lblFull(end-i+1:end,2))+sum(eleFull(end-i+1:end,2))]+[0 i*marginsV(2)];
+        off = [marginsH(1) marginsV(1)]+[0 sum(lblFull(end-i+1:end,2))+sum(eleFull(end-i+1:end,2))]+[0 (i+1)*marginsV(2)]+[0 buttonSz(2)];
         
         szE = eleFull(p,:);
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position = [off szE];
         
         hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = [off+[0 szE(2)] lblFull(p,:)];
     end
+    
+    % create buttons
+    tag   = sprintf('Stream%dSetting%dRecalcExecute',iStream(s),s);
+    hm.UserData.ui.coding.classifierPopup.setting(s).execButton = uicontrol(...
+        'Style','pushbutton','Tag',tag,'Position',[marginsH(1) marginsV(1) buttonSz],...
+        'Callback',@(hBut,~) executeClassifierParamChangeFnc(hm,hBut),'String','Recalculate',...
+        'Parent',hm.UserData.ui.coding.classifierPopup.setting(s).obj);
+    hm.UserData.ui.coding.classifierPopup.setting(s).resetButton = uicontrol(...
+        'Style','pushbutton','Tag',tag,'Position',[marginsH(1)+buttonSz(1)+marginsH(2) marginsV(1) buttonSz2],...
+        'Callback',@(hBut,~) executeClassifierParamResetFnc(hm,hBut),'String','Restore defaults',...
+        'Parent',hm.UserData.ui.coding.classifierPopup.setting(s).obj);
 end
 warning(oldWarn);
+end
+
+function changeClassifierParamCallback(hm,hndl,~)
+% get new value
+newVal = hndl.getValue;
+
+% set in temp parameter store
+info = sscanf(hndl.MatlabHGContainer.Tag,'Stream%dSetting%dParam%dSpinner');
+hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams{info(3)}.value = newVal;
+
+% update buttons
+if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams,hm.UserData.coding.stream.classifier.currentSettings{info(1)})
+    % activate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(info(2)).execButton.Enable = 'on';
+else
+    % deactivate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(info(2)).execButton.Enable = 'off';
+end
+if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams,hm.UserData.coding.stream.classifier.defaults{info(1)})
+    % activate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(info(2)).resetButton.Enable = 'on';
+else
+    % deactivate apply button
+    hm.UserData.ui.coding.classifierPopup.setting(info(2)).resetButton.Enable = 'off';
+end
+end
+
+function executeClassifierParamChangeFnc(hm,hndl)
+% find which
+info    = sscanf(hndl.Tag,'Stream%dSetting%dRecalcExecute');
+stream  = info(1);
+iSet    = info(2);
+% make popup invisible
+hm.UserData.ui.coding.classifierPopup.setting(iSet).obj.Visible = 'off';
+hm.UserData.ui.classifierSettingButton.Value = 0;
+% check if there is anything to do
+if isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
+    return
+end
+% rerun classifier
+tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+% update parameter storage
+hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
+% replace coding
+hm.UserData.coding.mark{stream} = tempCoding.mark;
+hm.UserData.coding.type{stream} = tempCoding.type;
+% make back up (e.g. for manual change detection)
+hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
+hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
+% refresh codings shown in GUI
+updateCodeMarks(hm);
+updateCodingShades(hm)
+updateScarf(hm);
+end
+
+function executeClassifierParamResetFnc(hm,hndl)
+% find which
+info    = sscanf(hndl.Tag,'Stream%dSetting%dRecalcExecute');
+stream  = info(1);
+iSet    = info(2);
+resetClassifierParameters(hm,iSet,hm.UserData.coding.stream.classifier.defaults{stream});
 end
 
 function createReloadPopup(hm)
@@ -2327,6 +2424,23 @@ try
             % carry on
         end
     end
+catch
+    % carry on
+end
+
+% clean up popups
+try
+    delete(hm.UserData.ui.coding.reloadPopup.obj);
+catch
+    % carry on
+end
+try
+    delete(hm.UserData.ui.coding.classifierPopup.select);
+catch
+    % carry on
+end
+try
+    delete(hm.UserData.ui.coding.classifierPopup.setting);
 catch
     % carry on
 end
