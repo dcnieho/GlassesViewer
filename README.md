@@ -59,7 +59,9 @@ on the [settings of some annotation streams](#annotation-streams)).
   an intervening annotation. Make a second shift-click to close the added
   interval. Use this, e.g., to add a missing saccade in a too long fixation.
   The `escape` key cancels this action, as does clicking anywhere without the
-  shift key held down.
+  shift key held down. Shift-clicking, keeping the mouse button down, dragging
+  and releasing adds an intervening annotation for the range over which the
+  mouse moved without a need for the second click.
 - dragging with right mouse button pans the plot, moves the visible data in the
   window
 - double-click on data axis sets time to clicked time

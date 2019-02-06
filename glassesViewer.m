@@ -2828,16 +2828,15 @@ if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt
 elseif hasShift && ~hasCtrl && ~hasAlt
     % shift click with either mouse button
     % if clicking on event, start or finish adding in the middle of it
-    % make sure we are not hovering any event marker
     ax = hitTestType(hm,'axes');
-    if hm.UserData.coding.hasCoding && ~hm.UserData.ui.coding.hoveringMarker && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
+    if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
         if ~hm.UserData.ui.coding.addingIntervening
             % check which, if any, event is pressed on
             for s=1:length(hm.UserData.coding.mark)
                 % pressed in already coded area. see which event tag was selected
                 evtTagIdx = find(mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end));
-                if ~isempty(evtTagIdx) && ~hm.UserData.coding.stream.isLocked(s)
+                if isscalar(evtTagIdx) && ~hm.UserData.coding.stream.isLocked(s)    % isscalar avoid both situation when not on an event and when exactly on a code mark (that returns two hits), both are places where we cannot add intervening event
                     hm.UserData.ui.coding.addingInterveningEvt = [hm.UserData.ui.coding.addingInterveningEvt; s evtTagIdx hm.UserData.coding.mark{s}(evtTagIdx+[0 1])];
                 end
             end
@@ -2855,8 +2854,7 @@ elseif hasShift && ~hasCtrl && ~hasAlt
                 end
             end
         else
-            % try adding second marker, closing off event if placed well
-            tryAddInterveningEvt(hm,mark)
+            % do nothing, adding second marker is done on mouse release
         end
     end
 elseif hasCtrl && ~hasShift && ~hasAlt
@@ -2903,6 +2901,8 @@ if hm.UserData.ui.coding.addingIntervening
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
+        % try adding intervening event, allows shift-click-drag adding an
+        % intervening event
         tryAddInterveningEvt(hm,mark);
     end
 elseif hm.UserData.ui.grabbedTime || hm.UserData.ui.coding.grabbedMarker
@@ -2918,9 +2918,13 @@ end
 
 function tryAddInterveningEvt(hm,mark)
 % adding second marker, closing off event if placed well
-if hm.UserData.ui.coding.interveningTempLoc==mark
-    % clicked same location twice, pretend second didn't happen
-    % as likely in error
+if hm.UserData.ui.coding.interveningTempLoc==mark || isnan(hm.UserData.ui.coding.interveningTempLoc)
+    % got here in multiple cases:
+    % 1) clicked same location twice, pretend second didn't happen as
+    %    likely in error
+    % 2) from mouse release handler for first click, mouse was not dragged
+    % 3) from mouse release handler for second click, event already added
+    %    from the click handler
     return;
 end
 marks = sort([hm.UserData.ui.coding.interveningTempLoc mark]);
