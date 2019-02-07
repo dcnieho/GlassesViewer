@@ -838,7 +838,6 @@ for s=1:nStream
 end
 
 % make buttons in each
-baseColor = hm.UserData.ui.coding.subpanel(1).BackgroundColor;
 for p=1:length(buttons)
     assert(sum(qFlag(p,:))==0||sum(qFlag(p,:))==1)
     if any(qFlag(p,:))
@@ -858,18 +857,20 @@ for p=1:length(buttons)
             assert(q==size(buttons{p},1)-1)
             start(1) = max(rowWidths)-marginsB(1)-buttonSz(1);
         else
-            if isempty(colors{p}{q})
-                clr = baseColor*.999;   % set color explicitly slightly different, else visually acts quite differently
-            else
-                clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
-            end
             btnLbl = buttons{p}{q,1};
             btnLbl(btnLbl=='*'|btnLbl=='+') = [];
             hm.UserData.ui.coding.buttons(butIdx) = uicontrol(...
                 'Style','togglebutton','Tag',sprintf('%s',buttons{p}{q,1}),'Position',[start buttonSz],...
                 'Callback',@(hBut,~) codingButtonCallback(hBut,hm,p,buttons{p}{q,:}),'String',btnLbl,...
-                'Parent',hm.UserData.ui.coding.subpanel(p),...
-                'BackgroundColor',clr);
+                'Parent',hm.UserData.ui.coding.subpanel(p));
+            
+            baseColor = hm.UserData.ui.coding.buttons(butIdx).BackgroundColor;
+            if isempty(colors{p}{q})
+                clr = baseColor*.999;   % set color explicitly slightly different, else visually acts quite differently
+            else
+                clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
+            end
+            hm.UserData.ui.coding.buttons(butIdx).BackgroundColor = clr;
             
             % advance to next pos
             start(1) = start(1)+buttonSz(1)+marginsB(2);
