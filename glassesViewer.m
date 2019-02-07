@@ -1343,6 +1343,8 @@ updateMainButtonStates(hm);
 end
 
 function createSettings(hm)
+% TODO: don't hardcode shit, nothing fits if items have a different size
+% (OSX, Roy).
 % panel at max spans between right of VCR and right of reset plot limits
 % button
 left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
