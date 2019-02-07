@@ -1317,7 +1317,7 @@ right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
 bottom  = hm.UserData.plot.axRect(end,2);
 % settings area
-width   = min(335,right-left-20);
+width   = min(338,right-left-20);
 height  = min(230,top-bottom-20);
 % center it
 leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
@@ -1334,19 +1334,19 @@ parent = hm.UserData.ui.setting.panel;
 c=0;
 % 1. SG filter
 c=c+1;
-SGPos       = [140 parent.InnerPosition(4)-5-20 60 20];
+SGPos       = [165 parent.InnerPosition(4)-5-20 60 20];
 ts          = 1000/hm.UserData.data.eye.fs;
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
 comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',SGPos,'Tag','SGSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0 ms ');
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0');
 comps(c).JavaComponent.setEditor(jEditor);
 
 c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Savitzky-Golay window');
+jLabel      = com.mathworks.mwswing.MJLabel('Savitzky-Golay window (ms)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
-jLabel.setToolTipText('window length of Savitzky-Golay differentiation filter');
+jLabel.setToolTipText('window length of Savitzky-Golay differentiation filter in milliseconds');
 comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,SGPos(2),SGPos(1)-10,SGPos(4)],'Tag','SGSpinnerLabel');
 
 % 2 separator
@@ -1424,18 +1424,18 @@ comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',sepPo
 
 % 5 plotLineWidth
 c=c+1;
-LWPos       = [140 sepPos(2)-sepPos(4)-5-20 60 20];
+LWPos       = [165 sepPos(2)-sepPos(4)-5-20 60 20];
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
 comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',LWPos,'Tag','LWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0.0 pix ');
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0.0');
 comps(c).JavaComponent.setEditor(jEditor);
 
 c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Plot line width');
+jLabel      = com.mathworks.mwswing.MJLabel('Plot line width (pix)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
-jLabel.setToolTipText('Line width for the plotted data');
+jLabel.setToolTipText('Line width for the plotted data (pixels)');
 comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,LWPos(2),LWPos(1)-10,LWPos(4)],'Tag','LWSpinnerLabel');
 
 % 6 separator
@@ -1485,12 +1485,12 @@ jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindo
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
 comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',CWPos,'Tag','TWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.00 s ');
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.00');
 comps(c).JavaComponent.setEditor(jEditor);
 
 c=c+1;
 LblPos      = [CWPos(1),CWPos(2)+5+20,CWPos(1)-10,CWPos(4)];
-jLabel      = com.mathworks.mwswing.MJLabel('Time window');
+jLabel      = com.mathworks.mwswing.MJLabel('Time window (s)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
 comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',LblPos,'Tag','TWSpinnerLabel');
 
