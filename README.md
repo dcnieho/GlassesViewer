@@ -126,6 +126,7 @@ In `settings.coding`, the following fields are understood:
 | --- | --- |
 |`streams`|Array of [annotation stream settings](#annotation-streams)|
 |`colors`|Array of RGB colors used for coloring events, format: `[[R, G, B],[R, G, B]]`|
+|`closePanelAfterCode`|Boolean indicating whether coding panel is closed after adding a new annotation (true), or not (false).|
 
 ### annotation streams
 Each of the annotation streams takes labels and a color coding in their
