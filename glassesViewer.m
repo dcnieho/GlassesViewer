@@ -1565,6 +1565,7 @@ stream = hm.UserData.ui.coding.classifierPopup.setting(idx).stream;
 params = hm.UserData.coding.stream.classifier.currentSettings{stream};
 hm.UserData.ui.coding.classifierPopup.setting(idx).newParams = params;
 resetClassifierParameters(hm,idx,params);
+hm.UserData.ui.coding.classifierPopup.setting(idx).execButton.String = 'Recalculate';
 hm.UserData.ui.coding.classifierPopup.setting(idx).execButton.Enable = 'off';
 if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(idx).newParams,hm.UserData.coding.stream.classifier.defaults{stream})
     % activate apply button
@@ -1733,7 +1734,7 @@ for s=1:nStream
     % layout the panel
     marginsH = [4 8];
     marginsV = [4 7]; % between label and spinner (and edges of window), between spinner and next option
-    buttonSz  = [70 24];
+    buttonSz  = [85 24];
     buttonSz2 = [100 24];
     
     % 1. get popup size
@@ -1812,6 +1813,7 @@ iSet    = info(2);
 % check if there is anything to do
 if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
     % rerun classifier
+    hndl.String = 'Recalculating...';
     tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
     % update parameter storage
     hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
@@ -1825,10 +1827,11 @@ if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.Use
     updateCodeMarks(hm);
     updateCodingShades(hm)
     updateScarf(hm);
+    % notify done through button
+    hndl.String = 'Done';
+    pause(10)
+    hndl.String = 'Recalculate';
 end
-% make popup invisible
-hm.UserData.ui.coding.classifierPopup.setting(iSet).obj.Visible = 'off';
-hm.UserData.ui.classifierSettingButton.Value = 0;
 end
 
 function executeClassifierParamResetFnc(hm,hndl)
