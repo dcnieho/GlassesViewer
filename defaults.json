@@ -19,6 +19,7 @@
     "windowLength": 300
   },
   "coding": {
+    "closePanelAfterCode": true,
     "streams": [
       {
         "type": "syncIn",

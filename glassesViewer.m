@@ -74,6 +74,8 @@ if isempty(hm.UserData.ui.doubleClickInterval)
     % so be it.
     hm.UserData.ui.doubleClickInterval = 550;
 end
+% this timer executes if there was no second click within double-click
+% interval
 hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
 
 %% load data
@@ -870,6 +872,8 @@ for p=1:length(buttons)
         end
     end
 end
+% init state
+hm.UserData.ui.coding.panelIsEditingCode = false;
 end
 
 function codingButtonCallback(hBut,hm,stream,butLbl,evtCode)
@@ -985,6 +989,11 @@ else
     return
 end
 
+% close panel if adding code
+if hm.UserData.settings.coding.closePanelAfterCode && ~hm.UserData.ui.coding.panelIsEditingCode
+    hm.UserData.ui.coding.panel.obj.Visible = 'off';
+end
+
 % update coding shades and scarf plot to reflect new code
 updateCodingShades(hm)
 updateScarf(hm);
@@ -1031,7 +1040,9 @@ otherStream = 1:length(hm.UserData.ui.coding.subpanel);
 otherStream(otherStream==stream) = [];
 mPosXAx = hm.UserData.ui.coding.panel.mPosAx(1);
 if mPosXAx<=markToTime(hm.UserData.coding.mark{stream}(end),hm.UserData.data.eye.fs)
-    % pressed in already coded area. see which event tag was selected
+    % pressed in already coded area.
+    hm.UserData.ui.coding.panelIsEditingCode = true;
+    % see which event tag was selected
     marks = markToTime(hm.UserData.coding.mark{stream},hm.UserData.data.eye.fs);
     evtTagIdx = find(mPosXAx>marks(1:end-1) & mPosXAx<=marks(2:end));
     hm.UserData.ui.coding.panel.evtTagIdx(stream) = evtTagIdx;
@@ -1056,6 +1067,7 @@ if mPosXAx<=markToTime(hm.UserData.coding.mark{stream}(end),hm.UserData.data.eye
 else
     % check for other streams whether click is also beyond last event, else
     % disable that stream
+    hm.UserData.ui.coding.panelIsEditingCode = false;
     for p=1:length(otherStream)
         if mPosXAx<=markToTime(hm.UserData.coding.mark{otherStream(p)}(end),hm.UserData.data.eye.fs)
             disableCodingStreamInPanel(hm,otherStream(p));
