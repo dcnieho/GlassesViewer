@@ -220,7 +220,7 @@ end
 
 if hm.UserData.coding.hasCoding
     % prepare coder popup panel
-    makeCoderPanel(hm);
+    createCoderPanel(hm);
     
     % draw actual coding, if any
     hm.UserData.ui.coding.currentStream = nan;
@@ -773,7 +773,7 @@ while ~isempty(transform)
 end
 end
 
-function makeCoderPanel(hm)
+function createCoderPanel(hm)
 marginsP = [3 2];
 marginsB = [5 5];   % horizontal: [margin from left edge, margin between buttons]
 buttonSz = [40 24];
