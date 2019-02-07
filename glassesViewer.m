@@ -2,9 +2,6 @@ function hm = glassesViewer(settings)
 close all
 
 % TODO: op Roy's mac past video niet helemaal op scherm when opstarten
-% TODO: java maximize call gebruiken (of wacht, was dat een matlab call op
-% recente versie ofzo? volgens mij latter. Weet meer voor welk project ik
-% dat uitgevonden had...
 
 qDEBUG = true;
 if qDEBUG
@@ -35,27 +32,34 @@ end
 
 
 %% init figure
-hm=figure('Visible','off');
+hm=figure();
 hm.Name='Tobii Glasses 2 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
+hm.MenuBar = 'none';
+
+% set figure to near full screen
+ws          = get(0,'ScreenSize');
+if isprop(hm,'WindowState')
+    hm.WindowState = 'Maximized';
+    drawnow
+    pos     = hm.OuterPosition;
+    pos(1)  = max(pos(1),ws(1));
+    pos(3)  = min(pos(3),ws(3));
+    set(hm,'WindowState','normal','OuterPosition',pos);
+else
+    hmmar       = [0 0 0 40];    % left right top bottom
+    hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
+end
+hm.Visible = 'off';
+drawnow
+
+% setup callbacks for interaction
 hm.CloseRequestFcn = @KillCallback;
 hm.WindowKeyPressFcn = @KeyPress;
 hm.WindowButtonMotionFcn = @MouseMove;
 hm.WindowButtonDownFcn = @MouseClick;
 hm.WindowButtonUpFcn = @MouseRelease;
-hm.MenuBar = 'none';
-
-% set figure to near full screen
-if isfield(hm,'WindowState')
-    hm.WindowState = 'Maximized';
-    pos = hm.OuterPosition;
-    set(hm,'WindowState','normal','OuterPosition',pos);
-else
-    ws          = get(0,'ScreenSize');
-    hmmar       = [0 0 0 40];    % left right top bottom
-    hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
-end
 
 % need to figure out if any DPI scaling active, some components work in
 % original screen space
