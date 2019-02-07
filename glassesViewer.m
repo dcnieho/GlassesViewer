@@ -2380,7 +2380,7 @@ idx = find(szs(:,2)==max(szs(:,2)));
 % get their actual size from the viewports (NB: Java indexing is zero based)
 w = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getWidth,idx));
 % now set size of container (note that Java sizes need to be corrected for DPI. Extra pixel to prevent scrollbar from appearing)
-hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIScale)+1;
+hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIScale)+4;
 % 3. to size columns and center column contents:
 % jTable = jScroll.getViewport.getView;
 % jTable.setAutoResizeMode(jTable.AUTO_RESIZE_ALL_COLUMNS); % NB: doesn't
