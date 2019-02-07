@@ -62,6 +62,8 @@ on the [settings of some annotation streams](#annotation-streams)).
   shift key held down. Shift-clicking, keeping the mouse button down, dragging
   and releasing adds an intervening annotation for the range over which the
   mouse moved without a need for the second click.
+- control-shift-clicking starts adding intervening annotation across all
+  streams instead of only current stream.
 - dragging with right mouse button pans the plot, moves the visible data in the
   window
 - double-click on data axis sets time to clicked time

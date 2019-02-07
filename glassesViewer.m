@@ -1,6 +1,11 @@
 function hm = glassesViewer(settings)
 close all
 
+% TODO: op Roy's mac past video niet helemaal op scherm when opstarten
+% TODO: java maximize call gebruiken (of wacht, was dat een matlab call op
+% recente versie ofzo? volgens mij latter. Weet meer voor welk project ik
+% dat uitgevonden had...
+
 qDEBUG = true;
 if qDEBUG
     dbstop if error
@@ -2466,6 +2471,8 @@ end
 end
 
 function KillCallback(hm,~)
+% TODO check if unsaved data, ask to confirm
+
 % delete timers
 try
     stop(hm.UserData.time.mainTimer);
@@ -2817,13 +2824,15 @@ function MouseClick(hm,~)
 % 2. shift-click: only operates when clicking on already coded interval.
 %    Start or finish adding an intervening event: so need to make two
 %    shift-clicks in a row to add an event inside an already coded interval
-%    (e.g. to add a missed saccade during a fixation interval)
-% 3. control-click: if hovering on coding marker, start drag of coding
+%    (e.g. to add a missed saccade during a fixation interval).
+% 3. Control-shift-click to add intervening event across all eligible
+%    streams.
+% 4. control-click: if hovering on coding marker, start drag of coding
 %    markers. Will drag markers in all streams that are aligned with the
 %    currently selected ones.
-% 4. right click: start panning plot along time and/or value axis by means
+% 5. right click: start panning plot along time and/or value axis by means
 %    of drag
-% 5. double-click: set current time to double-clicked location
+% 6. double-click: set current time to double-clicked location
 
 % get modifiers
 hasCtrl     = any(strcmp('control',hm.CurrentModifier));
@@ -2858,15 +2867,27 @@ if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt
             end
         end
     end
-elseif hasShift && ~hasCtrl && ~hasAlt
+elseif hasShift && ~hasAlt
     % shift click with either mouse button
     % if clicking on event, start or finish adding in the middle of it
+    % if control also held _during first click_, this adds across eligible
+    % streams. If not, only current stream
+    qAllStream = hasCtrl;
     ax = hitTestType(hm,'axes');
+    
+    % TODO: allow adding codes directly coincident with event start/end (if
+    % there are more than two non-flag categories, otherwise not possible).
+    % Store the mark we're adding, and determine if eating end of previous
+    % or start of next when trying to add intervening.
+    
     if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
         if ~hm.UserData.ui.coding.addingIntervening
             % check which, if any, event is pressed on
             for s=1:length(hm.UserData.coding.mark)
+                if ~qAllStream && s~=hm.UserData.ui.coding.currentStream
+                    continue;
+                end
                 % pressed in already coded area. see which event tag was selected
                 evtTagIdx = find(mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end));
                 if isscalar(evtTagIdx) && ~hm.UserData.coding.stream.isLocked(s)    % isscalar avoid both situation when not on an event and when exactly on a code mark (that returns two hits), both are places where we cannot add intervening event
