@@ -1200,7 +1200,8 @@ function updateCodingShades(hm)
 if ~hm.UserData.coding.hasCoding
     return;
 end
-axs = hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf'));
+qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
+axs = hm.UserData.plot.ax(qAx);
 % get which element we should expect given coded events
 toAdd = [hm.UserData.coding.type{hm.UserData.ui.coding.currentStream}; hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(1:end-1); hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(2:end)];
 toAdd = [repmat(hm.UserData.ui.coding.currentStream,1,size(toAdd,2)); toAdd]; % add stream number
@@ -1231,17 +1232,28 @@ for p=1:length(add)
         clr = {};
         alpha = 0.0;
     else
-        clr = {'FaceVertexCData',repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+        baseClr = hm.UserData.coding.codeColors{info(1)}{clrIdx}./255;
+        clr = {'FaceVertexCData',repmat(baseClr,4,1),'FaceColor','flat'};
         if sum(bits)>1
-            clr{2}(1,:) = clr{2}(1,:)/2;
-            clr{2}(2,:) = clr{2}(2,:)/2+.5;
+            bitsL = find(bits);
+            flagClr = hm.UserData.coding.codeColors{info(1)}{bitsL(end)}./255;
+            clr{2}(2,:) = flagClr;
+            clr{2}([1 3],:) = repmat(flagClr*.5+baseClr*.5,2,1);
             clr{4} = 'interp';
         end
         alpha = 0.3;
     end
     markTimes = markToTime(info([3 4]),hm.UserData.data.eye.fs);
+    lims = hm.UserData.plot.defaultValueScale(:,qAx);
     for a=1:length(axs)
-        patch('XData',markTimes([1 2 2 1]),'YData', [10^6 10^6 -10^5 -10^5],clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',axs(a),'Tag',add{p});
+        idx = [1 1 2 2];
+        if strcmp(axs(a).YDir,'reverse')
+            idx = fliplr(idx);
+        end
+        theLims = lims(:,a);
+        theLims = theLims+[-1;1]*.2.*diff(theLims);  % 20% extra at both sides
+        theLims = theLims(idx);
+        patch('XData',markTimes([1 2 2 1]),'YData', theLims,clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',axs(a),'Tag',add{p});
     end
 end
 % make sure all shades are on the bottom
@@ -1286,10 +1298,13 @@ for p=1:length(add)
         clr = {};
         alpha = 0.0;
     else
-        clr = {'FaceVertexCData',repmat(hm.UserData.coding.codeColors{info(1)}{clrIdx}./255,4,1),'FaceColor','flat'};
+        baseClr = hm.UserData.coding.codeColors{info(1)}{clrIdx}./255;
+        clr = {'FaceVertexCData',repmat(baseClr,4,1),'FaceColor','flat'};
         if sum(bits)>1
-            clr{2}(1,:) = clr{2}(1,:)/2;
-            clr{2}(2,:) = clr{2}(2,:)/2+.5;
+            bitsL = find(bits);
+            flagClr = hm.UserData.coding.codeColors{info(1)}{bitsL(end)}./255;
+            clr{2}(2,:) = flagClr;
+            clr{2}([1 3],:) = repmat(flagClr*.5+baseClr*.5,2,1);
             clr{4} = 'interp';
         end
         alpha = 1.0;
