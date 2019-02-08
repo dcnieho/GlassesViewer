@@ -50,6 +50,7 @@ if isprop(hm,'WindowState')
 else
     hmmar       = [0 0 0 40];    % left right top bottom
     hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
+    drawnow
 end
 hm.Visible = 'off';
 drawnow
