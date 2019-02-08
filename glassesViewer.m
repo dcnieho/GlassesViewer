@@ -37,6 +37,7 @@ hm.Name='Tobii Glasses 2 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
 hm.MenuBar = 'none';
+hm.UserData.fileDir = filedir;
 
 % set figure to near full screen
 ws          = get(0,'ScreenSize');
@@ -90,11 +91,11 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 
 %% load data
 % read glasses data
-hm.UserData.data            = getTobiiDataFromGlasses(filedir,qDEBUG);
+hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
-    hm.UserData.coding           = getCodingData(filedir, '', hm.UserData.settings.coding, hm.UserData.data);
+    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
     hm.UserData.coding.hasCoding = true;
 else
     hm.UserData.coding.hasCoding = false;
@@ -324,7 +325,7 @@ checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
 hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.coding.dataIsCrap,'Callback',@(hndl,~,~) setCrapData(hm,hndl));
 
 %% load videos
-segments = FolderFromFolder(fullfile(filedir,'segments'));
+segments = FolderFromFolder(fullfile(hm.UserData.fileDir,'segments'));
 for s=1:length(segments)
     for p=1:1+hm.UserData.ui.haveEyeVideo
         switch p
@@ -333,7 +334,7 @@ for s=1:length(segments)
             case 2
                 file = 'eyesstream.mp4';
         end
-        hm.UserData.vid.objs(s,p) = makeVideoReader(fullfile(filedir,'segments',segments(s).name,file),false);
+        hm.UserData.vid.objs(s,p) = makeVideoReader(fullfile(hm.UserData.fileDir,'segments',segments(s).name,file),false);
         % for warmup, read first frame
         hm.UserData.vid.objs(s,p).StreamHandle.read(1);
     end
@@ -535,9 +536,9 @@ createSettings(hm);
 
 % save coding data button
 butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(end,2) 100 30];
-hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm,filedir));
+hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
 hm.UserData.ui.savedCoding = [];
-saveCodingData(hm,filedir); % save starting point
+saveCodingData(hm); % save starting point
 
 
 %% all done, make sure GUI is shown
@@ -558,10 +559,10 @@ end
 
 
 %% helpers etc
-function saveCodingData(hm,filedir)
+function saveCodingData(hm)
 coding = rmfield(hm.UserData.coding,'hasCoding');
 fname = 'coding.mat';
-save(fullfile(filedir,fname),'-struct', 'coding');
+save(fullfile(hm.UserData.fileDir,fname),'-struct', 'coding');
 % store copy of what we just saved, so we can check if new save is needed
 % by user
 hm.UserData.ui.savedCoding = coding;
@@ -571,15 +572,14 @@ end
 function updateMainButtonStates(hm)
 % save button
 if isfield(hm.UserData.ui,'savedCoding')
-    % ignore log when checking for equality
-    if isequal(rmFieldOrContinue(hm.UserData.ui.savedCoding,'log'),rmFieldOrContinue(hm.UserData.coding,{'log','hasCoding'}))
-        hm.UserData.ui.saveCodingDataButton.Enable = 'off';
-        hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
-        clr = [0 1 0];
-    else
+    if hasUnsavedCoding(hm)
         hm.UserData.ui.saveCodingDataButton.Enable = 'on';
         hm.UserData.ui.saveCodingDataButton.String = 'save coding';
         clr = [1 0 0];
+    else
+        hm.UserData.ui.saveCodingDataButton.Enable = 'off';
+        hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
+        clr = [0 1 0];
     end
     opacity = .12;
     baseColor = hm.UserData.ui.toggleSettingsButton.BackgroundColor;
@@ -598,6 +598,11 @@ if isfield(hm.UserData.ui,'reloadDataButton')
         hm.UserData.ui.reloadDataButton.Enable = 'off';
     end
 end
+end
+
+function hasUnsaved = hasUnsavedCoding(hm)
+% ignore log when checking for equality
+hasUnsaved = isfield(hm.UserData.ui,'savedCoding') && ~isequal(rmFieldOrContinue(hm.UserData.ui.savedCoding,'log'),rmFieldOrContinue(hm.UserData.coding,{'log','hasCoding'}));
 end
 
 function setupPlots(hm,plotOrder,nTotal)
@@ -2479,7 +2484,23 @@ end
 end
 
 function KillCallback(hm,~)
-% TODO check if unsaved data, ask to confirm
+% if has unsaved data, ask to confirm first before continue to close
+if hasUnsavedCoding(hm)
+    answer = questdlg('Would to save your changes before exiting?', ...
+        'Unsaved data', ...
+        'Save coding','Discard unsaved coding','Don''t exit','Don''t exit');
+    % Handle response
+    switch answer
+        case 'Save coding'
+            saveCodingData(hm);
+            % then continue executing this function, which exits
+        case 'Discard unsaved coding'
+            % nothing to do, continue executing this function, which exits
+        case 'Don''t exit'
+            % cancel, stop executing this function
+            return
+    end
+end
 
 % delete timers
 try
