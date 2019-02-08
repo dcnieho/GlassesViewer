@@ -249,10 +249,10 @@ hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlacehold
 hm.UserData.ui.coding.hoveringMarker        = false;
 hm.UserData.ui.coding.hoveringWhichMarker   = nan;
 % UI for adding event in middle of another
-hm.UserData.ui.coding.addingIntervening     = false;
-hm.UserData.ui.coding.addingInterveningEvt  = [];
-hm.UserData.ui.coding.interveningTempLoc    = nan;
-hm.UserData.ui.coding.interveningTempElem   = matlab.graphics.GraphicsPlaceholder;
+hm.UserData.ui.coding.addingIntervening         = false;
+hm.UserData.ui.coding.addingInterveningStream   = [];
+hm.UserData.ui.coding.interveningTempLoc        = nan;
+hm.UserData.ui.coding.interveningTempElem       = matlab.graphics.GraphicsPlaceholder;
 
 % reset plot limits button
 butPos = [hm.UserData.plot.axRect(end,3)+10 hm.UserData.plot.axRect(end,2) 100 30];
@@ -2903,12 +2903,6 @@ elseif hasShift && ~hasAlt
     % streams. If not, only current stream
     qAllStream = hasCtrl;
     ax = hitTestType(hm,'axes');
-    
-    % TODO: allow adding codes directly coincident with event start/end (if
-    % there are more than two non-flag categories, otherwise not possible).
-    % Store the mark we're adding, and determine if eating end of previous
-    % or start of next when trying to add intervening.
-    
     if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
         mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
         if ~hm.UserData.ui.coding.addingIntervening
@@ -2918,26 +2912,31 @@ elseif hasShift && ~hasAlt
                     continue;
                 end
                 % pressed in already coded area. see which event tag was selected
-                evtTagIdx = find(mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end));
-                if isscalar(evtTagIdx) && ~hm.UserData.coding.stream.isLocked(s)    % isscalar avoid both situation when not on an event and when exactly on a code mark (that returns two hits), both are places where we cannot add intervening event
-                    hm.UserData.ui.coding.addingInterveningEvt = [hm.UserData.ui.coding.addingInterveningEvt; s evtTagIdx hm.UserData.coding.mark{s}(evtTagIdx+[0 1])];
+                qEvtTag = mark>=hm.UserData.coding.mark{s}(1:end-1) & mark<=hm.UserData.coding.mark{s}(2:end);
+                if any(qEvtTag) && ~hm.UserData.coding.stream.isLocked(s)
+                    if ~any(mark==hm.UserData.coding.mark{s}(2:end-1)) || size(hm.UserData.coding.codeCats{s},1)>2   % if adding exactly on top of existing mark, that can only be done in stream with more than two events. Exception is its start of first or end of last event, so don't check coincidence with first and last mark
+                        hm.UserData.ui.coding.addingInterveningStream = [hm.UserData.ui.coding.addingInterveningStream; s];
+                    end
                 end
             end
             % pressed on any event, then yes, we're starting to add an
             % intervening event
-            hm.UserData.ui.coding.addingIntervening = ~isempty(hm.UserData.ui.coding.addingInterveningEvt);
+            hm.UserData.ui.coding.addingIntervening = ~isempty(hm.UserData.ui.coding.addingInterveningStream);
             if hm.UserData.ui.coding.addingIntervening
                 % draw the temp marker
                 hm.UserData.ui.coding.interveningTempLoc    = mark;
                 for p=1:length(hm.UserData.plot.ax)
                     if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
                         t = markToTime(mark,hm.UserData.data.eye.fs);
-                        hm.UserData.ui.coding.interveningTempElem(p) = plot([t t],hm.UserData.plot.ax(p).YLim,'Color','b','Parent',hm.UserData.plot.ax(p));
+                        hm.UserData.ui.coding.interveningTempElem(p) = plot([t t],hm.UserData.plot.ax(p).YLim,'Color','b','Parent',hm.UserData.plot.ax(p),'LineWidth',hm.UserData.plot.coderMarks(1).LineWidth*2);
                     end
                 end
             end
         else
-            % do nothing, adding second marker is done on mouse release
+            % do nothing, adding second marker is done on mouse release.
+            % Thats more intuitive too, as in many GUIs the action is only
+            % done on mouse release, so that you can still move mouse to
+            % right position when button already down
         end
     end
 elseif hasCtrl && ~hasShift && ~hasAlt
@@ -3011,33 +3010,73 @@ if hm.UserData.ui.coding.interveningTempLoc==mark || isnan(hm.UserData.ui.coding
     return;
 end
 marks = sort([hm.UserData.ui.coding.interveningTempLoc mark]);
-% per stream, check if both new marks are within bound of
-% existing event (one sample offset, note the larger than
-% and smaller than
-for p=size(hm.UserData.ui.coding.addingInterveningEvt,1):-1:1   % go backwards so we can remove things we did not add, and then append info about added to the log
-    if all(marks>hm.UserData.ui.coding.addingInterveningEvt(p,3) & marks<hm.UserData.ui.coding.addingInterveningEvt(p,4))
-        % ok, add new event, init to code 1, the default,
-        % to start with
-        % see what to add and where
-        stream  = hm.UserData.ui.coding.addingInterveningEvt(p,1);
-        idx     = hm.UserData.ui.coding.addingInterveningEvt(p,2);
-        addType = 1;
-        if hm.UserData.coding.type{stream}(idx)==1
-            % ensure we don't insert same event as the event
-            % we're splitting
-            addType = 2;
+% per stream, check if both new marks create a valid intervening event
+added = cell(0,3);
+for p=length(hm.UserData.ui.coding.addingInterveningStream):-1:1   % go backwards so we can remove things we did not add, and then append info about added to the log
+    stream  = hm.UserData.ui.coding.addingInterveningStream(p);
+    qMark   = marks(1)>=hm.UserData.coding.mark{stream}(1:end-1) & marks(2)<=hm.UserData.coding.mark{stream}(2:end);
+    if any(qMark)
+        idx = find(qMark);  % find where in the stream to add
+        % see if any marks to add coincide with already existing mark
+        qCoincide = ismember(marks,hm.UserData.coding.mark{stream});
+        if all(qCoincide)
+            % trying to add intervening event that is exacty the same as
+            % event already there, not ok. Cancel
+            hm.UserData.ui.coding.addingInterveningStream(p) = [];
+            continue;
+        elseif ~any(qCoincide)
+            % adding in middle of existing event. Determine what type to
+            % add and where in the stream this is
+            addType = 1;
+            if hm.UserData.coding.type{stream}(idx)==1
+                % ensure we don't insert same event as the event
+                % we're splitting
+                addType = 2;
+            end
+            % add event
+            hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
+            hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
+            added{end+1,1} = idx+1;
+            added{end  ,2} = marks;
+            added{end  ,3} = addType;
+        else
+            % adding event at start or end of existing event
+            tidx = idx;
+            if qCoincide(1)
+                % at start
+                tidx    = idx-1;
+                addMark = marks(2);
+            else
+                % at end
+                % tidx is ok
+                addMark = marks(1);
+            end
+            % find valid type to add
+            flankingTypes   = hm.UserData.coding.type{stream}([max(tidx,1):min(tidx+1,end)]);  % make sure we don't run out of data (we could be adding at end of very last event)
+            allTypes        = [hm.UserData.coding.codeCats{stream}{:,2}];
+            addType         = allTypes(find(~ismember(allTypes,flankingTypes),1));      % find first type that is not on either side of one to add
+            if isempty(addType)
+                % cannot add event here, no possible valid type (user is
+                % trying to add event to stream with 2 events, can't do
+                % that when ending up on edge). Cancel
+                hm.UserData.ui.coding.addingInterveningStream(p) = [];
+                continue;
+            end
+            % add event
+            hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1: idx) addMark hm.UserData.coding.mark{stream}( idx+1:end)];
+            hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:tidx) addType hm.UserData.coding.type{stream}(tidx+1:end)];
+            added{end+1,1} = idx+1;
+            added{end  ,2} = addMark;
+            added{end  ,3} = addType;
         end
-        % add event
-        hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
-        hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
     else
-        hm.UserData.ui.coding.addingInterveningEvt(p,:) = [];
+        hm.UserData.ui.coding.addingInterveningStream(p) = [];
     end
 end
 % if added event, update graphics and open menu
-if ~isempty(hm.UserData.ui.coding.addingInterveningEvt)
-    pos = hm.UserData.ui.coding.addingInterveningEvt(1,1);
-    addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningEvt(:,1),'idx',hm.UserData.ui.coding.addingInterveningEvt(:,2)+1,'marks',marks));
+if ~isempty(hm.UserData.ui.coding.addingInterveningStream)
+    pos = hm.UserData.ui.coding.addingInterveningStream(1,1);
+    addToLog(hm,'AddedInterveningEvent',struct('stream',hm.UserData.ui.coding.addingInterveningStream,'idx',[added{:,1}],'marks',added(:,2),'type',[added{:,3}]));
     updateCodeMarks(hm);
     updateCodingShades(hm);
     updateScarf(hm);
@@ -3050,11 +3089,11 @@ endAddingInterveningEvt(hm);
 end
 
 function endAddingInterveningEvt(hm)
-hm.UserData.ui.coding.addingIntervening     = false;
-hm.UserData.ui.coding.addingInterveningEvt  = [];
-hm.UserData.ui.coding.interveningTempLoc    = nan;
+hm.UserData.ui.coding.addingIntervening         = false;
+hm.UserData.ui.coding.addingInterveningStream   = [];
+hm.UserData.ui.coding.interveningTempLoc        = nan;
 delete(hm.UserData.ui.coding.interveningTempElem);
-hm.UserData.ui.coding.interveningTempElem   = matlab.graphics.GraphicsPlaceholder;
+hm.UserData.ui.coding.interveningTempElem       = matlab.graphics.GraphicsPlaceholder;
 end
 
 function startMarkerDrag(hm,qAlignedMarkersAlso)
