@@ -1,8 +1,6 @@
 function hm = glassesViewer(settings)
 close all
 
-% TODO: op Roy's mac past video niet helemaal op scherm when opstarten
-
 qDEBUG = true;
 if qDEBUG
     dbstop if error
