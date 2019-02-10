@@ -243,7 +243,15 @@ The following settings are understood for classifier parameters:
 |`granularity`|For settable parameters of types `double` and `int`, denotes the stepsize by which the parameter changes when moving the spinner a tick in the GUI |
 
 # TODOs
-The below items could be considered to be implemented. Currently, none are
+These items I will consider implementing in upcoming commits:
+- generalize this program by making the data importer also a callable function (and splitting the Tobii Glasses 2 parser code into a submodule that is referenced here). If user returns in an expected format, code can automatically detect which streams are in a data file, and display those.
+- known streams are indicated from this function instead of hardcoded as they are now.
+- support no video at all, then just show 2D view of data in place of video. Return must indicate resolution of recording space (video size for glasses, usually screen size for remotes). (NB: support to have 2D stream averaging the eyes, or two separate eyes in the 2D view)
+- with the above, would be ready to add a simple reader for files saved by [Titta](https://github.com/dcnieho/Titta). Should change name of this repository to ETDataViewer.
+- note that user could easily implement a screen recording + ET data viewer this way too, as long as their read-in function returns info for video sync as well.(NB: will support only a single video, except for the special Tobii glasses eye video. I do not want to generalize 
+- set trail length in time separate from visible window (setting spinner)
+
+The below items could be also considered to be implemented. Currently, none are
 planned to actually be executed
 - user own json decoder function (or get from mathworks FEX), so we can support
   matlab version a little older than what i do currently
