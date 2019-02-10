@@ -124,12 +124,19 @@ for p=1:nStream
                 coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
             else
                 % copy over all parameter config except value, so that we
-                % can change labels, precision, etc. Keep value intact
-                for s=1:length(coding.stream.classifier.currentSettings{p})
-                    temp = coding.stream.classifier.defaults{p}{s};
-                    temp.value = coding.stream.classifier.currentSettings{p}{s}.value;
-                    coding.stream.classifier.currentSettings{p}{s} = temp;
+                % can change labels, precision, etc. Keep value intact. Do
+                % it in the below way, to ensure that removed or added
+                % parameters in the settings file are taken into account.
+                temp = coding.stream.classifier.defaults{p};
+                names = cellfun(@(x) x.name,coding.stream.classifier.currentSettings{p},'uni',false);
+                for s=1:length(temp)
+                    qName = strcmp(temp{s}.name, names);
+                    if any(qName)
+                        assert(sum(qName)==1,'parameter name ''%s'' occurs more than one for stream %d (''%s''), please fix your settings',temp{s}.name,p,coding.stream.lbls{p})
+                        temp{s}.value = coding.stream.classifier.currentSettings{p}{qName}.value;
+                    end
                 end
+                coding.stream.classifier.currentSettings{p} = temp;
             end
             % if nothing there yet, or always recalculate option set,
             % reclassify: always use default settings and recalculate
