@@ -1631,7 +1631,13 @@ end
 function resetClassifierParameters(hm,idx,params)
 for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
     info = sscanf(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dSpinner');
-    hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+    if strcmpi(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID,'CheckBoxUI')
+        % checkbox
+        hm.UserData.ui.coding.classifierPopup.setting(1).uiEditor(2).JavaPeer.setSelected(params{info(3)}.value);
+    else
+        % spinner
+        hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+    end
 end
 end
 
@@ -1717,56 +1723,67 @@ for s=1:nStream
                         granularity = 1;
                     end
                 end
+                % spinner
+                % 1. formatting
                 nDeci = abs(min(0,floor(log10(granularity))));
                 fmt = '#####0';
                 if nDeci>0
                     fmt = [fmt '.' repmat('0',1,abs(nDeci))];
                 end
-                % spinner
+                % 2. create actual spinner
                 jModel      = javax.swing.SpinnerNumberModel(typeFun(param.value),typeFun(param.range(1)),typeFun(param.range(2)),typeFun(granularity));
                 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
                 comp        = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Tag',tag);
                 comp.StateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
                 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, fmt);
                 comp.JavaComponent.setEditor(jEditor);
+                
+                % label name
+                jLabel = com.mathworks.mwswing.MJLabel(param.label);
+                jLabel.setLabelFor(comp.JavaComponent);
+                jLabel.setToolTipText(param.name);
+                lbl = uicomponent(jLabel,'Parent',parent,'Units','pixels','Tag',[tag 'Label']);
+                % label range
+                if ismember(type,{'double','int'})
+                    fmt = sprintf('%%.%df',nDeci);
+                    lblRange = uicomponent('Style','text','Parent',parent,'Units','pixels','Tag',[tag 'LabelRange'],'String',sprintf(['[' fmt ', ' fmt ']'],param.range));
+                else
+                    lblRange = gobjects(1);
+                end
             case 'bool'
                 % checkbox
-                % TODO: implement
-        end
-        
-        % label name
-        jLabel = com.mathworks.mwswing.MJLabel(param.label);
-        jLabel.setLabelFor(comp.JavaComponent);
-        jLabel.setToolTipText(param.name);
-        lbl = uicomponent(jLabel,'Parent',parent,'Units','pixels','Tag',[tag 'Label']);
-        % label range
-        if ismember(type,{'double','int'})
-            fmt = sprintf('%%.%df',nDeci);
-            lblRange = uicomponent('Style','text','Parent',parent,'Units','pixels','Tag',[tag 'LabelRange'],'String',sprintf(['[' fmt ', ' fmt ']'],param.range));
-        else
-            lblRange = gobjects(1);
+                jCheckBox   = com.mathworks.mwswing.MJCheckBox([' ' param.label]);
+                jCheckBox.setToolTipText(param.name);
+                comp        = uicomponent(jCheckBox,'Parent',parent,'Units','pixels','Tag',tag);
+                comp.StateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
+                lbl         = gobjects(1);
+                lblRange    = gobjects(1);
         end
          
         % store
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p) = comp;
         hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p) = lbl;
         hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p)= lblRange;
-        hm.UserData.ui.coding.classifierPopup.setting(s).newParams   = params;
     end
+    hm.UserData.ui.coding.classifierPopup.setting(s).newParams   = params;
     
     % drawnow so we get sizes, then organize and rescale parent to fit
     drawnow
-    % get tight extents of text labels name
-    lblSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels,'uni',false);
-    lblSzs  = cellfun(@(x) [x.width x.height],lblSzs,'uni',false); lblSzs = cat(1,lblSzs{:})/hm.UserData.ui.DPIScale;
-    lblPad  = lbl.Position(4)-lblSzs(1,2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
-    lblFull = ceil(lblSzs+lblPad);
     % get size of spinners and check boxes
+    qCheckBox = cellfun(@(x) strcmpi(x.type,'bool'),params(iParam));
     eleSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor,'uni',false);
     eleSzs  = cellfun(@(x) [x.width x.height],eleSzs,'uni',false); eleSzs = cat(1,eleSzs{:})/hm.UserData.ui.DPIScale;
     elePad  = comp.Position(4)-eleSzs(1,2);         % get how much padding there is vertically. Horizontal we can't recover, but thats fine
     eleFull = ceil(eleSzs+elePad);
-    eleFull(:,1) = max(eleFull(:,1));
+    eleFull(~qCheckBox,1) = max(eleFull(~qCheckBox,1));
+    % get tight extents of text labels name
+    lblSzs  = zeros(length(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels),2);
+    q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels);
+    temp(q) = arrayfun(@(x) [x.PreferredSize.width x.PreferredSize.height]./hm.UserData.ui.DPIScale,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(q),'uni',false);
+    lblSzs(q,:) = cat(1,temp{:});
+    lblPad  = lbl.Position(4)-lblSzs(find(q,1),2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
+    lblFull = lblSzs;
+    lblFull(q,:) = ceil(lblSzs(q,:)+lblPad);
     % get size of range labels if any
     lblRSzs = zeros(size(lblSzs));
     q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR);
@@ -1798,7 +1815,9 @@ for s=1:nStream
         hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position = [off szE];
         
         lblPos = [off+[0 szE(2)] lblFull(p,:)];
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = lblPos;
+        if ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p))
+            hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = lblPos;
+        end
         
         if ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p))
             lblPos    = [off 0 lblPos(4)];
@@ -1825,7 +1844,13 @@ end
 
 function changeClassifierParamCallback(hm,hndl,~)
 % get new value
-newVal = hndl.getValue;
+if strcmpi(hndl.UIClassID,'CheckBoxUI')
+    % checkbox
+    newVal = ~~hndl.Selected;
+else
+    % spinner
+    newVal = hndl.getValue;
+end
 
 % set in temp parameter store
 info = sscanf(hndl.MatlabHGContainer.Tag,'Stream%dSetting%dParam%dSpinner');
