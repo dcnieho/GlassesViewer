@@ -1897,7 +1897,7 @@ if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.Use
     updateScarf(hm);
     % notify done through button
     hndl.String = 'Done';
-    pause(10)
+    pause(1.5)
     hndl.String = 'Recalculate';
 end
 end
