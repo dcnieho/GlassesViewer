@@ -2570,7 +2570,7 @@ catch
     % carry on
 end
 try
-    delete(hm.UserData.ui.coding.classifierPopup.setting);
+    delete([hm.UserData.ui.coding.classifierPopup.setting.obj]);
 catch
     % carry on
 end
