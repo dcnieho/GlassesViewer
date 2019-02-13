@@ -2583,8 +2583,16 @@ closereq();
 end
 
 function addToLog(hm,ID,info,time)
+persistent hasGetSecs;
+if isempty(hasGetSecs)
+    hasGetSecs = exist('GetSecs','file')==3;
+end
 if nargin<4 || isempty(time)
-    time=GetSecs;
+    if hasGetSecs
+        time = GetSecs;
+    else
+        time = now;
+    end
 end
 if nargin<3
     info = [];

@@ -202,4 +202,9 @@ end
 
 
 % add log entry indicated new session started
-coding.log(end+1,:) = {GetSecs,'SessionStarted',[]};
+if exist('GetSecs','file')==3
+    time = GetSecs;
+else
+    time = now;
+end
+coding.log(end+1,:) = {time,'SessionStarted',[]};
