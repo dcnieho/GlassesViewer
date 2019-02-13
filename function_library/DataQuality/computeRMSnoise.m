@@ -10,7 +10,7 @@ if windowLength < ns % if number of samples in data exceeds window size
     for p=1:ns-windowLength
         RMS(p) = RMSnoise(data(p:p+windowLength));
     end
-    medianRMS = nanmedian(RMS);
+    medianRMS = median(RMS,'omitnan');
 else % if too few samples in data
     medianRMS = NaN;
 end
