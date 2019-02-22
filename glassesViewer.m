@@ -3340,16 +3340,12 @@ end
 % update current time and update display
 setCurrentTime(hm,newTime);
 
-% periodically issue drawnow
-hm.UserData.ui.VCR.state.cumTicks = hm.UserData.ui.VCR.state.cumTicks+ticks;
-if hm.UserData.ui.VCR.state.cumTicks*hm.UserData.time.tickPeriod>.2
-    start(timer('TimerFcn',@(~,~)drawnow)); % execute asynchronously so execution of this timer is not blocked
-    hm.UserData.ui.VCR.state.cumTicks = 0;
-end
+% issue drawnow, limitrate makes sure it is ignored if rendered is still
+% busy with previous frame
+start(timer('TimerFcn',@(~,~)drawnow('limitrate'))); % execute asynchronously so execution of this timer is not blocked
 end
 
 function initPlayback(evt,hm)
-hm.UserData.ui.VCR.state.cumTicks         = 0;
 hm.UserData.ui.VCR.state.playLastTickTime = evt.Data.time;
 end
 
