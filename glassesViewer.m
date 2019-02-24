@@ -90,6 +90,8 @@ hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'Time
 %% load data
 % read glasses data
 hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
+% TODO: make below function also store results to a mat file alongside
+% livedata.mat
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
