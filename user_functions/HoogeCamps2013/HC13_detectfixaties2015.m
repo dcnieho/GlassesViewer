@@ -27,7 +27,7 @@ while 1
     counter     = counter + 1;
 end
 
-thr2            = meanvel + 3*stdvel;              % determine new threshold based on data noise
+thr2            = meanvel + f.lambda*stdvel;       % determine new threshold based on data noise
 qvel            = mvel < thr2;                     % look for velocity below threshold
 [on,off]        = HC13_detectswitches(qvel');      % determine fixations
 
