@@ -3202,7 +3202,7 @@ else
     if nargin<2 || doFullUpdate
         updateScarf(hm);
     else
-        hm.UserData.ui.savedCoding
+        updateMainButtonStates(hm);
     end
 end
 % update cursors (check for hovers and adjusts cursor if needed)
