@@ -28,12 +28,15 @@ totalFaulty = sum(dtFaulty);
 totalVideo = ts(end) - ts(1);
 percFaulty = 100 * totalFaulty / totalVideo;
 if totalFaulty > 0
-    fprintf('Missing %.2f /%.2f seconds of the %s video (%.2f%%)\n', ...
+    warning('Missing %.2f /%.2f seconds of the %s video (%.2f%%)\n', ...
         totalFaulty, totalVideo, id, percFaulty);
-    for v = sort(dtFaulty, 'descend')
-        if v >= reportThresholdSec
-            fprintf('%.3fs (%.2f%%)\n', ...
-                v, 100 * v / totalVideo );
+    if any(dtFaulty>reportThresholdSec)
+        fprintf('Worst offenders:\n');
+        for v = sort(dtFaulty, 'descend')
+            if v >= reportThresholdSec
+                fprintf('%.3fs (%.2f%%)\n', ...
+                    v, 100 * v / totalVideo );
+            end
         end
     end
 end

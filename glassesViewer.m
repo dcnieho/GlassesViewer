@@ -406,10 +406,7 @@ hm.UserData.vid.gt = plot(nan,nan,'r-','Parent',hm.UserData.vid.ax(1),'Visible',
 % create gaze marker (NB: size is marker area, not diameter or radius)
 hm.UserData.vid.gm = scatter(0,0,'Marker','o','SizeData',10^2,'MarkerFaceColor',[0 1 0],'MarkerFaceAlpha',0.6,'MarkerEdgeColor','none','Parent',hm.UserData.vid.ax(1),'HitTest','off');
 
-% We expect to have one video at roughly 50Hz and one at roughly 25.
-% hardcode, but check
-assert(round(1./hm.UserData.vid.objs(1,1).FrameRate,2)==0.04 && (~hm.UserData.ui.haveEyeVideo || round(1./hm.UserData.vid.objs(1,2).FrameRate,2)==0.02))
-% if multiple segments, find switch point
+% if recording consists of multiple segments, find switch point
 hm.UserData.vid.switchFrames(:,1) = [0 cumsum(hm.UserData.data.videoSync.scene.segframes)];
 if hm.UserData.ui.haveEyeVideo
     hm.UserData.time.endTime = min([hm.UserData.data.videoSync.scene.fts(end) hm.UserData.data.videoSync.eye.fts(end)]);
