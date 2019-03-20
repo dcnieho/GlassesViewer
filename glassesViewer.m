@@ -3194,7 +3194,7 @@ if hm.UserData.ui.grabbedTime
     if nargin<2 || doFullUpdate
         updateTime(hm);
     end
-else
+elseif hm.UserData.ui.coding.grabbedMarker
     hm.UserData.ui.coding.grabbedMarker         = false;
     hm.UserData.ui.coding.grabbedMarkerLoc      = [];
     hm.UserData.ui.coding.grabbedShadeElement   = [];
