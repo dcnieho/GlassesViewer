@@ -3242,12 +3242,12 @@ drawnow
 
 % start/stop playback
 if desiredState
-    % start playing
-    start(hm.UserData.time.mainTimer);
     % cancel any drag (also cancels hover)
     endDrag(hm,false);
     % cancel any event insertion
     endAddingInterveningEvt(hm);
+    % start playing
+    start(hm.UserData.time.mainTimer);
 else
     % stop playing
     stop(hm.UserData.time.mainTimer);
