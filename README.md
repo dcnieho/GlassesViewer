@@ -281,6 +281,9 @@ planned to actually be executed
   in their data file that are required by this reader. Known to work are
   1.22.0-zucchinipaj and several later firmware releases.
 
+# Relation GlassesViewer export to Tobii Pro Lab export
+TODO: make nice text. Time in Tobii Pro Lab export start at first sample (t=0 is time of first sample), and exported video starts with some black frames. Time of my export starts at start of scene or eye video (if available), whichever is later. That means there are a bunch of gaze samples with negative time, as gaze recording stream seems to normally start earlier. So converting between the two is a matter of adding or subtracting the time difference between first sample's time and first video frame time.
+
 # License details
 Most parts of this repository are licensed under the Creative Commons
 Attribution 4.0 (CC BY 4.0) license.
