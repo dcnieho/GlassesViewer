@@ -41,7 +41,7 @@ hm.UserData.fileDir = filedir;
 ws          = get(0,'ScreenSize');
 if isprop(hm,'WindowState')
     hm.WindowState = 'Maximized';
-    drawnow, pause(0.5);    % one some systems, it appears drawnow doesn't finish executing before we hit the next line, so add a pause
+    drawnow, pause(0.5);    % on some systems, it appears drawnow doesn't finish executing before we hit the next line, so add a pause
     pos     = hm.OuterPosition;
     pos(1)  = max(pos(1),ws(1));
     pos(3)  = min(pos(3),ws(3));
@@ -3339,7 +3339,7 @@ end
 % update current time and update display
 setCurrentTime(hm,newTime);
 
-% issue drawnow, limitrate makes sure it is ignored if rendered is still
+% issue drawnow, limitrate makes sure it is ignored if renderer is still
 % busy with previous frame
 start(timer('TimerFcn',@(~,~)drawnow('limitrate'))); % execute asynchronously so execution of this timer is not blocked
 end
