@@ -11,20 +11,42 @@ if nargin<1 || isempty(settings)
     settings  = jsondecode(fileread(fullfile(myDir,'defaults.json')));
 end
 
-addpath(genpath('function_library'),genpath('user_functions'))
+addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'))
 
-% select the folder of a recording to display. This needs to point to a
-% specific recording's folder. if "projects" is the project folder on the
-% SD card, an example of a specific recording is:
-%   projects\rkamrkb\recordings\zi4xmt2
+% select either the folder of a specific recording to open, or the projects
+% directory copied from the SD card itself. So, if "projects" is the
+% project folder on the SD card, there are two places that you can point
+% the software to:
+% 1. the projects folder itself
+% 2. the folder of a specific recording. An example of a specific recording
+%    is: projects\rkamrkb\recordings\zi4xmt2. Not the the higher level
+%    folders are not needed when opening a recording, so you can just copy
+%    the "zi4xmt2" of this example somewhere and open it in isolation.
 if 0
-    filedir = uigetdir('','Select recording folder');
+    selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
-    filedir = 'C:\dat\projects\headmounted event classification\data\extra test\TG2-switch2';
+    selectedDir = 'C:\dat\projects\headmounted event classification\data\extra test\TG2-switch2';
+    selectedDir = 'C:\Users\huml-dkn\Desktop\marcus\projects';
+%     selectedDir = 'C:\dat\projects\glasses test\data\Tobii 100Hz';
 end
-if ~filedir
+if ~selectedDir
     return
+end
+
+% find out if this is a projects folder or the folder of an individual
+% recording, take appropriate action
+if exist(fullfile(selectedDir,'segments'),'dir') && exist(fullfile(selectedDir,'recording.json'),'file')
+    recordingDir = selectedDir;
+else
+    % assume this is a project dir. G2ProjectParser will fail if it is not
+    if ~exist(fullfile(selectedDir,'lookup.xls'),'file')
+        success = G2ProjectParser(selectedDir);
+    end
+    recordingDir = recordingSelector(selectedDir);
+    if isempty(recordingDir)
+        return
+    end
 end
 
 
@@ -35,7 +57,7 @@ hm.Name='Tobii Glasses 2 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
 hm.MenuBar = 'none';
-hm.UserData.fileDir = filedir;
+hm.UserData.fileDir = recordingDir;
 
 % set figure to near full screen
 ws          = get(0,'ScreenSize');
