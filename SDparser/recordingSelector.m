@@ -142,6 +142,7 @@ waitfor(f);
         data.uRecLabel= cellfun(@(x,y) [x ', recorded: ' y],data.uRecName,data.uRecDate,'uni',false);
         
         set(data.popupRec,'String',[{'<select recording>'}; data.uRecLabel]);
+        set(data.popupRec,'Value',1);
         
         set(data.pRec,'BackgroundColor',[1 0.5 0.2]);
         set(data.CalStat,'String', 'Unknown','BackgroundColor',[1 0.5 0.2]);
