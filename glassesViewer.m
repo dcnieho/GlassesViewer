@@ -28,7 +28,7 @@ else
     % for easy use, hardcode a folder. 
     selectedDir = 'C:\dat\projects\headmounted event classification\data\extra test\TG2-switch2';
     selectedDir = 'C:\Users\huml-dkn\Desktop\marcus\projects';
-%     selectedDir = 'C:\dat\projects\glasses test\data\Tobii 100Hz';
+    selectedDir = 'C:\dat\projects\glasses test\data\Tobii 100Hz';
 end
 if ~selectedDir
     return
@@ -1373,37 +1373,41 @@ updateMainButtonStates(hm);
 end
 
 function createSettings(hm)
-% TODO: don't hardcode shit, nothing fits if items have a different size
-% (OSX, Roy).
 % panel at max spans between right of VCR and right of reset plot limits
 % button
 left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
 right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
 bottom  = hm.UserData.plot.axRect(end,2);
-% settings area
-width   = min(338,right-left-20);
-height  = min(230,top-bottom-20);
+% settings area, initial guess of size -- we'll scale it tightly later when
+% all elements are known
+width   = min(400,right-left-20);
+height  = min(250,top-bottom-20);
 % center it
 leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
 panelPos = [leftBot width height];
 hm.UserData.ui.setting.panel = uipanel('Units','pixels','Position',panelPos, 'title','Settings');
-% pos is wanted innerPosition. scale outerPosition
-off = panelPos-hm.UserData.ui.setting.panel.InnerPosition;
-panelPos(3:4) = panelPos(3:4)+off(3:4);
-panelPos(1:2) = panelPos(1:2)-(off(1:2)+off(3:4)/2);
-hm.UserData.ui.setting.panel.Position = panelPos;
+
+% sizes, margins
+butSz           = [20 20];
+arrangerSz      = [80 104]; % min width
+scrollWidth     = 20;   % or so, guess so make sure we leave enough margin for that
+sepMargin       = [10 10];
+labelSpinSep    = [5 2];
+butSep          = [5 4];
+spinnerWidths   = [60 85];
+spinnerHeight   = 20;
+labelHeight     = 20;
 
 % make a bunch of components. store them in comps
 parent = hm.UserData.ui.setting.panel;
 c=0;
 % 1. SG filter
 c=c+1;
-SGPos       = [165 parent.InnerPosition(4)-5-20 60 20];
 ts          = 1000/hm.UserData.data.eye.fs;
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',SGPos,'Tag','SGSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) spinnerHeight],'Tag','SGSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0');
 comps(c).JavaComponent.setEditor(jEditor);
@@ -1412,87 +1416,73 @@ c=c+1;
 jLabel      = com.mathworks.mwswing.MJLabel('Savitzky-Golay window (ms)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
 jLabel.setToolTipText('window length of Savitzky-Golay differentiation filter in milliseconds');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,SGPos(2),SGPos(1)-10,SGPos(4)],'Tag','SGSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) labelHeight],'Tag','SGSpinnerLabel');
 
 % 2 separator
 c=c+1;
-sepPos      = [10 SGPos(2)-10 215 1];
 jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.HORIZONTAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',sepPos);
+comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 20 1],'Tag','SepLeftHori1');
 
 % 3 plot rearranger
 % 3.1 labels
-butSz       = [20 20];
-arrangerSz  = [80 104];
-
 c=c+1;
-lblPos      = [10, sepPos(2)-20-5, parent.InnerPosition(3)-20, 20];
 jLabel      = com.mathworks.mwswing.MJLabel('Plot order and shown axes');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',lblPos,'Tag','plotArrangerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelMain');
 
 c=c+1;
-lblPos      = [10+butSz(1)+5, lblPos(2)-20-3, arrangerSz(1), 20];
 jLabel      = com.mathworks.mwswing.MJLabel('Shown');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',lblPos,'Tag','plotArrangerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelLeft');
 
 c=c+1;
-lblPos      = [10+butSz(1)+5+arrangerSz(1)+5+butSz(1)+5, lblPos(2), arrangerSz(1), 20];
 jLabel      = com.mathworks.mwswing.MJLabel('Hidden');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',lblPos,'Tag','plotArrangerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelRight');
 
 % 3.2 listbox
 c=c+1;
-arrangerPos = [10+butSz(1)+5 lblPos(2)-arrangerSz(2) arrangerSz];
-listItems   = {hm.UserData.plot.ax.Tag};
-comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPos, 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
+listItems   = {hm.UserData.plot.ax.Tag};    % TODO: allow user-provided stream names
+comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
 listbox     = comps(c);
 
 % 3.3 listbox
 c=c+1;
-arrangerPosJ= [arrangerPos(1)+arrangerPos(3)+5+butSz(1)+5 arrangerPos(2) arrangerSz];
 listItems   = {};
-comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',arrangerPosJ, 'String',listItems,'Tag','plotArrangerHidden','Max',2,'Min',0,'Value',[]);
+comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerHidden','Max',2,'Min',0,'Value',[]);
 listboxJail = comps(c);
 
 
 % 3.4 buttons
-butMargin   = 4;
-butPosBase  = [10 lblPos(2)-2-arrangerPos(3)/2];
 gfx         = load('icons');
 c=c+1;
 icon        = getIcon(gfx,'<jump_to');
-comps(c)    = uicontrol('Style','pushbutton','Tag','moveUp','Position',[butPosBase(1) butPosBase(2)+butMargin/2 butSz],...
+comps(c)    = uicontrol('Style','pushbutton','Tag','moveUp','Position',[10 10 butSz],...
     'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) movePlot(hm,-1));
 
 c=c+1;
 icon        = getIcon(gfx,'<-jump_to');
-comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[butPosBase(1) butPosBase(2)-butMargin/2-butSz(2) butSz],...
+comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[10 10 butSz],...
     'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) movePlot(hm,1));
 
 
-butPosBase  = [arrangerPos(1)+arrangerPos(3)+5 lblPos(2)-2-arrangerPos(3)/2];
 c=c+1;
 icon        = getIcon(gfx,'ffwd_default');
-comps(c)    = uicontrol('Style','pushbutton','Tag','moveUp','Position',[butPosBase(1) butPosBase(2)+butMargin/2 butSz],...
-    'Parent',parent,'TooltipString','move selected up','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'jail'));
+comps(c)    = uicontrol('Style','pushbutton','Tag','placeInJail','Position',[10 10 butSz],...
+    'Parent',parent,'TooltipString','hide selected','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'jail'));
 
 c=c+1;
 icon        = getIcon(gfx,'rewind_default');
-comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[butPosBase(1) butPosBase(2)-butMargin/2-butSz(2) butSz],...
-    'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'restore'));
+comps(c)    = uicontrol('Style','pushbutton','Tag','restoreFromJail','Position',[10 10 butSz],...
+    'Parent',parent,'TooltipString','restore selected','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'restore'));
 
 % 4 separator
 c=c+1;
-sepPos      = [10 arrangerPos(2)-10 215 1];
 jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.HORIZONTAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',sepPos);
+comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 20 1],'Tag','SepLeftHori2');
 
 % 5 plotLineWidth
 c=c+1;
-LWPos       = [165 sepPos(2)-sepPos(4)-5-20 60 20];
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',LWPos,'Tag','LWSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) spinnerHeight],'Tag','LWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0.0');
 comps(c).JavaComponent.setEditor(jEditor);
@@ -1501,17 +1491,16 @@ c=c+1;
 jLabel      = com.mathworks.mwswing.MJLabel('Plot line width (pix)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
 jLabel.setToolTipText('Line width for the plotted data (pixels)');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10,LWPos(2),LWPos(1)-10,LWPos(4)],'Tag','LWSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) labelHeight],'Tag','LWSpinnerLabel');
 
 % 6 separator
 c=c+1;
-sepPos      = [arrangerPosJ(1)+arrangerPosJ(3)+10 10 1 parent.InnerPosition(4)-20];
 jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',sepPos);
+comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 1 20],'Tag','SepVert');
 
 % 7 current time
+% TODO HERE I WAS; C`CONTINUE CHAGING POSs to something initial
 c=c+1;
-CTPos       = [sepPos(1)+10 parent.InnerPosition(4)-5-20-5-20 85 20];
 % do this complicated way to take timezone effects into account..
 % grr... Setting the timezone of the formatter fixes the display, but
 % seems to make the spinner unsettable
@@ -1527,7 +1516,7 @@ jModel      = javax.swing.SpinnerDateModel(startDate,startDate,endDate,java.util
 % action, the current caret position is taken and the field it is in is
 % spinned
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',CTPos,'Tag','CTSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','CTSpinner');
 jEditor     = javaObject('javax.swing.JSpinner$DateEditor', comps(c).JavaComponent, 'HH:mm:ss.SSS ');
 jEditor.getTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
 formatter   = jEditor.getTextField().getFormatter();
@@ -1537,44 +1526,210 @@ comps(c).JavaComponent.setEditor(jEditor);
 comps(c).StateChangedCallback = @(hndl,evt) setCurrentTimeSpinnerCallback(hm,hndl.Value);
 
 c=c+1;
-LblPos      = [CTPos(1),CTPos(2)+5+20,CTPos(1)-10,CTPos(4)];
 jLabel      = com.mathworks.mwswing.MJLabel('Current time');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
 jLabel.setToolTipText('<html>Display and change current time.<br>Spinner button change the field that the caret is in.<br>Typing overwrites values and is committed with [enter]</html>');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',LblPos,'Tag','CTSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','CTSpinnerLabel');
 
 % 8 current window
 c=c+1;
-CWPos       = [sepPos(1)+10 CTPos(2)-15-20-5-20 85 20];
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindow,0,hm.UserData.time.endTime,1);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',CWPos,'Tag','TWSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','TWSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.00');
 comps(c).JavaComponent.setEditor(jEditor);
 
 c=c+1;
-LblPos      = [CWPos(1),CWPos(2)+5+20,CWPos(1)-10,CWPos(4)];
 jLabel      = com.mathworks.mwswing.MJLabel('Time window (s)');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',LblPos,'Tag','TWSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','TWSpinnerLabel');
 
 % 9 playback speed
 c=c+1;
-CPPos       = [sepPos(1)+10 CWPos(2)-15-20-5-20 85 20];
 jModel      = javax.swing.SpinnerNumberModel(1,0,16,0.001);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',CPPos,'Tag','PSSpinner');
+comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','PSSpinner');
 comps(c).StateChangedCallback = @(hndl,evt) setPlaybackSpeed(hm,hndl);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.000 x ');
 comps(c).JavaComponent.setEditor(jEditor);
 
 c=c+1;
-LblPos      = [CPPos(1),CPPos(2)+5+20,CPPos(1)-10,CPPos(4)];
 jLabel      = com.mathworks.mwswing.MJLabel('Playback speed');
 jLabel.setLabelFor(comps(c-1).JavaComponent);
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',LblPos,'Tag','PSSpinnerLabel');
+comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','PSSpinnerLabel');
 
+% all elements created, figure out sizes and positions, start from bottom
+% left column
+obj = findobj(comps,'Tag','LWSpinnerLabel');
+lWidth{1}(1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','LWSpinner');
+lWidth{1}(2) = obj.Position(3);
+
+obj = findobj(comps,'Tag','moveUp');
+lWidth{2}(1) = obj.Position(3);
+height(1)    = obj.Position(4)*2+butSep(2);
+obj = findobj(comps,'Tag','plotArrangerShown');
+lWidth{2}(2) = ceil(obj.Extent(3))+4;
+height(2)   = ceil(obj.Extent(4));
+nElem(1)    = length(obj.String);
+obj = findobj(comps,'Tag','placeInJail');
+lWidth{2}(3) = obj.Position(3);
+height(3)    = obj.Position(4)*2+butSep(2);
+obj = findobj(comps,'Tag','plotArrangerHidden');
+if isempty(obj.String)
+    lWidth{2}(4) = lWidth{2}(2);
+    height(4)   = 0;
+    nElem(2)    = 0;
+else
+    lWidth{2}(4) = ceil(obj.Extent(3))+4;
+    height(4)   = ceil(obj.Extent(4));
+    nElem(2)    = length(obj.String);
+end
+lWidth{2}([2 4]) = max([[lWidth{2}(2) lWidth{2}(4)]+scrollWidth arrangerSz(1)]);
+heightPerElem   = max(floor(height([2 4])./nElem));
+height([2 4])   = max([max(heightPerElem)*sum(nElem) height([1 3])]);
+
+obj = findobj(comps,'Tag','plotArrangerLabelLeft');
+lWidth{3}(1)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','plotArrangerLabelRight');
+lWidth{3}(2)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+
+obj = findobj(comps,'Tag','plotArrangerLabelMain');
+lWidth{4}(1)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+
+obj = findobj(comps,'Tag','SGSpinnerLabel');
+lWidth{5}(1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','SGSpinner');
+lWidth{5}(2) = obj.Position(3);
+% get full widths of each row of left column
+fullWidth(1) = sum(lWidth{1})+labelSpinSep(1);
+fullWidth(2) = sum(lWidth{2})+3*butSep(1);
+fullWidth(3) = 0;   % definitely shorter than other elements, but hard to determine due to alignment with boxes of width(2), so lets ignore in this calculation
+fullWidth(4) = lWidth{4}(1);
+fullWidth(5) = sum(lWidth{5})+labelSpinSep(1);
+theWidth     = max(fullWidth);
+
+% position everything
+thePos = [sepMargin lWidth{1}(1) labelHeight];
+obj = findobj(comps,'Tag','LWSpinnerLabel');
+obj.Position = thePos;
+obj = findobj(comps,'Tag','LWSpinner'); % right align this one
+thePos([1 3]) = [theWidth+sepMargin(1)-lWidth{1}(2) lWidth{1}(2)];
+obj.Position = thePos;
+%---
+thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
+thePos([1 3 4]) = [sepMargin(1) theWidth 1];
+obj = findobj(comps,'Tag','SepLeftHori2');
+obj.Position = thePos;
+%---
+butOff = (height(2)-height(1))/2;
+thePos(2) = thePos(2)+thePos(4)+sepMargin(2)+butOff;
+thePos(3:4) = butSz;
+obj = findobj(comps,'Tag','moveDown');
+obj.Position = thePos;
+thePos(2) = thePos(2)+thePos(4)+butSep(2);
+obj = findobj(comps,'Tag','moveUp');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)-thePos(4)-butSep(2)-butOff;
+thePos(1) = thePos(1)+thePos(3)+butSep(1);
+thePos(3:4) = [lWidth{2}(2) height(2)];
+obj = findobj(comps,'Tag','plotArrangerShown');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)+butOff;
+thePos(1) = thePos(1)+thePos(3)+butSep(1);
+thePos(3:4) = butSz;
+obj = findobj(comps,'Tag','restoreFromJail');
+obj.Position = thePos;
+thePos(2) = thePos(2)+thePos(4)+butSep(2);
+obj = findobj(comps,'Tag','placeInJail');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)-thePos(4)-butSep(2)-butOff;
+thePos(1) = thePos(1)+thePos(3)+butSep(1);
+thePos(3:4) = [lWidth{2}(2) height(2)];
+obj = findobj(comps,'Tag','plotArrangerHidden');
+obj.Position = thePos;
+%---
+thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
+thePos([1 3 4]) = [sepMargin(1) theWidth 1];
+obj = findobj(comps,'Tag','SepLeftHori1');
+obj.Position = thePos;
+%---
+thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
+thePos(3:4) = [lWidth{5}(1) labelHeight];
+obj = findobj(comps,'Tag','SGSpinnerLabel');
+obj.Position = thePos;
+obj = findobj(comps,'Tag','SGSpinner'); % right align this one
+thePos([1 3]) = [theWidth+sepMargin(1)-lWidth{1}(2) lWidth{1}(2)];
+obj.Position = thePos;
+%---
+%---
+% now determine containing panel height. ASSUMPTION: left column is the
+% tallest column and thus its height determines panel height
+fullHeight = thePos(2)+thePos(4)+sepMargin(2);
+%---
+% vertical separator
+thePos = [theWidth+2*sepMargin(1) sepMargin(2) 1 fullHeight-sepMargin(2)];
+obj = findobj(comps,'Tag','SepVert');
+obj.Position = thePos;
+%---
+%---
+% right column
+% work top to bottom
+% get sizes
+clear lWidth
+obj = findobj(comps,'Tag','CTSpinnerLabel');
+lWidth(1,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','CTSpinner');
+lWidth(1,2) = obj.Position(3);
+obj = findobj(comps,'Tag','TWSpinnerLabel');
+lWidth(2,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','TWSpinner');
+lWidth(2,2) = obj.Position(3);
+obj = findobj(comps,'Tag','PSSpinnerLabel');
+lWidth(3,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+obj = findobj(comps,'Tag','PSSpinner');
+lWidth(3,2) = obj.Position(3);
+% position
+thePos(1) = thePos(1)+thePos(3)+sepMargin(1);
+thePos(2) = fullHeight-sepMargin(2)-labelHeight;
+thePos(3:4) = [lWidth(1,1) labelHeight];
+obj = findobj(comps,'Tag','CTSpinnerLabel');
+obj.Position = thePos;
+thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
+thePos(3:4) = [lWidth(1,2) spinnerHeight];
+obj = findobj(comps,'Tag','CTSpinner');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)-sepMargin(2)-labelHeight;
+thePos(3:4) = [lWidth(2,1) labelHeight];
+obj = findobj(comps,'Tag','TWSpinnerLabel');
+obj.Position = thePos;
+thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
+thePos(3:4) = [lWidth(2,2) spinnerHeight];
+obj = findobj(comps,'Tag','TWSpinner');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)-sepMargin(2)-labelHeight;
+thePos(3:4) = [lWidth(3,1) labelHeight];
+obj = findobj(comps,'Tag','PSSpinnerLabel');
+obj.Position = thePos;
+thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
+thePos(3:4) = [lWidth(3,2) spinnerHeight];
+obj = findobj(comps,'Tag','PSSpinner');
+obj.Position = thePos;
+%---
+%---
+% now determine containing panel's width
+fullWidth = thePos(1)+max(lWidth(:))+sepMargin(1);
+%---
+% position panel
+wh = [fullWidth fullHeight] + (hm.UserData.ui.setting.panel.Position(3:4)-hm.UserData.ui.setting.panel.InnerPosition(3:4));
+leftBot = [(right-left)/2+left-wh(1)/2 (top-bottom)/2+bottom-wh(2)/2];
+hm.UserData.ui.setting.panel.Position = [leftBot wh];
 
 hm.UserData.ui.setting.panel.UserData.comps = comps;
 hm.UserData.ui.setting.panel.Visible = 'off';
