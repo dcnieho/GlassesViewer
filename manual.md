@@ -36,50 +36,69 @@ Changing the amount of data visible
 
 ![](screenshots/008.png)
 
-Browsing through the data
+Settings:
 
 ![](screenshots/009.png)
 
-Settings window:
-
-![](screenshots/019.png)
-
-## 3 - fixation classification
-
-Click on fixation classification results.
+Modify what signals are visible:
 
 ![](screenshots/010.png)
 
-Adjust settings.
+Browse through the data:
 
 ![](screenshots/011.png)
 
-Recalculate.
+## 3 - fixation classification
+
+
+Click on fixation classification results.
 
 ![](screenshots/012.png)
 
-Result.
+Go to classifier settings:
 
 ![](screenshots/013.png)
 
-Save coding.
+Classifier settings dialog:
 
 ![](screenshots/014.png)
 
-## 4 - manual annotation of eye-tracking data
-
-General explanation with example.
+Modify settings and recalculate:.
 
 ![](screenshots/015.png)
 
-Colours become visible in interface.
+Result of adjusted classifier settings, and save coding:
 
 ![](screenshots/016.png)
 
-Adjust trim of a label.
+Coding saved:
 
 ![](screenshots/017.png)
 
-Add labels to different streams.
+## 4 - manual annotation of eye-tracking data
+
+Click on empty coding stream. Then click somewhere in a signal to make the first annotation:
 
 ![](screenshots/018.png)
+
+First annotation:
+
+![](screenshots/019.png)
+
+Add a second annotation of a different kind:
+
+![](screenshots/020.png)
+
+Adjust trim of an annotation:
+
+![](screenshots/021.png)
+
+Multiple labels:
+
+![](screenshots/022.png)
+
+## 5 - exiting GlassesViewer
+
+Dialog asking whether to save adjusted coding or not:
+
+![](screenshots/023.png)

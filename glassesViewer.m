@@ -22,7 +22,7 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 %    is: projects\rkamrkb\recordings\zi4xmt2. Not the the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "zi4xmt2" of this example somewhere and open it in isolation.
-if 0
+if 1
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
