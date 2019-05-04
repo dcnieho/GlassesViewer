@@ -31,7 +31,7 @@ thr2            = meanvel + f.lambda*stdvel;       % determine new threshold bas
 qvel            = mvel < thr2;                     % look for velocity below threshold
 [on,off]        = HC13_detectswitches(qvel');      % determine fixations
 
-on              = time(on);                        % convcert to time
+on              = time(on);                        % convert to time
 off             = time(off);                       % convert to time
 
 qfix            = off - on > minfix;               % look for small fixations       

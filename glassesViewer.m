@@ -91,25 +91,6 @@ hm.UserData.ui.DPIScale = getDPIScale();
 %% global options and starting values
 hm.UserData.settings = settings;
 
-%% setup time
-% setup main time and timer for smooth playback
-hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
-hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
-hm.UserData.time.currentTime        = 0;
-hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
-hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
-hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
-if isempty(hm.UserData.ui.doubleClickInterval)
-    % it seems the java call sometimes returns nothing, then hardcode to
-    % 550 ms, which is its value on my machine. If its set to something
-    % longer on a user's machine, the experience would not be optimal, but
-    % so be it.
-    hm.UserData.ui.doubleClickInterval = 550;
-end
-% this timer executes if there was no second click within double-click
-% interval
-hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
-
 %% load data
 % read glasses data
 hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
@@ -123,6 +104,26 @@ else
 end
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
+
+%% setup time
+% setup main time and timer for smooth playback
+hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
+hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
+hm.UserData.time.currentTime        = 0;
+hm.UserData.time.startTime          = hm.UserData.data.eye.left.ts(find(hm.UserData.data.eye.left.ts<=0,1,'last'));
+hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
+hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
+hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
+if isempty(hm.UserData.ui.doubleClickInterval)
+    % it seems the java call sometimes returns nothing, then hardcode to
+    % 550 ms, which is its value on my machine. If its set to something
+    % longer on a user's machine, the experience would not be optimal, but
+    % so be it.
+    hm.UserData.ui.doubleClickInterval = 550;
+end
+% this timer executes if there was no second click within double-click
+% interval
+hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
 
 
 %% setup data axes
@@ -914,9 +915,9 @@ hm.UserData.ui.coding.panelIsEditingCode = false;
 end
 
 function codingButtonCallback(hBut,hm,stream,butLbl,evtCode)
-mark = timeToMark(hm.UserData.ui.coding.panel.mPosAx(1),hm.UserData.data.eye.fs);
+markT = hm.UserData.ui.coding.panel.mPosAx(1);
 % see if editing current code or adding new
-if mark>hm.UserData.coding.mark{stream}(end)
+if markT>hm.UserData.coding.mark{stream}(end)
     % adding new
     % check if event not the same as previous
     if ~isempty(hm.UserData.coding.type{stream}) && bitand(hm.UserData.coding.type{stream}(end),evtCode)
@@ -929,11 +930,11 @@ if mark>hm.UserData.coding.mark{stream}(end)
         return
     end
     % add code, set evtTagIdx, done
-    hm.UserData.coding.mark{stream}(end+1) = mark;
+    hm.UserData.coding.mark{stream}(end+1) = markT;
     hm.UserData.coding.type{stream}(end+1) = evtCode;
     hm.UserData.ui.coding.panel.evtTagIdx(stream) = length(hm.UserData.coding.type{stream});
     % log
-    addToLog(hm,'AddedNewCode',struct('stream',stream,'mark',mark,'type',evtCode,'idx',hm.UserData.ui.coding.panel.evtTagIdx(stream)));
+    addToLog(hm,'AddedNewCode',struct('stream',stream,'mark',markT,'type',evtCode,'idx',hm.UserData.ui.coding.panel.evtTagIdx(stream)));
     % update coded extent to reflect new code
     updateCodeMarks(hm);
 elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
@@ -958,14 +959,14 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
                 % rightmost event, just remove right marker
                 hm.UserData.coding.mark{stream}(idx+1) = [];
                 hm.UserData.coding.type{stream}(idx)   = [];
-                addToLog(hm,'RemovedRightEvent',struct('stream',stream,'mark',mark,'idx',idx));
+                addToLog(hm,'RemovedRightEvent',struct('stream',stream,'mark',markT,'idx',idx));
             elseif idx==1
                 % selected first event, (which isn't also last/only),
                 % remove and grow second leftward
                 hm.UserData.coding.mark{stream}(idx+1) = [];
                 hm.UserData.coding.type{stream}(idx)   = [];
                 disableCodingStreamInPanel(hm,stream);
-                addToLog(hm,'RemovedFirstEvent',struct('stream',stream,'mark',mark,'idx',idx));
+                addToLog(hm,'RemovedFirstEvent',struct('stream',stream,'mark',markT,'idx',idx));
             else
                 % selected event in middle of coded stream, remove whole
                 % event
@@ -978,14 +979,14 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
                     % event are kept intact
                     hm.UserData.coding.mark{stream}(idx+[0 1]) = [];
                     hm.UserData.coding.type{stream}(idx+[0 1]) = [];
-                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',mark,'idx',idx,'action','merge'));
+                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',markT,'idx',idx,'action','merge'));
                 else
                     % different event on both sides, just remove left
                     % marker of the affected event and event tag, this has
                     % left flanking event expand into the deleted one
                     hm.UserData.coding.mark{stream}(idx) = [];
                     hm.UserData.coding.type{stream}(idx) = [];
-                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',mark,'idx',idx,'action','growLeft'));
+                    addToLog(hm,'RemovedMiddleEvent',struct('stream',stream,'mark',markT,'idx',idx,'action','growLeft'));
                 end
                 % can't place it back in again, so disable this stream on
                 % coding panel
@@ -996,7 +997,7 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
             updateCodeMarks(hm);
         else
             % flag removed
-            addToLog(hm,'RemovedFlag',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+            addToLog(hm,'RemovedFlag',struct('stream',stream,'mark',markT,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
         end
     elseif butLbl(1)=='*'
         % check if current event allows flag
@@ -1006,7 +1007,7 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
             return
         end
         hm.UserData.coding.type{stream}(idx) = bitor(hm.UserData.coding.type{stream}(idx),evtCode);
-        addToLog(hm,'AddedFlag',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+        addToLog(hm,'AddedFlag',struct('stream',stream,'mark',markT,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
     else
         % check if not same as previous
         if idx>1 && bitand(hm.UserData.coding.type{stream}(idx-1),evtCode)
@@ -1016,7 +1017,7 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
         % change event
         hm.UserData.coding.type{stream}(idx) = evtCode;
         % log
-        addToLog(hm,'ChangedEvent',struct('stream',stream,'mark',mark,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
+        addToLog(hm,'ChangedEvent',struct('stream',stream,'mark',markT,'type',hm.UserData.coding.type{stream}(idx),'idx',idx));
         % untoggle other buttons
         activateCodingButtons(hm.UserData.ui.coding.subpanel(stream).Children, hm.UserData.coding.type{stream}(idx),true);
     end
@@ -1076,11 +1077,11 @@ hm.UserData.ui.coding.panel.evtTagIdx = nan(length(hm.UserData.ui.coding.subpane
 otherStream = 1:length(hm.UserData.ui.coding.subpanel);
 otherStream(otherStream==stream) = [];
 mPosXAx = hm.UserData.ui.coding.panel.mPosAx(1);
-if mPosXAx<=markToTime(hm.UserData.coding.mark{stream}(end),hm.UserData.data.eye.fs)
+if mPosXAx<=hm.UserData.coding.mark{stream}(end)
     % pressed in already coded area.
     hm.UserData.ui.coding.panelIsEditingCode = true;
     % see which event tag was selected
-    marks = markToTime(hm.UserData.coding.mark{stream},hm.UserData.data.eye.fs);
+    marks = hm.UserData.coding.mark{stream};
     evtTagIdx = find(mPosXAx>marks(1:end-1) & mPosXAx<=marks(2:end));
     hm.UserData.ui.coding.panel.evtTagIdx(stream) = evtTagIdx;
     % load and activate toggles
@@ -1090,7 +1091,7 @@ if mPosXAx<=markToTime(hm.UserData.coding.mark{stream}(end),hm.UserData.data.eye
     % 2. also exactly coincident event tags in the other streams
     for p=1:length(otherStream)
         % have event with same start+end in this stream?
-        marksO  = markToTime(hm.UserData.coding.mark{otherStream(p)},hm.UserData.data.eye.fs);
+        marksO  = hm.UserData.coding.mark{otherStream(p)};
         iHave   = find(ismember(marksO,marks(evtTagIdx+[0 1])));
         if length(iHave)==2 && diff(iHave)==1
             iEvt = find(marksO==marks(evtTagIdx));
@@ -1106,7 +1107,7 @@ else
     % disable that stream
     hm.UserData.ui.coding.panelIsEditingCode = false;
     for p=1:length(otherStream)
-        if mPosXAx<=markToTime(hm.UserData.coding.mark{otherStream(p)}(end),hm.UserData.data.eye.fs)
+        if mPosXAx<=hm.UserData.coding.mark{otherStream(p)}(end)
             disableCodingStreamInPanel(hm,otherStream(p));
         end
     end
@@ -1179,7 +1180,7 @@ function updateCodeMarks(hm)
 if ~hm.UserData.coding.hasCoding
     return
 end
-marks   = markToTime(hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream},hm.UserData.data.eye.fs);
+marks   = hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream};
 qAx     = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
 % marks
 xMark = nan(1,length(marks)*3);
@@ -1201,45 +1202,44 @@ for p=1:length(stream)
         hm.UserData.coding.mark{stream(p)}(markerIdx(p)) = mark(p);
         
         % update graphics
-        time = markToTime(mark(p),hm.UserData.data.eye.fs);
         qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
         if stream(p)==hm.UserData.ui.coding.currentStream
             % always update the dragged marker
             for iAx=find(qAx)
-                hm.UserData.plot.coderMarks(iAx).XData((markerIdx(p)-1)*3+[1 2]) = time;
+                hm.UserData.plot.coderMarks(iAx).XData((markerIdx(p)-1)*3+[1 2]) = mark(p);
             end
         end
         if stream(p)==hm.UserData.ui.coding.currentStream
             % update coding shade
             if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{1})
                 % update tag
-                [hm.UserData.ui.coding.grabbedShadeElement{1}.Tag]    = deal(sprintf('codeShade%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0])));
+                [hm.UserData.ui.coding.grabbedShadeElement{1}.Tag]    = deal(sprintf('codeShade%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0])));
                 % update graphics
                 temp = hm.UserData.ui.coding.grabbedShadeElement{1}(1).XData;
-                temp(2:3) = time;
+                temp(2:3) = mark(p);
                 [hm.UserData.ui.coding.grabbedShadeElement{1}.XData]  = deal(temp);
             end
             if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && size(hm.UserData.ui.coding.grabbedShadeElement,2)>1 && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{2})
                 % update tag
-                [hm.UserData.ui.coding.grabbedShadeElement{2}.Tag]    = deal(sprintf('codeShade%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1])));
+                [hm.UserData.ui.coding.grabbedShadeElement{2}.Tag]    = deal(sprintf('codeShade%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1])));
                 % update graphics
                 temp = hm.UserData.ui.coding.grabbedShadeElement{2}(1).XData;
-                temp([1 4]) = time;
+                temp([1 4]) = mark(p);
                 [hm.UserData.ui.coding.grabbedShadeElement{2}.XData]  = deal(temp);
             end
         end
         % update scarf
         if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,1))
             % update tag
-            hm.UserData.ui.coding.grabbedScarfElement(p,1).Tag = sprintf('code%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0]));
+            hm.UserData.ui.coding.grabbedScarfElement(p,1).Tag = sprintf('code%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0]));
             % update graphics
-            hm.UserData.ui.coding.grabbedScarfElement(p,1).XData(2:3) = time;
+            hm.UserData.ui.coding.grabbedScarfElement(p,1).XData(2:3) = mark(p);
         end
         if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,2))
             % update tag
-            hm.UserData.ui.coding.grabbedScarfElement(p,2).Tag = sprintf('code%d,%d,%d,%d',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1]));
+            hm.UserData.ui.coding.grabbedScarfElement(p,2).Tag = sprintf('code%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1]));
             % update graphics
-            hm.UserData.ui.coding.grabbedScarfElement(p,2).XData([1 4]) = time;
+            hm.UserData.ui.coding.grabbedScarfElement(p,2).XData([1 4]) = mark(p);
         end
     end
 end
@@ -1254,7 +1254,7 @@ axs = hm.UserData.plot.ax(qAx);
 % get which element we should expect given coded events
 toAdd = [hm.UserData.coding.type{hm.UserData.ui.coding.currentStream}; hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(1:end-1); hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(2:end)];
 toAdd = [repmat(hm.UserData.ui.coding.currentStream,1,size(toAdd,2)); toAdd]; % add stream number
-expect = cellfun(@(x)sprintf('codeShade%d,%d,%d,%d',x),num2cell(toAdd,1),'uni',false).';
+expect = cellfun(@(x)sprintf('codeShade%d,%d,%.3f,%.3f',x),num2cell(toAdd,1),'uni',false).';
 % get which elements we have
 kids = findall(axs(1).Children,'Type','Patch'); % NB: assume shades are the same for all axes, as they should be
 have = {};
@@ -1273,7 +1273,7 @@ if any(qRem)
 end
 % add new ones
 for p=1:length(add)
-    info = sscanf(add{p},'codeShade%d,%d,%d,%d');
+    info = sscanf(add{p},'codeShade%d,%d,%f,%f');
     % for color, get first set bit (flags are highest bits)
     bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
     clrIdx = find(bits,1);
@@ -1292,7 +1292,7 @@ for p=1:length(add)
         end
         alpha = 0.3;
     end
-    markTimes = markToTime(info([3 4]),hm.UserData.data.eye.fs);
+    markTimes = info([3 4]);
     lims = hm.UserData.plot.defaultValueScale(:,qAx);
     for a=1:length(axs)
         idx = [1 1 2 2];
@@ -1324,7 +1324,7 @@ expect = {};
 for p=1:length(hm.UserData.coding.type)
     toAdd = [hm.UserData.coding.type{p}; hm.UserData.coding.mark{p}(1:end-1); hm.UserData.coding.mark{p}(2:end)];
     toAdd = [repmat(p,1,size(toAdd,2)); toAdd]; % add stream number
-    expect = [expect; cellfun(@(x)sprintf('code%d,%d,%d,%d',x),num2cell(toAdd,1),'uni',false).'];
+    expect = [expect; cellfun(@(x)sprintf('code%d,%d,%.3f,%.3f',x),num2cell(toAdd,1),'uni',false).'];
 end
 % get which elements we have
 kids = findall(ax.Children,'Type','Patch');
@@ -1339,7 +1339,7 @@ qRem = ~ismember(have,expect);
 delete(kids(qRem));
 % add new ones
 for p=1:length(add)
-    info = sscanf(add{p},'code%d,%d,%d,%d');
+    info = sscanf(add{p},'code%d,%d,%f,%f');
     % for color, get first set bit (flags are highest bits)
     bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
     clrIdx = find(bits,1);
@@ -1358,7 +1358,7 @@ for p=1:length(add)
         end
         alpha = 1.0;
     end
-    markTimes = markToTime(info([3 4]),hm.UserData.data.eye.fs);
+    markTimes = info([3 4]);
     patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',ax,'Tag',add{p});
 end
 % make sure time indicator is on top
@@ -2060,7 +2060,8 @@ iSet    = info(2);
 if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
     % rerun classifier
     hndl.String = 'Recalculating...';
-    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+    drawnow
+    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.time.startTime,hm.UserData.time.endTime);
     % update parameter storage
     hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
     % replace coding
@@ -2074,7 +2075,9 @@ if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.Use
     updateCodingShades(hm)
     updateScarf(hm);
     % notify done through button
+    hndl.Enable = 'off';
     hndl.String = 'Done';
+    drawnow
     pause(1.5)
     hndl.String = 'Recalculate';
 end
@@ -2190,9 +2193,9 @@ for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
         stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
         % load file
         if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')
-            tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+            tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
         else
-            tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.coding.stream.classifier.currentSettings{stream},timeToMark(hm.UserData.time.endTime,hm.UserData.data.eye.fs));
+            tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.coding.stream.classifier.currentSettings{stream},hm.UserData.time.startTime,hm.UserData.time.endTime);
         end
         % replace coding
         hm.UserData.coding.mark{stream} = tempCoding.mark;
@@ -2901,10 +2904,11 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
         updateTimeLines(hm);
     elseif hm.UserData.ui.coding.grabbedMarker
         % dragging, move marker
-        newMark     = repmat(timeToMark(mPosX,hm.UserData.data.eye.fs),size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
+        newMark     = repmat(findNearestTime(mPosX,hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime),size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
         markers     = hm.UserData.coding.mark(hm.UserData.ui.coding.grabbedMarkerLoc(:,1));
         markerIdx   = hm.UserData.ui.coding.grabbedMarkerLoc(:,2);
-        % also make sure that if dragging multiple streams, we stop all
+        ts          = hm.UserData.data.eye.left.ts;
+        % also make sure that if dragging multiple streams, we stop each
         % streams at the first limit we hit
         [qLeft,qRight] = deal(false);
         for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
@@ -2913,14 +2917,17 @@ if ~isempty(axisHndl) && any(axisHndl==hm.UserData.plot.ax)
             % don't have to check for whether we have a previous
             % also don't have to worry marker is outside of time axis, as then we
             % wouldn't be in this function
-            prevMark = markers{p}(markerIdx(p)-1);
-            nextMark = inf;
+            prevMark              = markers{p}(markerIdx(p)-1);
+            prevFirstPossibleMark = ts(find(ts==prevMark)+1);
             if markerIdx(p)<length(markers{p})
-                nextMark = markers{p}(markerIdx(p)+1);
+                nextMark             = markers{p}(markerIdx(p)+1);
+                prevLastPossibleMark = ts(find(ts==nextMark)-1);
+            else
+                prevLastPossibleMark = inf;
             end
-            qRight = qRight | newMark(p)>nextMark-1;
-            qLeft  = qLeft  | newMark(p)<prevMark+1;
-            newMark(p) = max(min(newMark(p),nextMark-1),prevMark+1);    % stay one sample away from the previous or next
+            qRight = qRight | newMark(p)>prevLastPossibleMark;
+            qLeft  = qLeft  | newMark(p)<prevFirstPossibleMark;
+            newMark(p) = max(min(newMark(p),prevLastPossibleMark),prevFirstPossibleMark);    % stay one sample away from the previous or next
         end
         if qLeft
             newMark(:) = max(newMark);
@@ -2967,7 +2974,8 @@ else
         endDrag(hm);
     elseif hm.UserData.ui.coding.grabbedMarker
         % find if to left or to right of axis
-        mPosX = hm.CurrentPoint(1); % this in now in pixels in the figure window
+        mPosX   = hm.CurrentPoint(1); % this is now in pixels in the figure window
+        ts      = hm.UserData.data.eye.left.ts;
         % since all axes are aligned, check against any left bound
         if mPosX<hm.UserData.plot.axRect(1,1)
             % on left of axis, as first one is never moved, we know we have
@@ -2978,8 +2986,9 @@ else
             % leftward
             newMark = zeros(size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
             for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
-                prevMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)-1);
-                newMark(p) = max(timeToMark(hm.UserData.plot.ax(1).XLim(1),hm.UserData.data.eye.fs),prevMark+1);
+                prevMark            = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)-1);
+                nextPossibleMarkT   = ts(find(ts==prevMark)+1);
+                newMark(p)          = max(hm.UserData.plot.ax(1).XLim(1),nextPossibleMarkT);
             end
             newMark(:) = max(newMark);
             % 2. update marks
@@ -2993,11 +3002,14 @@ else
             % rightward
             newMark = zeros(size(hm.UserData.ui.coding.grabbedMarkerLoc,1),1);
             for p=1:size(hm.UserData.ui.coding.grabbedMarkerLoc,1)
-                nextMark = inf;
                 if hm.UserData.ui.coding.grabbedMarkerLoc(p,2) < length(hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)})
+                    % there is a next mark, get its location
                     nextMark = hm.UserData.coding.mark{hm.UserData.ui.coding.grabbedMarkerLoc(p,1)}(hm.UserData.ui.coding.grabbedMarkerLoc(p,2)+1);
+                    prevPossibleMarkT   = ts(find(ts==nextMark)-1);
+                else
+                    prevPossibleMarkT   = inf;
                 end
-                newMark(p) = min(timeToMark(hm.UserData.plot.ax(1).XLim(2),hm.UserData.data.eye.fs),nextMark-1);
+                newMark(p) = min(hm.UserData.plot.ax(1).XLim(2),prevPossibleMarkT);
             end
             newMark(:) = min(newMark);
             % 2. update marks
@@ -3040,8 +3052,7 @@ if ~isempty(lineHndl) && contains(lineHndl.Tag,'timeIndicator')
 elseif ~isempty(lineHndl) && contains(lineHndl.Tag,'codeMark') && ~hm.UserData.coding.stream.isLocked(hm.UserData.ui.coding.currentStream)
     hm.UserData.ui.coding.hoveringMarker = true;
     % find which marker
-    marker = timeToMark(mPosX,hm.UserData.data.eye.fs);
-    [~,i] = min(abs(hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}-marker));
+    [~,i] = min(abs(hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}-mPosX));
     hm.UserData.ui.coding.hoveringWhichMarker = i;
 else
     % no hovering at all
@@ -3098,7 +3109,7 @@ if strcmp(hm.SelectionType,'normal') && ~hasShift && ~hasCtrl && ~hasAlt
             if all(acp>=[ax.XLim(1) ax.YLim(1)] & acp<=[ax.XLim(2) ax.YLim(2)])
                 % click on axis, restart click timer
                 hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint;
-                hm.UserData.ui.coding.panel.mPosAx = acp;
+                hm.UserData.ui.coding.panel.mPosAx = findNearestTime(acp,hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
                 hm.UserData.ui.coding.panel.clickedAx = ax;
                 stop(hm.UserData.ui.doubleClickTimer);
                 start(hm.UserData.ui.doubleClickTimer);
@@ -3113,7 +3124,7 @@ elseif hasShift && ~hasAlt
     qAllStream = hasCtrl;
     ax = hitTestType(hm,'axes');
     if hm.UserData.coding.hasCoding && ~isempty(ax) && any(ax==hm.UserData.plot.ax)
-        mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
+        mark = findNearestTime(ax.CurrentPoint(1,1),hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
         if ~hm.UserData.ui.coding.addingIntervening
             % check which, if any, event is pressed on
             for s=1:length(hm.UserData.coding.mark)
@@ -3136,8 +3147,7 @@ elseif hasShift && ~hasAlt
                 hm.UserData.ui.coding.interveningTempLoc    = mark;
                 for p=1:length(hm.UserData.plot.ax)
                     if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
-                        t = markToTime(mark,hm.UserData.data.eye.fs);
-                        hm.UserData.ui.coding.interveningTempElem(p) = plot([t t],hm.UserData.plot.ax(p).YLim,'Color','b','Parent',hm.UserData.plot.ax(p),'LineWidth',hm.UserData.plot.coderMarks(1).LineWidth*2);
+                        hm.UserData.ui.coding.interveningTempElem(p) = plot([mark mark],hm.UserData.plot.ax(p).YLim,'Color','b','Parent',hm.UserData.plot.ax(p),'LineWidth',hm.UserData.plot.coderMarks(1).LineWidth*2);
                     end
                 end
             end
@@ -3191,7 +3201,7 @@ function MouseRelease(hm,~)
 if hm.UserData.ui.coding.addingIntervening
     ax = hitTestType(hm,'axes');
     if ~isempty(ax) && any(ax==hm.UserData.plot.ax)
-        mark = timeToMark(ax.CurrentPoint(1,1),hm.UserData.data.eye.fs);
+        mark = findNearestTime(ax.CurrentPoint(1,1),hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
         % try adding intervening event, allows shift-click-drag adding an
         % intervening event
         tryAddInterveningEvt(hm,mark);
@@ -3245,7 +3255,7 @@ for p=length(hm.UserData.ui.coding.addingInterveningStream):-1:1   % go backward
             % add event
             hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1:idx) marks   hm.UserData.coding.mark{stream}(idx+1:end)];
             hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:idx) addType hm.UserData.coding.type{stream}(idx:end)];  % its correct to repeat element at idx twice, we're splitting existing evt into two and thus need to repeat its type
-            added{end+1,1} = idx+1;
+            added{end+1,1} = idx+1; %#ok<AGROW>
             added{end  ,2} = marks;
             added{end  ,3} = addType;
         else
@@ -3274,7 +3284,7 @@ for p=length(hm.UserData.ui.coding.addingInterveningStream):-1:1   % go backward
             % add event
             hm.UserData.coding.mark{stream} = [hm.UserData.coding.mark{stream}(1: idx) addMark hm.UserData.coding.mark{stream}( idx+1:end)];
             hm.UserData.coding.type{stream} = [hm.UserData.coding.type{stream}(1:tidx) addType hm.UserData.coding.type{stream}(tidx+1:end)];
-            added{end+1,1} = idx+1;
+            added{end+1,1} = idx+1; %#ok<AGROW>
             added{end  ,2} = addMark;
             added{end  ,3} = addType;
         end
@@ -3290,7 +3300,7 @@ if ~isempty(hm.UserData.ui.coding.addingInterveningStream)
     updateCodingShades(hm);
     updateScarf(hm);
     hm.UserData.ui.coding.panel.mPos = hm.CurrentPoint(1,1:2);
-    hm.UserData.ui.coding.panel.mPosAx(1) = markToTime(marks(2),hm.UserData.data.eye.fs);
+    hm.UserData.ui.coding.panel.mPosAx(1) = marks(2);
     initAndOpenCodingPanel(hm,pos);
 end
 % clean up
@@ -3354,12 +3364,12 @@ end
 end
 
 function obj = getCodeShadeElements(hm,varargin)
-tag = sprintf('codeShade%d,%d,%d,%d',varargin{:});
+tag = sprintf('codeShade%d,%d,%.3f,%.3f',varargin{:});
 obj = findobj(cat(1,hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children),'Tag',tag);
 end
 
 function obj = getScarfElement(hm,varargin)
-tag = sprintf('code%d,%d,%d,%d',varargin{:});
+tag = sprintf('code%d,%d,%.3f,%.3f',varargin{:});
 obj = findobj(hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children,'Tag',tag);
 end
 
@@ -3620,9 +3630,8 @@ end
 if nargin<3
     qStayWithinWindow = false;
 end
-% newTime should be a multiple of inter-sample-interval, and clamp it to 0
-% and data length
-newTime = clampTime(hm,newTime);
+% newTime should be an actual sample time, find nearest
+newTime = findNearestTime(newTime,hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
 if qStayWithinWindow
     if newTime < hm.UserData.plot.ax(1).XLim(1)
         newTime = newTime+1/hm.UserData.data.eye.fs;

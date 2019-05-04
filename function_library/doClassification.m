@@ -1,4 +1,4 @@
-function coding = doClassification(tobiiData,func,parameters,endT)
+function coding = doClassification(tobiiData,func,parameters,startT,endT)
 
 % run classification
 func = str2func(func);
@@ -23,12 +23,26 @@ for p=1:length(parameters)
     params.(parameters{p}.name) = val;
 end
 % call func
-[ts,type]   = func(tobiiData,params,endT);
+[ts,type]   = func(tobiiData,params);
 % ensure row vectors
 ts          = ts(:).';
 type        = type(:).';
 % fix up output
-[ts,type]   = addStartEndCoding(ts,type,endT);
+% 1. truncate events to part of data during which we actually have videos
+iBeforeSt   = find(ts<startT);
+if ~isempty(iBeforeSt)
+    ts  (iBeforeSt(end))    = startT;
+    ts  (iBeforeSt(1:end-1))= [];
+    type(iBeforeSt(1:end-1))= [];
+end
+iAfterEnd   = find(ts>=endT);
+if ~isempty(iAfterEnd)
+    ts  (iAfterEnd(1))      = endT;
+    ts  (iAfterEnd(2:end))  = [];
+    type(iAfterEnd(2:end))  = [];
+end
+% 2. make sure we have expected start and end markers
+[ts,type]   = addStartEndCoding(ts,type,startT,endT);
 % store
 coding.mark = ts;
 coding.type = type;

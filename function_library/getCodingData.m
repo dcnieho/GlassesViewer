@@ -37,15 +37,19 @@ lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
 options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
 
 % set file format version. coding files older than this version are ignored
-fileVersion = 1;
+fileVersion = 2;
 
 qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
 if qHaveExistingCoding
-    % we have a cache file, check its file version
+    % we have a cache file, check its file version and if coding streams
+    % and categories are the same
     coding = load(fullfile(filedir,fname),'fileVersion','codeCats');
     qHaveExistingCoding = isfield(coding,'fileVersion') && coding.fileVersion==fileVersion && isequal(coding.codeCats,theCats);
 end
 
+% for start of coding stream, need first timestamp equal to zero or
+% less
+tFirst = tobiiData.eye.left.ts(find(tobiiData.eye.left.ts<=0,1,'last'));
 if qHaveExistingCoding
     % load
     coding                  = load(fullfile(filedir,fname));
@@ -57,7 +61,7 @@ if qHaveExistingCoding
 else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
-    coding.mark             = repmat({1},nStream,1);            % we code all samples, so always start with a mark at first sample
+    coding.mark             = repmat({tFirst},nStream,1);       % we code all samples, so always start with a mark at t is roughly 0
     coding.type             = repmat({zeros(1,0)},nStream,1);   % always one less elements than in mark, as two marks define one event
     coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
     coding.codeColors       = theColors;                        % just cosmetics, can be ignored, but good to have in easy format
@@ -74,16 +78,15 @@ if isfield(tobiiData.videoSync,'eye')
 else
     endT = min([tobiiData.videoSync.scene.fts(end)]);
 end
-endT = timeToMark(endT,tobiiData.eye.fs);
 for p=1:nStream
     switch lower(coding.stream.type{p})
         case {'syncin','syncout'}
             % load sync channel data from Tobii data
             if strcmpi(coding.stream.type{p},'syncin')
-                ts  = timeToMark(tobiiData.syncPort.in.ts(:).',tobiiData.eye.fs);
+                ts  = tobiiData.syncPort.in.ts(:).';
                 type= tobiiData.syncPort.in.state(:).'+1;
             else
-                ts  = timeToMark(tobiiData.syncPort.out.ts(:).',tobiiData.eye.fs);
+                ts  = tobiiData.syncPort.out.ts(:).';
                 type= tobiiData.syncPort.out.state(:).'+1;
             end
             % sometimes multiple times same event in a row, merge
@@ -93,7 +96,7 @@ for p=1:nStream
             if isempty(ts)
                 warning('glassesViewer: no %s events found for stream %d',coding.stream.type{p},p);
             end
-            [ts,type]       = addStartEndCoding(ts,type,endT);
+            [ts,type]       = addStartEndCoding(ts,type,tFirst,endT);
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
@@ -104,7 +107,7 @@ for p=1:nStream
             % file
             coding.stream.options{p}.dataDir = filedir;
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
-                tempCoding = loadCodingFile(coding.stream.options{p},endT);
+                tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,tFirst,endT);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;
@@ -147,7 +150,7 @@ for p=1:nStream
                 else
                     settings = coding.stream.classifier.currentSettings{p};
                 end
-                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,endT);
+                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,tFirst,endT);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;
