@@ -68,8 +68,6 @@ if isprop(hm,'WindowState')
     hm.WindowState = 'Maximized';
     drawnow, pause(0.5);    % on some systems, it appears drawnow doesn't finish executing before we hit the next line, so add a pause
     pos     = hm.OuterPosition;
-    pos(1)  = max(pos(1),ws(1));
-    pos(3)  = min(pos(3),ws(3));
     set(hm,'WindowState','normal','OuterPosition',pos);
 else
     hmmar       = [0 0 0 40];    % left right top bottom
