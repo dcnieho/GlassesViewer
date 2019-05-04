@@ -97,6 +97,7 @@ waitfor(f);
         
         tempPartName = data.PartName(index);
         data.uPartName = unique(tempPartName);
+        set(data.pPart,'BackgroundColor',[1 0.5 0.2]);
         set(data.popupPart,'Value',1);
         set(data.popupPart,'String',[{'<select participant>'}; data.uPartName]);
         
