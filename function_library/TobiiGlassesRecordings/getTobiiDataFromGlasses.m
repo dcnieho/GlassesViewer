@@ -118,7 +118,7 @@ if qGenCacheFile
     % 4 organize into types
     % the overall strategy to deal with crap in the files is to:
     % 1. remove all gidx with more than 8 packets
-    % 2. remove binocular data if data for neither eye is complete
+    % 2. remove binocular data if data for both eyes is incomplete
     % 3. check if any monocular gidx with 2 packets for single eye,
     %    remove
     % 4. remove data where (when sorted by gidx) time apparently went
@@ -140,7 +140,7 @@ if qGenCacheFile
     qLeftEye(qRemove,:) = [];
     % 4.1.2 now for each gidx, build a table flagging what we have, so we
     % can throw out all broken samples
-    qAllEyeDat = [qData(:,1:3)&qLeftEye qData(:,1:3)&~qLeftEye qData(:,4:5)];
+    qAllEyeDat = [qData(:,1:3)&qLeftEye qData(:,1:3)&~qLeftEye qData(:,4:5)]; % three fields left eye, three fields right, two binocular
     qAllEyeDat(~qHasGidx,:) = [];
     [gs,i,j] = unique(dat.gidx(qHasGidx));
     qGidxTags = false(length(i),size(qAllEyeDat,2));
@@ -148,8 +148,8 @@ if qGenCacheFile
     qGidxTags(sub2ind(size(qGidxTags),j,x)) = true;
     % 4.1.3 remove binocular data for gidx for which monocular data for
     % both eyes is incomplete (one eye incomplete is possible, binocular
-    % data is then computed based on assumption of unchanged vergence
-    % distance since last available true binocular data)
+    % data is then computed by the eye tracker based on assumption of
+    % unchanged vergence distance since last available true binocular data)
     qBad = ~all(qGidxTags(:,1:3),2) & ~all(qGidxTags(:,4:6),2) & any(qGidxTags(:,7:8),2);
     qRemove = ismember(dat.gidx,gs(qBad))&any(qData(:,4:5),2);   % remove binocular data for these
     % 4.1.4 remove monocular data for incomplete eyes

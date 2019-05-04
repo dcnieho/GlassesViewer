@@ -19,6 +19,8 @@ assert(all(isnan(u) | u<1000))  % arbitrarily decide that less than one ms is sm
 
 % step 1, for left, check if in right we do have corresponding ts, use it
 % to fill gap. do same vice versa. Then check for binocular
+% NB: timestamps are nan if for a given gidx there was no data, see
+% organizeTobiiGlassesEyeData
 % 1. right -> left eye
 qInRight = isnan(data.left.ts) & ~isnan(data.right.ts);
 data.left.ts(qInRight) = data.right.ts(qInRight);
@@ -29,16 +31,20 @@ data.right.ts(qInleft) = data.left.ts(qInleft);
 qInleft = isnan(data.binocular.ts) & ~isnan(data.left.ts);
 data.binocular.ts(qInleft) = data.left.ts(qInleft);
 
-% gaps are places where there is ISI corresponding to a sampling frequency
-% less than expectedFs*.6 Hz (arbitrarily chosen). deal with these
-% first remove all nan ts from a signal (we now break correspondence
-% between the three signals, though at the end of this operation for all
-% three eyes we should kinda have it back, depending on what is missing at
-% the starts and ends of each signal. no biggy anyway.
+% gaps are places where ISI is 1.667 (5/3) times longer than expected given
+% sampling frequency expectedFs (arbitrarily chosen). deal with these.
+% First remove all nan ts from a signal, find gaps by above definition,
+% fill with new ts and nan data
+% Note that we now break correspondence between the three signals, as they
+% may have different missing data in them. As we have taken maximum care to
+% have corresponding timestamps in the three signals, in practice after the
+% below operation, the three signals will correspond again (i.e., have the
+% same ts fields). I struggle to think of a situation where this would not
+% be the case, and have not found a recording where this failed.
 data.left       = replaceElementsInStruct(data.left     ,isnan(data.left.ts),[],[],true);
 data.right      = replaceElementsInStruct(data.right    ,isnan(data.left.ts),[],[],true);
 data.binocular  = replaceElementsInStruct(data.binocular,isnan(data.left.ts),[],[],true);
-thr = round(1000*1000/(expectedFs*.6)); % expectedFs*.6 Hz ISI in us
+thr = round(1000*1000/expectedFs*5/3); % consider a gap as more than thr time elapsed between consequtive samples (5/3 means gap when ISI is 1.667 times longer than expected)
 for c=1:3
     switch c
         case 1
@@ -58,7 +64,7 @@ for c=1:3
     nSampMissing    = round(gapSzs/(1000*1000/expectedFs))-1;     % round instead of ceil or floor gives smallest deviation from nominal framerate: 5.4->5, 5.6->6
     
     % place samples in the right places (effectively inserts the missing
-    % samples
+    % samples)
     % indicate where real samples should be in timeline
     idxs            = ones(1,length(data.(ch).ts));
     idxs(iGap+1)    = nSampMissing+1;
@@ -74,4 +80,6 @@ for c=1:3
     % fill gaps in time with faked equally intersecting intervals
     data.(ch).ts = round(interp1(idxs,data.(ch).ts(idxs),1:idxs(end),'linear')).';
 end
+if ~isequal(data.left.ts,data.right.ts) || ~isequal(data.left.ts,data.binocular.ts)
+    warning('timestamps for the different eyes are not the same. please contact dcnieho@gmail.com if you are willing to share this recording, I would love to see it and check if this is a problem')
 end
