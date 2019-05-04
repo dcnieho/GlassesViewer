@@ -250,6 +250,21 @@ if hm.UserData.coding.hasCoding
     % prepare coder popup panel
     createCoderPanel(hm);
     
+    % set up coding shades
+    for p=1:length(hm.UserData.plot.ax)
+        if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
+            hm.UserData.plot.codeShade(p) = patch('Faces',[],'Vertices',[].','FaceVertexCData',[],'FaceColor','interp','FaceAlpha','flat','AlphaDataMapping','none','LineStyle','none','Parent',hm.UserData.plot.ax(p),'Tag',['codeShade|' hm.UserData.plot.ax(p).Tag]);
+            uistack(hm.UserData.plot.codeShade(p),'bottom'); % make sure shade is on the bottom
+        end
+    end
+    
+    % set up scarf
+    ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
+    for p=1:length(hm.UserData.coding.type)
+        hm.UserData.plot.scarfs(p) = patch('Faces',[],'Vertices',[].','FaceVertexCData',[],'FaceColor','interp','FaceAlpha','flat','AlphaDataMapping','none','LineStyle','none','Parent',ax,'Tag',sprintf('code|%d',p));
+    end
+    uistack(hm.UserData.plot.scarfs,'bottom'); % make sure scarf is on the bottom so time indicator is on top of it
+    
     % draw actual coding, if any
     hm.UserData.ui.coding.currentStream = nan;
     changeCoderStream(hm,1);
@@ -266,8 +281,6 @@ hm.UserData.ui.scrollRefAx                  = matlab.graphics.GraphicsPlaceholde
 % UI for dragging coding markers
 hm.UserData.ui.coding.grabbedMarker         = false;
 hm.UserData.ui.coding.grabbedMarkerLoc      = [];
-hm.UserData.ui.coding.grabbedShadeElement   = [];
-hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
 hm.UserData.ui.coding.hoveringMarker        = false;
 hm.UserData.ui.coding.hoveringWhichMarker   = nan;
 % UI for adding event in middle of another
@@ -1197,49 +1210,65 @@ end
 function moveMarker(hm,stream,mark,markerIdx)
 % update if needed
 for p=1:length(stream)
-    if mark(p) ~= hm.UserData.coding.mark{stream(p)}(markerIdx(p))
+    markers = hm.UserData.coding.mark{stream(p)};
+    if mark(p) ~= markers(markerIdx(p))
         % update store
         hm.UserData.coding.mark{stream(p)}(markerIdx(p)) = mark(p);
+        
+        % for codeShade + scarfs
+        % for markerIdx==2, update 3:6, for 3 update 7:10, for
+        % last, update last-1:last only
+        idxs = (markerIdx(p)-1)*4-2+[1:4];
+        idxs(idxs>(length(markers)-1)*4) = [];
         
         % update graphics
         qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
         if stream(p)==hm.UserData.ui.coding.currentStream
-            % always update the dragged marker
+            % always update the dragged marker and codeShade
             for iAx=find(qAx)
+                % marker
                 hm.UserData.plot.coderMarks(iAx).XData((markerIdx(p)-1)*3+[1 2]) = mark(p);
-            end
-        end
-        if stream(p)==hm.UserData.ui.coding.currentStream
-            % update coding shade
-            if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{1})
-                % update tag
-                [hm.UserData.ui.coding.grabbedShadeElement{1}.Tag]    = deal(sprintf('codeShade%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0])));
-                % update graphics
-                temp = hm.UserData.ui.coding.grabbedShadeElement{1}(1).XData;
-                temp(2:3) = mark(p);
-                [hm.UserData.ui.coding.grabbedShadeElement{1}.XData]  = deal(temp);
-            end
-            if ~isempty(hm.UserData.ui.coding.grabbedShadeElement) && size(hm.UserData.ui.coding.grabbedShadeElement,2)>1 && ~isempty(hm.UserData.ui.coding.grabbedShadeElement{2})
-                % update tag
-                [hm.UserData.ui.coding.grabbedShadeElement{2}.Tag]    = deal(sprintf('codeShade%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1])));
-                % update graphics
-                temp = hm.UserData.ui.coding.grabbedShadeElement{2}(1).XData;
-                temp([1 4]) = mark(p);
-                [hm.UserData.ui.coding.grabbedShadeElement{2}.XData]  = deal(temp);
+                % codeShade
+                hm.UserData.plot.codeShade(iAx).Vertices(idxs,1) = mark(p);
             end
         end
         % update scarf
-        if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,1))
-            % update tag
-            hm.UserData.ui.coding.grabbedScarfElement(p,1).Tag = sprintf('code%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)-1),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[-1 0]));
-            % update graphics
-            hm.UserData.ui.coding.grabbedScarfElement(p,1).XData(2:3) = mark(p);
-        end
-        if ishandle(hm.UserData.ui.coding.grabbedScarfElement(p,2))
-            % update tag
-            hm.UserData.ui.coding.grabbedScarfElement(p,2).Tag = sprintf('code%d,%d,%.3f,%.3f',stream(p),hm.UserData.coding.type{stream(p)}(markerIdx(p)),hm.UserData.coding.mark{stream(p)}(markerIdx(p)+[0 1]));
-            % update graphics
-            hm.UserData.ui.coding.grabbedScarfElement(p,2).XData([1 4]) = mark(p);
+        hm.UserData.plot.scarfs(stream(p)).Vertices(idxs,1) = mark(p);
+    end
+end
+end
+
+function [faces,vertices,colors,alphas] = getCodeScarf(hm,stream,baseAlpha)
+marks   = hm.UserData.coding.mark{stream};
+types   = hm.UserData.coding.type{stream};
+if isempty(types)
+    % simply clear vertex data
+    [faces,vertices,colors,alphas] = deal([]);
+else
+    % prep data structures
+    square  = [1 2 4 3];
+    faces   = bsxfun(@plus,square,[0:length(types)-1].'*4);
+    vertices= reshape([marks(1:end-1);marks(1:end-1);marks(2:end);marks(2:end)],[],1);   % NB: Y vertices differ per plot, set them in loop below
+    colors  = zeros(size(vertices,1),3);
+    alphas  = repmat(baseAlpha, size(faces,1),1);
+    % now set colors and alpha per element
+    for c=1:length(types)
+        % for color, get first set bit (flags are highest bits)
+        bits    = fliplr(rem(floor(types(c)*pow2(1-8:0)),2));
+        clrIdx  = find(bits,1);
+        if isempty(hm.UserData.coding.codeColors{stream}{clrIdx})
+            alphas(c) = 0;
+        else
+            cidx    = [1:4]+4*(c-1);
+            baseClr = hm.UserData.coding.codeColors{stream}{clrIdx}./255;
+            clr     = repmat(baseClr,4,1);
+            if sum(bits)>1
+                bitsL       = find(bits);
+                flagClr     = hm.UserData.coding.codeColors{stream}{bitsL(end)}./255;
+                clr(3,:)    = flagClr;
+                clr([1 4],:)= repmat(flagClr*.5+baseClr*.5,2,1);
+            end
+            colors(cidx,:) = clr;
         end
     end
 end
@@ -1250,122 +1279,42 @@ if ~hm.UserData.coding.hasCoding
     return;
 end
 qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
-axs = hm.UserData.plot.ax(qAx);
-% get which element we should expect given coded events
-toAdd = [hm.UserData.coding.type{hm.UserData.ui.coding.currentStream}; hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(1:end-1); hm.UserData.coding.mark{hm.UserData.ui.coding.currentStream}(2:end)];
-toAdd = [repmat(hm.UserData.ui.coding.currentStream,1,size(toAdd,2)); toAdd]; % add stream number
-expect = cellfun(@(x)sprintf('codeShade%d,%d,%.3f,%.3f',x),num2cell(toAdd,1),'uni',false).';
-% get which elements we have
-kids = findall(axs(1).Children,'Type','Patch'); % NB: assume shades are the same for all axes, as they should be
-have = {};
-if ~isempty(kids)
-    have = {kids.Tag};
-end
-% find which should be removed and which added
-add = expect(~ismember(expect,have));
-qRem = ~ismember(have,expect);
-% remove unneeded
-if any(qRem)
-    for a=1:length(axs)
-        kids = findall(axs(a).Children,'Type','Patch'); % NB: assume shades are the same for all axes, as they should be
-        delete(kids(qRem));
+
+% get coded events to show
+[faces,vertices,colors,alphas] = getCodeScarf(hm,hm.UserData.ui.coding.currentStream,.3);
+
+% draw
+for iAx=find(qAx)
+    lims = hm.UserData.plot.defaultValueScale(:,iAx);
+    lims = lims+[-1;1]*.2.*diff(lims);  % 20% extra at both sides
+    if strcmp(hm.UserData.plot.ax(iAx).YDir,'reverse')
+        lims = flipud(lims);
     end
-end
-% add new ones
-for p=1:length(add)
-    info = sscanf(add{p},'codeShade%d,%d,%f,%f');
-    % for color, get first set bit (flags are highest bits)
-    bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
-    clrIdx = find(bits,1);
-    if isempty(hm.UserData.coding.codeColors{info(1)}{clrIdx})
-        clr = {};
-        alpha = 0.0;
+    
+    if ~isempty(vertices)
+        theVertices = [vertices repmat(lims,size(vertices,1)/2,1)];
     else
-        baseClr = hm.UserData.coding.codeColors{info(1)}{clrIdx}./255;
-        clr = {'FaceVertexCData',repmat(baseClr,4,1),'FaceColor','flat'};
-        if sum(bits)>1
-            bitsL = find(bits);
-            flagClr = hm.UserData.coding.codeColors{info(1)}{bitsL(end)}./255;
-            clr{2}(2,:) = flagClr;
-            clr{2}([1 3],:) = repmat(flagClr*.5+baseClr*.5,2,1);
-            clr{4} = 'interp';
-        end
-        alpha = 0.3;
+        theVertices = [];
     end
-    markTimes = info([3 4]);
-    lims = hm.UserData.plot.defaultValueScale(:,qAx);
-    for a=1:length(axs)
-        idx = [1 1 2 2];
-        if strcmp(axs(a).YDir,'reverse')
-            idx = fliplr(idx);
-        end
-        theLims = lims(:,a);
-        theLims = theLims+[-1;1]*.2.*diff(theLims);  % 20% extra at both sides
-        theLims = theLims(idx);
-        patch('XData',markTimes([1 2 2 1]),'YData', theLims,clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',axs(a),'Tag',add{p});
-    end
-end
-% make sure all shades are on the bottom
-if any(qRem) || ~isempty(add)
-    for a=1:length(axs)
-        kids = findall(axs(a).Children,'Type','Patch');
-        uistack(kids,'bottom');
-    end
+    set(hm.UserData.plot.codeShade(iAx),'Faces',faces,'Vertices',theVertices,'FaceVertexCData',colors,'FaceVertexAlphaData',alphas);
 end
 end
 
 function updateScarf(hm)
-ax = hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf'));
-if isempty(ax)
+if ~any(strcmp({hm.UserData.plot.ax.Tag},'scarf'))
     return
 end
-% get which element we should expect given coded events
-expect = {};
-for p=1:length(hm.UserData.coding.type)
-    toAdd = [hm.UserData.coding.type{p}; hm.UserData.coding.mark{p}(1:end-1); hm.UserData.coding.mark{p}(2:end)];
-    toAdd = [repmat(p,1,size(toAdd,2)); toAdd]; % add stream number
-    expect = [expect; cellfun(@(x)sprintf('code%d,%d,%.3f,%.3f',x),num2cell(toAdd,1),'uni',false).'];
-end
-% get which elements we have
-kids = findall(ax.Children,'Type','Patch');
-have = {};
-if ~isempty(kids)
-    have = {kids.Tag};
-end
-% find which should be removed and which added
-add = expect(~ismember(expect,have));
-qRem = ~ismember(have,expect);
-% remove unneeded
-delete(kids(qRem));
-% add new ones
-for p=1:length(add)
-    info = sscanf(add{p},'code%d,%d,%f,%f');
-    % for color, get first set bit (flags are highest bits)
-    bits = fliplr(rem(floor(info(2)*pow2(1-8:0)),2));
-    clrIdx = find(bits,1);
-    if isempty(hm.UserData.coding.codeColors{info(1)}{clrIdx})
-        clr = {};
-        alpha = 0.0;
+
+for p=1:length(hm.UserData.plot.scarfs)
+    % get coded events to show
+    [faces,vertices,colors,alphas] = getCodeScarf(hm,p,1);
+    if ~isempty(vertices)
+        theVertices = [vertices repmat([.5;-.5]+p,size(vertices,1)/2,1)];
     else
-        baseClr = hm.UserData.coding.codeColors{info(1)}{clrIdx}./255;
-        clr = {'FaceVertexCData',repmat(baseClr,4,1),'FaceColor','flat'};
-        if sum(bits)>1
-            bitsL = find(bits);
-            flagClr = hm.UserData.coding.codeColors{info(1)}{bitsL(end)}./255;
-            clr{2}(2,:) = flagClr;
-            clr{2}([1 3],:) = repmat(flagClr*.5+baseClr*.5,2,1);
-            clr{4} = 'interp';
-        end
-        alpha = 1.0;
+        theVertices = [];
     end
-    markTimes = info([3 4]);
-    patch('XData',markTimes([1 2 2 1]),'YData', [.5 .5 -.5 -.5]+info(1),clr{:},'FaceAlpha',alpha,'LineStyle','none','Parent',ax,'Tag',add{p});
-end
-% make sure time indicator is on top
-if any(qRem) || ~isempty(add)
-    timeIndicator = findall(ax.Children,'Type','Line');
-    qTI = ax.Children==timeIndicator;
-    ax.Children = [timeIndicator; ax.Children(~qTI)];
+    
+    set(hm.UserData.plot.scarfs(p),'Faces',faces,'Vertices',theVertices,'FaceVertexCData',colors,'FaceVertexAlphaData',alphas);
 end
 
 % this function is always called when some coding is changed, so this is
@@ -2439,13 +2388,14 @@ for a=1:nVisible
 end
 
 % reorder handles and other plot attributes
-assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','coderMarks','zoom'})),'added new fields, check if need to reorder')
+assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','coderMarks','codeShade','scarfs','zoom'})),'added new fields, check if need to reorder')
 hm.UserData.plot.ax                 = hm.UserData.plot.ax(newOrder);
 hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
 hm.UserData.plot.axPos              = hm.UserData.plot.axPos(newOrder,:);
 hm.UserData.plot.axRect             = hm.UserData.plot.axRect(newOrder,:);
 hm.UserData.plot.coderMarks         = hm.UserData.plot.coderMarks(newOrder);
+hm.UserData.plot.codeShade          = hm.UserData.plot.codeShade(newOrder);
 
 % update this listbox and its selection
 listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
@@ -3331,14 +3281,6 @@ wm = hm.UserData.ui.coding.hoveringWhichMarker;
 mark = hm.UserData.coding.mark{cs}(wm);
 hm.UserData.ui.coding.grabbedMarker         = true;
 hm.UserData.ui.coding.grabbedMarkerLoc      = [cs wm mark];
-% get corresponding code shade and scarf elements
-hm.UserData.ui.coding.grabbedShadeElement{1,1}  = getCodeShadeElements(hm,cs,hm.UserData.coding.type{cs}(wm-1), hm.UserData.coding.mark{cs}(wm+[-1 0]));
-hm.UserData.ui.coding.grabbedScarfElement(1,1)  = getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm-1), hm.UserData.coding.mark{cs}(wm+[-1 0]));
-if wm<length(hm.UserData.coding.mark{cs})
-    % the marker is part of two code shade and scarf elements
-    hm.UserData.ui.coding.grabbedShadeElement{1,2}  = getCodeShadeElements(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
-    hm.UserData.ui.coding.grabbedScarfElement(1,2)  = getScarfElement(hm,cs,hm.UserData.coding.type{cs}(wm), hm.UserData.coding.mark{cs}(wm+[0 1]));
-end
 
 % is also dragging aligned, check other streams for marker at same location
 if qAlignedMarkersAlso
@@ -3353,24 +3295,9 @@ if qAlignedMarkersAlso
         if any(hm.UserData.coding.mark{otherStream(p)}==mark)
             iMark = find(hm.UserData.coding.mark{otherStream(p)}==mark);
             hm.UserData.ui.coding.grabbedMarkerLoc = [hm.UserData.ui.coding.grabbedMarkerLoc; otherStream(p) iMark mark];
-            hm.UserData.ui.coding.grabbedScarfElement(end+1,1)  = getScarfElement(hm,otherStream(p),hm.UserData.coding.type{otherStream(p)}(iMark-1), hm.UserData.coding.mark{otherStream(p)}(iMark+[-1 0]));
-            if iMark<length(hm.UserData.coding.mark{otherStream(p)})
-                % the marker is part of two scarf elements
-                hm.UserData.ui.coding.grabbedScarfElement(end,2)= getScarfElement(hm,otherStream(p),hm.UserData.coding.type{otherStream(p)}(iMark), hm.UserData.coding.mark{otherStream(p)}(iMark+[0 1]));
-            end
         end
     end
 end
-end
-
-function obj = getCodeShadeElements(hm,varargin)
-tag = sprintf('codeShade%d,%d,%.3f,%.3f',varargin{:});
-obj = findobj(cat(1,hm.UserData.plot.ax(~strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children),'Tag',tag);
-end
-
-function obj = getScarfElement(hm,varargin)
-tag = sprintf('code%d,%d,%.3f,%.3f',varargin{:});
-obj = findobj(hm.UserData.plot.ax(strcmp({hm.UserData.plot.ax.Tag},'scarf')).Children,'Tag',tag);
 end
 
 function endDrag(hm,doFullUpdate)
@@ -3386,8 +3313,6 @@ if hm.UserData.ui.grabbedTime
 elseif hm.UserData.ui.coding.grabbedMarker
     hm.UserData.ui.coding.grabbedMarker         = false;
     hm.UserData.ui.coding.grabbedMarkerLoc      = [];
-    hm.UserData.ui.coding.grabbedShadeElement   = [];
-    hm.UserData.ui.coding.grabbedScarfElement   = [matlab.graphics.GraphicsPlaceholder matlab.graphics.GraphicsPlaceholder];
     if nargin<2 || doFullUpdate
         updateScarf(hm);
     else
