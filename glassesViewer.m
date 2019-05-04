@@ -475,14 +475,17 @@ if ceil(hm.UserData.time.endTime/11)>60
     % minutes
     stepLbls = 0:ceil(hm.UserData.time.endTime/60/11):hm.UserData.time.endTime/60;
     steps    = stepLbls*60;
+    toolTip  = 'time (minutes)';
 else
     % seconds
     stepLbls = 0:ceil(hm.UserData.time.endTime/11):hm.UserData.time.endTime;
     steps    = stepLbls;
+    toolTip  = 'time (seconds)';
 end
 for p=1:length(stepLbls)
     labelTable.put( int32( steps(p)*hm.UserData.ui.VCR.slider.fac ), javax.swing.JLabel(sprintf('%d',stepLbls(p))) );
 end
+hm.UserData.ui.VCR.slider.jComp.ToolTipText = toolTip;
 hm.UserData.ui.VCR.slider.jComp.LabelTable=labelTable;
 hm.UserData.ui.VCR.slider.jComp.MajorTickSpacing = steps(2)*hm.UserData.ui.VCR.slider.fac;
 hm.UserData.ui.VCR.slider.jComp.MinorTickSpacing = steps(2)/5*hm.UserData.ui.VCR.slider.fac;
