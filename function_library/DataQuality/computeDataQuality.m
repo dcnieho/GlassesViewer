@@ -12,7 +12,7 @@ qGenCacheFile = ~exist(fullfile(recordingDir,'dataquality.mat'),'file');
 if ~qGenCacheFile
     % we have a cache file, check its file version and windowLength
     cache = load(fullfile(recordingDir,'dataquality.mat'),'fileVersion','windowMs');
-    qGenCacheFile = cache.fileVersion<fileVersion || cache.windowMs~=windowLengthMs;
+    qGenCacheFile = cache.fileVersion~=fileVersion || cache.windowMs~=windowLengthMs;
 end
 
 if qGenCacheFile

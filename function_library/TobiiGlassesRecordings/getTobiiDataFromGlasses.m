@@ -8,7 +8,7 @@ qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
 if ~qGenCacheFile
     % we have a cache file, check its file version
     cache = load(fullfile(recordingDir,'livedata.mat'),'fileVersion');
-    qGenCacheFile = cache.fileVersion<fileVersion;
+    qGenCacheFile = cache.fileVersion~=fileVersion;
 end
 
 if qGenCacheFile
