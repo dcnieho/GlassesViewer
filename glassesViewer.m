@@ -26,9 +26,7 @@ if 1
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
-    selectedDir = 'C:\dat\projects\headmounted event classification\data\extra test\TG2-switch2';
-    selectedDir = 'C:\Users\huml-dkn\Desktop\marcus\projects';
-    selectedDir = 'C:\dat\projects\glasses test\data\Tobii 100Hz';
+    selectedDir = '';
 end
 if ~selectedDir
     return
@@ -169,15 +167,25 @@ for a=1:nPanel
         case 'azi'
             % 1. azimuth
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.aziLim.*[-1 1]];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','azi');
-            hm.UserData.plot.ax(a).YLabel.String = 'azi (deg)';
+            if isfield(hm.UserData.settings.plot.panelNames,'azi')
+                lbl = hm.UserData.settings.plot.panelNames.azi;
+            else
+                lbl = 'azi';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.azi,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.azi,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'ele'
             % 2. elevation
             hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.eleLim.*[-1 1]];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','ele');
-            hm.UserData.plot.ax(a).YLabel.String = 'ele (deg)';
+            if isfield(hm.UserData.settings.plot.panelNames,'ele')
+                lbl = hm.UserData.settings.plot.panelNames.ele;
+            else
+                lbl = 'ele';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
             hm.UserData.plot.ax(a).YDir = 'reverse';
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.ele,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.ele,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
@@ -187,22 +195,37 @@ for a=1:nPanel
             velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
             velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
             hm.UserData.plot.defaultValueScale(:,a) = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','vel');
-            hm.UserData.plot.ax(a).YLabel.String = 'vel (deg/s)';
+            if isfield(hm.UserData.settings.plot.panelNames,'vel')
+                lbl = hm.UserData.settings.plot.panelNames.vel;
+            else
+                lbl = 'vel';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
             plot(hm.UserData.data.eye. left.ts,velL,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,velR,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'pup'
             % 4. pupil
             hm.UserData.plot.defaultValueScale(:,a) = [0 nanmax([hm.UserData.data.eye.left.pd(:); hm.UserData.data.eye.right.pd(:)])];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','pup');
-            hm.UserData.plot.ax(a).YLabel.String = 'pup (mm)';
+            if isfield(hm.UserData.settings.plot.panelNames,'pup')
+                lbl = hm.UserData.settings.plot.panelNames.pup;
+            else
+                lbl = 'pup';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.pd,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.pd,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'gyro'
             % 5. gyroscope
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','gyro');
-            hm.UserData.plot.ax(a).YLabel.String = 'gyro (deg/s)';
+            if isfield(hm.UserData.settings.plot.panelNames,'gyro')
+                lbl = hm.UserData.settings.plot.panelNames.gyro;
+            else
+                lbl = 'gyro';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,1),'r','Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,2),'b','Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,3),'g','Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
@@ -213,15 +236,25 @@ for a=1:nPanel
                 ac = ac-nanmean(ac,1);
             end
             hm.UserData.plot.defaultValueScale(:,a) = [nanmin(ac(:)) nanmax(ac(:))];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','acc');
-            hm.UserData.plot.ax(a).YLabel.String = 'acc (m/s^2)';
+            if isfield(hm.UserData.settings.plot.panelNames,'acc')
+                lbl = hm.UserData.settings.plot.panelNames.acc;
+            else
+                lbl = 'acc';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (m/s^2)',lbl);
             plot(hm.UserData.data.accelerometer.ts,ac(:,1),'r','Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,2),'b','Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,3),'g','Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
         case 'scarf'
             % 7. scarf plot special axis
             hm.UserData.plot.defaultValueScale(:,a) = [.5 length(hm.UserData.coding.codeCats)+.5];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag','scarf','YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
+            if isfield(hm.UserData.settings.plot.panelNames,'scarf')
+                lbl = hm.UserData.settings.plot.panelNames.scarf;
+            else
+                lbl = 'scarf';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl,'YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
             % for arrow indicating current stream
             hm.UserData.plot.ax(a).YAxis.FontSize = 12;
             hm.UserData.plot.ax(a).YAxis.TickLength(1) = 0;
@@ -1389,7 +1422,7 @@ comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10
 
 % 3.2 listbox
 c=c+1;
-listItems   = {hm.UserData.plot.ax.Tag};    % TODO: allow user-provided stream names
+listItems   = {hm.UserData.plot.ax.Tag};
 comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
 listbox     = comps(c);
 
