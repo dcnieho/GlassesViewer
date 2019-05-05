@@ -1449,7 +1449,6 @@ jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL);
 comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 1 20],'Tag','SepVert');
 
 % 7 current time
-% TODO HERE I WAS; C`CONTINUE CHAGING POSs to something initial
 c=c+1;
 % do this complicated way to take timezone effects into account..
 % grr... Setting the timezone of the formatter fixes the display, but
@@ -3447,10 +3446,9 @@ if newTime >= hm.UserData.time.endTime
     newTime = hm.UserData.time.endTime;
     startStopPlay(hm,0);
 end
-% TODO: something not right when reaching end of video: above should lead
-% timeline to stop at end of video, now seems to stop at last update
 
 % update current time and update display
+drawnow
 setCurrentTime(hm,newTime);
 
 % issue drawnow, limitrate makes sure it is ignored if renderer is still
