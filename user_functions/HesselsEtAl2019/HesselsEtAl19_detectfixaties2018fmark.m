@@ -5,7 +5,7 @@ minfix          = f.minfix;                        % minfix in ms
 qvel            = mvel < thr2;                     % look for velocity below threshold
 [on,off]        = HesselsEtAl19_detectswitches(qvel');  % determine fixations
 
-on              = time(on);                        % convcert to time
+on              = time(on);                        % convert to time
 off             = time(off);                       % convert to time
 
 qfix            = off - on > minfix;               % look for small fixations       
