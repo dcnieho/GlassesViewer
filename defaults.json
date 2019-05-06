@@ -93,6 +93,59 @@
           }
         ],
         "categories": [ "none", 20, "slow", 4, "fast", 5 ]
+      }      ,
+      {
+        "type": "classifier",
+        "lbl": "Hessels et al. (2019): slow/fast",
+        "locked": false,
+        "function": "HesselsEtAl19",
+        "alwaysRecalculate": true,
+        "alwaysRecalculateUseStoredSettings": false,
+        "parameters": [
+          {
+            "name": "thr",
+            "label": "start velocity threshold (deg/s)",
+            "type": "double",
+            "value": 5000.0,
+            "range": [ 0, 100000 ],
+            "granularity": 0,
+            "settable": true
+          },
+          {
+            "name": "counter",
+            "label": "maximum number of iterations",
+            "type": "int",
+            "value": 200
+          },
+          {
+            "name": "minfix",
+            "label": "minimum fixation duration (ms)",
+            "type": "double",
+            "value": 80,
+            "range": [ 0, 10000 ],
+            "granularity": 1,
+            "settable": true
+          },
+          {
+            "name": "lambda",
+            "label": "lambda: slow/fast separation threshold",
+            "type": "double",
+            "value": 2.5,
+            "range": [ 0, 10 ],
+            "granularity": 0.1,
+            "settable": true
+          },
+          {
+            "name": "windowlength",
+            "label": "length of moving window (ms)",
+            "type": "double",
+            "value": 8000,
+            "range": [ 0, 36000000 ],
+            "granularity": 1,
+            "settable": true
+          }
+        ],
+        "categories": [ "none", 20, "slow", 4, "fast", 5 ]
       }
     ],
     "colors": [
