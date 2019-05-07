@@ -1,0 +1,2 @@
+use a screenshot from screenshots folder for readme
+move textCodingFile to demo_recording as exampleCodingFile, put better content in it (e.g., handcode first three seconds myself)
