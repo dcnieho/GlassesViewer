@@ -2,7 +2,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 5;
+fileVersion = 6;
 
 qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
 if ~qGenCacheFile
@@ -239,10 +239,10 @@ if qGenCacheFile
     
     % 8 add video sync data to output file
     assert(issorted( vts.ts,'monotonic'))
-    data.videoSync.scene    =  vts;
+    data.video.scene    =  vts;
     if qHasEyeVideo
         assert(issorted(evts.ts,'monotonic'))
-        data.videoSync.eye      = evts;
+        data.video.eye      = evts;
     end
     
     % 9 add sync port data to output file
@@ -252,9 +252,9 @@ if qGenCacheFile
     
     % 11 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
-    t0s = min(data.videoSync.scene.ts);
+    t0s = min(data.video.scene.ts);
     if qHasEyeVideo
-        t0s = [t0s min(data.videoSync.eye.ts)];
+        t0s = [t0s min(data.video.eye.ts)];
     end
     t0 = max(t0s);
     data.eye.left.ts        = (data.eye.left.ts-t0)./1000000;
@@ -262,20 +262,20 @@ if qGenCacheFile
     data.eye.binocular.ts   = (data.eye.binocular.ts-t0)./1000000;
     data.gyroscope.ts       = (data.gyroscope.ts-t0)./1000000;
     data.accelerometer.ts   = (data.accelerometer.ts-t0)./1000000;
-    data.videoSync.scene.ts = (data.videoSync.scene.ts-t0)./1000000;
+    data.video.scene.ts     = (data.video.scene.ts-t0)./1000000;
     if qHasEyeVideo
-        data.videoSync.eye.ts   = (data.videoSync.eye.ts-t0)./1000000;
+        data.video.eye.ts       = (data.video.eye.ts-t0)./1000000;
     end
     data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
     
     % 12 open video files for each segment, check how many frames, and make
     % frame timestamps
-    data.videoSync.scene.fts = [];
-    data.videoSync.scene.segframes = [];
+    data.video.scene.fts        = [];
+    data.video.scene.segframes  = [];
     if qHasEyeVideo
-        data.videoSync.eye.fts = [];
-        data.videoSync.eye.segframes = [];
+        data.video.eye.fts          = [];
+        data.video.eye.segframes    = [];
     end
     for s=1:length(segments)
         for p=1:1+qHasEyeVideo
@@ -283,11 +283,11 @@ if qGenCacheFile
                 case 1
                     file = 'fullstream.mp4';
                     field= 'scene';
-                    tsoff= data.videoSync.scene.ts(data.videoSync.scene.vts==0);
+                    tsoff= data.video.scene.ts(data.video.scene.vts==0);
                 case 2
                     file = 'eyesstream.mp4';
                     field= 'eye';
-                    tsoff= data.videoSync.  eye.ts(data.videoSync.  eye.evts==0);
+                    tsoff= data.video.  eye.ts(data.video.  eye.evts==0);
             end
             fname = fullfile(recordingDir,'segments',segments(s).name,file);
             % get frame timestamps and such from info stored in the mp4
@@ -323,8 +323,14 @@ if qGenCacheFile
             timeStamps(lastFrame+1:end) = [];
             % Sync video frames with data by offsetting the timelines for
             % each based on timesync info in tobii data file
-            data.videoSync.(field).fts = [data.videoSync.(field).fts timeStamps+tsoff(s)];
-            data.videoSync.(field).segframes = [data.videoSync.(field).segframes lastFrame];
+            data.video.(field).fts = [data.video.(field).fts timeStamps+tsoff(s)];
+            data.video.(field).segframes = [data.video.(field).segframes lastFrame];
+            
+            % resolution sanity check
+            assert(atoms.tracks(videoTrack).tkhd.width ==atoms.tracks(videoTrack).stsd.width , 'mp4 file weird: video widths in tkhd and stsd atoms do not match')
+            assert(atoms.tracks(videoTrack).tkhd.height==atoms.tracks(videoTrack).stsd.height,'mp4 file weird: video heights in tkhd and stsd atoms do not match')
+            data.video.(field).width  = atoms.tracks(videoTrack).tkhd.width;
+            data.video.(field).height = atoms.tracks(videoTrack).tkhd.height;
         end
     end
     

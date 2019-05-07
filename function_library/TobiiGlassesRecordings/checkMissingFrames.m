@@ -7,10 +7,10 @@ function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
 %   b) data for faulty periods >= reportThresholdSec (given in seconds)
 
 
-if isfield(data.videoSync,'eye')
-    checkMissingFramesImpl(data.videoSync.eye.fts, 'eye', toleranceRatio, reportThresholdSec);
+if isfield(data.video,'eye')
+    checkMissingFramesImpl(data.video.eye.fts, 'eye', toleranceRatio, reportThresholdSec);
 end
-checkMissingFramesImpl(data.videoSync.scene.fts, 'scene', toleranceRatio, reportThresholdSec);
+checkMissingFramesImpl(data.video.scene.fts, 'scene', toleranceRatio, reportThresholdSec);
 
 
 

@@ -1,4 +1,4 @@
-function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
+function coding = getCodingData(filedir,fname,codeSettings,tobiiData, endTime)
 if isempty(codeSettings.streams)
     return;
 end
@@ -73,11 +73,6 @@ else
 end
 
 % process some streams
-if isfield(tobiiData.videoSync,'eye')
-    endT = min([tobiiData.videoSync.scene.fts(end) tobiiData.videoSync.eye.fts(end)]);
-else
-    endT = min([tobiiData.videoSync.scene.fts(end)]);
-end
 for p=1:nStream
     switch lower(coding.stream.type{p})
         case {'syncin','syncout'}
@@ -96,7 +91,7 @@ for p=1:nStream
             if isempty(ts)
                 warning('glassesViewer: no %s events found for stream %d',coding.stream.type{p},p);
             end
-            [ts,type]       = addStartEndCoding(ts,type,tFirst,endT);
+            [ts,type]       = addStartEndCoding(ts,type,tFirst,endTime);
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
@@ -107,7 +102,7 @@ for p=1:nStream
             % file
             coding.stream.options{p}.dataDir = filedir;
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
-                tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,tFirst,endT);
+                tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,tFirst,endTime);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;
@@ -150,7 +145,7 @@ for p=1:nStream
                 else
                     settings = coding.stream.classifier.currentSettings{p};
                 end
-                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,tFirst,endT);
+                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,tFirst,endTime);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;

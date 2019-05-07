@@ -93,13 +93,7 @@ hm.UserData.settings = settings;
 % read glasses data
 hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
-hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.videoSync,'eye');
-if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
-    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
-    hm.UserData.coding.hasCoding = true;
-else
-    hm.UserData.coding.hasCoding = false;
-end
+hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 
@@ -109,7 +103,11 @@ hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to up
 hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
 hm.UserData.time.currentTime        = 0;
 hm.UserData.time.startTime          = hm.UserData.data.eye.left.ts(find(hm.UserData.data.eye.left.ts<=0,1,'last'));
-hm.UserData.time.endTime            = nan;   % determined below when videos are loaded
+if hm.UserData.ui.haveEyeVideo
+    hm.UserData.time.endTime = min([hm.UserData.data.video.scene.fts(end) hm.UserData.data.video.eye.fts(end)]);
+else
+    hm.UserData.time.endTime = hm.UserData.data.video.scene.fts(end);
+end
 hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
 hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
 if isempty(hm.UserData.ui.doubleClickInterval)
@@ -122,6 +120,14 @@ end
 % this timer executes if there was no second click within double-click
 % interval
 hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
+
+%% get coding setup
+if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
+    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data, hm.UserData.time.endTime);
+    hm.UserData.coding.hasCoding = true;
+else
+    hm.UserData.coding.hasCoding = false;
+end
 
 
 %% setup data axes
@@ -475,12 +481,9 @@ hm.UserData.vid.gt = plot(nan,nan,'r-','Parent',hm.UserData.vid.ax(1),'Visible',
 hm.UserData.vid.gm = scatter(0,0,'Marker','o','SizeData',10^2,'MarkerFaceColor',[0 1 0],'MarkerFaceAlpha',0.6,'MarkerEdgeColor','none','Parent',hm.UserData.vid.ax(1),'HitTest','off');
 
 % if recording consists of multiple segments, find switch point
-hm.UserData.vid.switchFrames(:,1) = [0 cumsum(hm.UserData.data.videoSync.scene.segframes)];
+hm.UserData.vid.switchFrames(:,1) = [0 cumsum(hm.UserData.data.video.scene.segframes)];
 if hm.UserData.ui.haveEyeVideo
-    hm.UserData.time.endTime = min([hm.UserData.data.videoSync.scene.fts(end) hm.UserData.data.videoSync.eye.fts(end)]);
-    hm.UserData.vid.switchFrames(:,2) = [0 cumsum(hm.UserData.data.videoSync.eye.segframes)];
-else
-    hm.UserData.time.endTime = hm.UserData.data.videoSync.scene.fts(end);
+    hm.UserData.vid.switchFrames(:,2) = [0 cumsum(hm.UserData.data.video.eye.segframes)];
 end
 hm.UserData.vid.currentFrame = [0 0];
 
@@ -3502,7 +3505,7 @@ for p=1:size(hm.UserData.vid.objs,2)
         case 2
             field = 'eye';
     end
-    frameToShow = find(hm.UserData.data.videoSync.(field).fts<=hm.UserData.time.currentTime,1,'last');
+    frameToShow = find(hm.UserData.data.video.(field).fts<=hm.UserData.time.currentTime,1,'last');
     
     % if different from currently showing frame, update
     if ~isempty(frameToShow) && hm.UserData.vid.currentFrame(p)~=frameToShow

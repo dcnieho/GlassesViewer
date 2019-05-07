@@ -39,8 +39,7 @@ fclose(data.fid);
 data = rmfield(data,{'fid','eof'});
 
 % get data to return
-stsds = [data.tracks.stsd];
-trackIdx = find(strcmpi('avc1',{stsds.type}));
+trackIdx = find(arrayfun(@(x) strcmpi('avc1',x.stsd.type),data.tracks));
 time_info = data.tracks(trackIdx).mdhd;
 sttsEntries = [data.tracks(trackIdx).stts.sample_count; data.tracks(trackIdx).stts.sample_delta].';
 if sttsEntries(end,2)==0
@@ -146,12 +145,45 @@ switch type
         end
         data.tracks(data.total_tracks).mdhd.duration_ms = floor(data.tracks(data.total_tracks).mdhd.duration*1000/data.tracks(data.total_tracks).mdhd.time_scale);
         
+    case 'tkhd'
+        fread(data.fid,1,'uchar');
+        fread(data.fid,3,'uchar');
+        data.tracks(data.total_tracks).tkhd.creationTime    = read_int(data.fid, 4);
+        data.tracks(data.total_tracks).tkhd.modificationTime= read_int(data.fid, 4);
+        data.tracks(data.total_tracks).tkhd.trackId         = read_int(data.fid, 4);
+        fread(data.fid,4,'uchar');  % reserved
+        data.tracks(data.total_tracks).tkhd.duration        = read_int(data.fid, 4);
+        fread(data.fid,8,'uchar');  % reserved
+        fread(data.fid,2,'uchar');  % layer
+        fread(data.fid,2,'uchar');  % alternative group
+        fread(data.fid,2,'uchar');  % volume
+        fread(data.fid,2,'uchar');  % reserved
+        fread(data.fid,9*4,'uchar');  % matrix
+        data.tracks(data.total_tracks).tkhd.width           = read_int(data.fid, 4)/2^16;
+        data.tracks(data.total_tracks).tkhd.height          = read_int(data.fid, 4)/2^16;
+        
+        
     case 'stsd'
         fread(data.fid,1,'uchar');
         fread(data.fid,3,'uchar');
         data.tracks(data.total_tracks).stsd.entry_count = read_int(data.fid, 4);
+        % there's a box in this box
         [~,~,typeTxt,~,data] = read_atom_header(data);
         data.tracks(data.total_tracks).stsd.type = typeTxt;
+        if strcmp(typeTxt,'avc1')
+            % its an avc1 box, read some info about the encoded video data
+            fread(data.fid,6,'uchar');  % reserved
+            fread(data.fid,2,'uchar');  % data reference index
+            fread(data.fid,2,'uchar');  % video encoding version
+            fread(data.fid,2,'uchar');  % video encoding revision level
+            fread(data.fid,4,'uchar');  % video encoding vendor
+            fread(data.fid,4,'uchar');  % video temporal quality
+            fread(data.fid,4,'uchar');  % video spatial quality
+            data.tracks(data.total_tracks).stsd.width           = read_int(data.fid, 2);
+            data.tracks(data.total_tracks).stsd.height          = read_int(data.fid, 2);
+            data.tracks(data.total_tracks).stsd.dpiHori         = read_int(data.fid, 4)/2^16;
+            data.tracks(data.total_tracks).stsd.dpiVert         = read_int(data.fid, 4)/2^16;
+        end
         
     case 'stts'
         fread(data.fid,1,'uchar');
