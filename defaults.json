@@ -87,7 +87,7 @@
             "label": "lambda: slow/fast separation threshold",
             "type": "double",
             "value": 4,
-            "range": [ 0, 10 ],
+            "range": [ 0.1, 10 ],
             "granularity": 0.1,
             "settable": true
           }
@@ -131,7 +131,7 @@
             "label": "lambda: slow/fast separation threshold",
             "type": "double",
             "value": 2.5,
-            "range": [ 0, 10 ],
+            "range": [ 0.1, 10 ],
             "granularity": 0.1,
             "settable": true
           },
