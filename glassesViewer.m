@@ -26,7 +26,8 @@ if 1
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
-    selectedDir = '';
+    mydir       = fileparts(mfilename('fullpath'));
+    selectedDir = fullfile(mydir,'demo_recording');
 end
 if ~selectedDir
     return

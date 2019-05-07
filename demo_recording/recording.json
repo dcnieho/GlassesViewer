@@ -1,0 +1,26 @@
+{
+    "rec_id": "gzz7stc",
+    "rec_info": {
+        "EagleId": "3e51fbf9-b7ca-4a1c-b333-5795d7af0c29",
+        "Name": "Recording011",
+        "Notes": ""
+    },
+    "rec_participant": "vxgtdb2",
+    "rec_project": "raoscyb",
+    "rec_state": "done",
+    "rec_segments": 1,
+    "rec_length": 28,
+    "rec_calibration": "3gqkra3",
+    "rec_created": "2019-03-20T13:25:47+0000",
+    "rec_et_samples": 1424,
+    "rec_et_valid_samples": 1331,
+    "ts_right_x": -32.5,
+    "ts_right_y": -27.0,
+    "ts_right_z": -19.0,
+    "ts_left_x": 32.5,
+    "ts_left_y": -27.0,
+    "ts_left_z": -19.0,
+    "ts_green_limit_radius": 10.0,
+    "ts_yellow_limit_radius": 12.5
+}
+

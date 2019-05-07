@@ -1,0 +1,11 @@
+{    "servicemanager_version": "1.25.3-citronkola",
+    "fpga_v_maj": 0,
+    "fpga_v_min": 0,
+    "fpga_v_rel": 62,
+    "fpga_variant": "normal",
+    "board_type": "PVT Board",
+    "hu_serial": "TG02G-010105956192",
+    "ru_serial": "TG02B-080105043691",
+    "sys_ec_preset": "Indoor",
+    "sys_sc_preset": "GazeBasedExposure"
+}
