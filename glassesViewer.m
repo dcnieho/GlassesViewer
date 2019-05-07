@@ -2674,21 +2674,25 @@ end
 
 function KillCallback(hm,~)
 % if has unsaved data, ask to confirm first before continue to close
-if hasUnsavedCoding(hm)
-    answer = questdlg('Would to save your changes before exiting?', ...
-        'Unsaved data', ...
-        'Save coding','Discard unsaved coding','Don''t exit','Don''t exit');
-    % Handle response
-    switch answer
-        case 'Save coding'
-            saveCodingData(hm);
-            % then continue executing this function, which exits
-        case 'Discard unsaved coding'
-            % nothing to do, continue executing this function, which exits
-        case 'Don''t exit'
-            % cancel, stop executing this function
-            return
+try
+    if hasUnsavedCoding(hm)
+        answer = questdlg('Would to save your changes before exiting?', ...
+            'Unsaved data', ...
+            'Save coding','Discard unsaved coding','Don''t exit','Don''t exit');
+        % Handle response
+        switch answer
+            case 'Save coding'
+                saveCodingData(hm);
+                % then continue executing this function, which exits
+            case 'Discard unsaved coding'
+                % nothing to do, continue executing this function, which exits
+            case 'Don''t exit'
+                % cancel, stop executing this function
+                return
+        end
     end
+catch
+    % carry on
 end
 
 % delete timers
