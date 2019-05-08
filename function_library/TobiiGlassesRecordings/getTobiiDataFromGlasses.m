@@ -39,7 +39,7 @@ if qGenCacheFile
         fclose(fid);
     end
     % 2 get ts, s and type per packet
-    types = regexp(txt,'(?:"ts":)(\d+,).*?(?:"s":)(\d).*?(?:")(pc|pd|gd|gp|gp3|gy|ac|vts|evts|pts|epts|sig|type)(?:")','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
+    types = regexp(txt,'(?:"ts":)(\d+,).*?(?:"s":)(\d+,).*?(?:")(pc|pd|gd|gp|gp3|gy|ac|vts|evts|pts|epts|sig|type)(?:")','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
     types = cat(1,types{:});
     % 3 transform packets into struct of arrays we do our further
     % processing on
@@ -54,13 +54,13 @@ if qGenCacheFile
     % its crap, failed or otherwise shouldn't be used), split off and
     % remove fields requiring custom processing (sig, type) and remove
     % unwanted fields (pts, epts)
-    qOk     = cat(1,types{:,2})=='0';
     qSplit  = strcmp(types(:,3),'sig')|strcmp(types(:,3),'type');
     qUnwanted = strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts');
-    qKeep   = qOk & ~qSplit & ~qUnwanted;  % remove non-zero s, split off fields and unwanted fields
+    qKeep   = ~qSplit & ~qUnwanted;  % remove non-zero s, split off fields and unwanted fields
     nKeep   = sum(qKeep);
     dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[]);
     dat.ts  = sscanf(cat(2,types{qKeep,1}),'%f,');
+    dat.qValid = sscanf(cat(2,types{qKeep,2}),'%f,')==0;
     dat.dat = nan(nKeep,3);
     dat.gidx= nan(nKeep,1);
     dat.eye = repmat('x',nKeep,1);
@@ -71,17 +71,16 @@ if qGenCacheFile
     end
     assert(length(iNewLines)==length(qKeep)+1,'must have missed a type in the above regexp, or the assumption that each element has only one of the above strings is no longer true')
     % split off the ones we process separately
-    qSplitOk = qSplit & qOk;
-    q = bounds2bool(iNewLines([qSplitOk; false])+1,iNewLines([false; qSplitOk]));
+    q = bounds2bool(iNewLines([qSplit; false])+1,iNewLines([false; qSplit]));
     syncPortAPISyncTxt  = txt(q);
-    syncPortAPISyncType = types(qSplitOk,3);
+    syncPortAPISyncType = types(qSplit,3);
     % get types for main packets
     types   = types(qKeep,3);
     % now remove these packets from string
     qRem    = ~qKeep;
     q       = bounds2bool(iNewLines([qRem; false])+1,iNewLines([false; qRem]));
     txt(q)  = [];
-    clear qOk qSplit qUnwanted qKeep qSplitOk qRem iNewLines q
+    clear qSplit qUnwanted qKeep qRem iNewLines q
     % find where each type is in this data
     qData    = [strcmp(types,'pc')  strcmp(types,'pd') strcmp(types,'gd')...
                 strcmp(types,'gp')  strcmp(types,'gp3')...
@@ -97,7 +96,7 @@ if qGenCacheFile
     eye  = regexp(txt,'(?<="eye":")[lr]','match');
     dat.eye(qHasEye) = cat(1,eye{:});
     qLeftEye = qHasEye & dat.eye=='l';
-    clear gidx eye types
+    clear gidx eye types qHasEye
     % parse in scalar data (only pd)
     dat.dat(qData(:,2),1  )   = parseTobiiGlassesData(txt,  'pd',1);
     % parse in 2-vector (only gp)
@@ -117,75 +116,83 @@ if qGenCacheFile
     clear txt
     % 4 organize into types
     % the overall strategy to deal with crap in the files is to:
-    % 1. remove all gidx with more than 8 packets
-    % 2. remove binocular data if data for both eyes is incomplete
-    % 3. check if any monocular gidx with 2 packets for single eye,
+    % 1. completely remove all gidx for which we have an unexpected number
+    %    of packets (~=8).
+    % 2. remove all gidx with more than 8 valid packets or less than 3
+    % 3. remove binocular data if data for both eyes is incomplete
+    % 4. check if any monocular gidx with 2 packets for single eye,
     %    remove
-    % 4. remove data where (when sorted by gidx) time apparently went
+    % 5. remove data where (when sorted by gidx) time apparently went
     %    backward (check per eye if monocular). This mostly gets a few
     %    packets of monocular data where only a single eye is available
     %    for a given gidx (this one is done in
     %    getDataTypeFromTobiiArray)
-    % 4.1 first some global processing
-    % 4.1.1 remove all gidx with more than 8 packets or less than 3 (should have 3 monocular for each eye and 2 binocular if recording succeeded for both eyes. due to bug, sometimes multiple monocular packets for single eye, resp. calculated based on single camera and stereo views, without knowing which is the right one)
-    [gs,n] = UniqueAndN(dat.gidx(qHasGidx));
-    qRemove = ismember(dat.gidx,[gs(n>8);gs(n<3)]);  % less than 3 packets, we probably have a lonely pc while even pd and such failed, better ignore it, must be crap
-    dat.ts  (qRemove  ) = [];
-    dat.dat (qRemove,:) = [];
-    dat.gidx(qRemove  ) = [];
-    dat.eye (qRemove  ) = [];
+    minGidx     = min(dat.gidx(qHasGidx));
+    maxGidx     = max(dat.gidx(qHasGidx));
+    allGidx     = [minGidx:maxGidx].';
+    gidxCount   = accumarray(dat.gidx(qHasGidx)-minGidx+1,true(sum(qHasGidx),1));
+    validCount  = accumarray(dat.gidx(qHasGidx)-minGidx+1,dat.qValid(qHasGidx));
+    % 4.1 completely remove gidx for which there are not the right numbers
+    % of packets
+    qRemove     = ismember(dat.gidx,allGidx(gidxCount~=8));
     qData   (qRemove,:) = [];
-    qHasEye (qRemove,:) = [];
-    qHasGidx(qRemove,:) = [];
     qLeftEye(qRemove,:) = [];
-    % 4.1.2 now for each gidx, build a table flagging what we have, so we
+    dat = replaceElementsInStruct(dat,qRemove,[],[],true);
+    % 4.2 first some global processing
+    % 4.2.1 remove all gidx with more than 8 valid packets or less than 3 (should have 3 monocular for each eye and 2 binocular if recording succeeded for both eyes. due to bug, sometimes multiple monocular packets for single eye, resp. calculated based on single camera and stereo views, without knowing which is the right one)
+    qBad    = validCount>8 | validCount<3;    % less than 3 packets, we probably have a lonely pc while even pd and such failed, better ignore it, must be crap
+    qRemove = ismember(dat.gidx,allGidx(qBad,1));
+    dat.dat   (qRemove,:) = nan;
+    dat.qValid(qRemove  ) = false;
+    % 4.2.2 now for each gidx, build a table flagging what we have, so we
     % can throw out all broken samples
-    qAllEyeDat = [qData(:,1:3)&qLeftEye qData(:,1:3)&~qLeftEye qData(:,4:5)]; % three fields left eye, three fields right, two binocular
-    qAllEyeDat(~qHasGidx,:) = [];
-    [gs,i,j] = unique(dat.gidx(qHasGidx));
-    qGidxTags = false(length(i),size(qAllEyeDat,2));
-    [x,~] = find(qAllEyeDat.');
-    qGidxTags(sub2ind(size(qGidxTags),j,x)) = true;
-    % 4.1.3 remove binocular data for gidx for which monocular data for
+    % per gidx, see which valid samples we have
+    qValidPerGidx   = [qData(:,1:3)&qLeftEye&dat.qValid qData(:,1:3)&~qLeftEye&dat.qValid qData(:,4:5)&dat.qValid]; % three fields left eye, three fields right, two binocular
+    [i,i2]          = find(qValidPerGidx.');   % get column
+    qValidPerGidx   = false(maxGidx-minGidx+1,size(qValidPerGidx,2));
+    qValidPerGidx(sub2ind(size(qValidPerGidx),dat.gidx(i2)-minGidx+1,i)) = true;
+    % 4.2.3 remove binocular data for gidx for which monocular data for
     % both eyes is incomplete (one eye incomplete is possible, binocular
     % data is then computed by the eye tracker based on assumption of
     % unchanged vergence distance since last available true binocular data)
-    qBad = ~all(qGidxTags(:,1:3),2) & ~all(qGidxTags(:,4:6),2) & any(qGidxTags(:,7:8),2);
-    qRemove = ismember(dat.gidx,gs(qBad))&any(qData(:,4:5),2);   % remove binocular data for these
-    % 4.1.4 remove monocular data for incomplete eyes
-    qBad = ~all(qGidxTags(:,1:3),2);    % left eye
-    qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)& qLeftEye;
-    qBad = ~all(qGidxTags(:,4:6),2);    % right eye
-    qRemove = qRemove | ismember(dat.gidx,gs(qBad))&any(qData(:,1:3),2)&~qLeftEye;
-    % 4.1.5 check for case with monocular data twice from same eye for
+    qBad    = ~all(qValidPerGidx(:,1:3),2) & ~all(qValidPerGidx(:,4:6),2) & any(qValidPerGidx(:,7:8),2);
+    qRemove = ismember(dat.gidx,allGidx(qBad))&any(qData(:,4:5),2);   % remove binocular data for these
+    % 4.2.4 remove monocular data for incomplete eyes
+    qBad    = ~all(qValidPerGidx(:,1:3),2);    % left eye
+    qRemove = qRemove | ismember(dat.gidx,allGidx(qBad))&any(qData(:,1:3),2)& qLeftEye;
+    qBad    = ~all(qValidPerGidx(:,4:6),2);    % right eye
+    qRemove = qRemove | ismember(dat.gidx,allGidx(qBad))&any(qData(:,1:3),2)&~qLeftEye;
+    % now remove all these flagged data
+    dat.dat   (qRemove,:) = nan;
+    dat.qValid(qRemove  ) = false;
+    % 4.2.5 check for case with monocular data twice from same eye for
     % given gidx. like for gidx with more than 8 packets, we don't know
     % which is the right one, so remove both
     % To check: sort samples by e, use that to sort gidx and see if any
     % same numbers in a row. those are an issue as that means same gidx
     % multiple times for same eye
-    [~,i] = sort(dat.eye(qData(:,1)));
-    gidx  = dat.gidx(qData(:,1));
+    qSel  = qData(:,1)&dat.qValid;
+    [~,i] = sort(dat.eye(qSel));
+    gidx  = dat.gidx(qSel);
     gidx  = gidx(i);
     qDupl = diff(gidx)==0;
-    qRemove = qRemove | ismember(dat.gidx,gidx(qDupl));
+    qRemove = ismember(dat.gidx,gidx(qDupl));
     % now remove all these flagged data
-    dat.ts  (qRemove  ) = [];
-    dat.dat (qRemove,:) = [];
-    dat.gidx(qRemove  ) = [];
-    dat.eye (qRemove  ) = [];
-    qData   (qRemove,:) = [];
-    clear qAllEyeDat qBad qDupl qGidxTags qHasEye qHasGidx qLeftEye qRemove i j gs x
-    % 4.2 pupil data: pupil center (3D position w.r.t. scene camera) and pupil diameter
+    dat.dat   (qRemove,:) = nan;
+    dat.qValid(qRemove  ) = false;
+    clear qValidPerGidx qSel qBad qDupl qHasGidx qLeftEye qRemove allGidx gidx gidxCount i i2 validCount
+
+    % 4.3 pupil data: pupil center (3D position w.r.t. scene camera) and pupil diameter
     pc  = getDataTypeFromTobiiArray(dat,qData(:,1), 'pc',3,{'gidx','eye'},2,qDEBUG);        % pupil center
     pd  = getDataTypeFromTobiiArray(dat,qData(:,2), 'pd',1,{'gidx','eye'},2,qDEBUG);        % pupil diameter
-    % 4.3 gaze data: gaze direction vector. gaze position on scene video. 3D gaze position (where eyes intersect, in camera coordinate system?)
+    % 4.4 gaze data: gaze direction vector. gaze position on scene video. 3D gaze position (where eyes intersect, in camera coordinate system?)
     gd  = getDataTypeFromTobiiArray(dat,qData(:,3), 'gd',3,{'gidx','eye'},2,qDEBUG);        % gaze direction
     gp  = getDataTypeFromTobiiArray(dat,qData(:,4), 'gp',2,{'gidx'      },1,qDEBUG);        % gaze position on scene video
     gp3 = getDataTypeFromTobiiArray(dat,qData(:,5),'gp3',3,{'gidx'      },1,qDEBUG);        % gaze convergence position in 3D space
-    % 4.4 gyroscope and accelerometer data
+    % 4.5 gyroscope and accelerometer data
     gy  = getDataTypeFromTobiiArray(dat,qData(:,6), 'gy',3,{'ts'        },0,false );        % gyroscope
     ac  = getDataTypeFromTobiiArray(dat,qData(:,7), 'ac',3,{'ts'        },0,false );        % accelerometer
-    % 4.5 get video sync info. (e)vts package contains what video
+    % 4.6 get video sync info. (e)vts package contains what video
     % timestamp corresponds to a given data timestamp, these occur once
     % in a while so we can see how the two clocks have progressed.
     vts = getDataTypeFromTobiiArray(dat,qData(:,8),'vts',1,{'ts'        },0,false );       % scene video
@@ -193,8 +200,8 @@ if qGenCacheFile
         evts = getDataTypeFromTobiiArray(dat,qData(:,9),'evts',3,{'ts'        },0,false );       % eye video
     end
     % clean up
-    clear dat;
-    % 4.6 parse sync signal (parse directly as it has extra field of interest)
+    clear dat qData
+    % 4.7 parse sync signal (parse directly as it has extra field of interest)
     temp = regexp(syncPortAPISyncTxt,'(?:"ts":)(\d+,).*?(?:"dir":")(in|out)(?:","sig":)(\d})','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
     temp = cat(1,temp{:});
     qOut = strcmp(temp(:,2),'out');
@@ -211,7 +218,7 @@ if qGenCacheFile
         [sig.in.ts,sig.in.state] = deal([]);
     end
     
-    % 4.7 TODO: parse API sync-packages
+    % 4.8 TODO: parse API sync-packages
     % qAPISync = strcmp(syncPortAPISyncType,'type');
     % clean up
     clear temp syncPortAPISyncTxt syncPortAPISyncType;
@@ -219,6 +226,7 @@ if qGenCacheFile
     
     % 5 reorganize eye data into binocular data, left eye data and right eye data
     data.eye = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3);
+    clear pc pd gd gp gp3
     data.eye.fs = expectedFs;
     % 5.1 convert gaze vectors to azimuth elevation
     [la,le] = cart2sph(data.eye. left.gd(:,1),data.eye. left.gd(:,3),data.eye. left.gd(:,2));   % matlab's Z and Y are reversed w.r.t. ours
@@ -236,6 +244,7 @@ if qGenCacheFile
     assert(issorted(ac.ts,'monotonic'))
     data.gyroscope      = gy;
     data.accelerometer  = ac;
+    clear gy ac
     
     % 8 add video sync data to output file
     assert(issorted( vts.ts,'monotonic'))

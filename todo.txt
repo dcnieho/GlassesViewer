@@ -1,4 +1,2 @@
-instead of fake time, use ts of gidx that are all missing but have 8 packets, where possible. for demo recording, we now have the problem that gaze stream is too short as missing at start and end of file is ignored/removed
-read-in strategy might be to test per gidx whether packets are screwed or not, and only then check for missing data, keeping timestamps around anyway
 use a screenshot from screenshots folder for readme
 move textCodingFile to demo_recording as exampleCodingFile, put better content in it (e.g., handcode first three seconds myself)
