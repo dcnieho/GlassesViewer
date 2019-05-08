@@ -2616,23 +2616,27 @@ right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
 bottom  = hm.UserData.plot.axRect(end,2);
 hm.UserData.ui.dataQuality.panel = uipanel('Units','pixels', 'title','Data quality','Parent',hm,'Position',[100 100 100 100]);
-hm.UserData.ui.dataQuality.string= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
+hm.UserData.ui.dataQuality.string1= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('Sampling frequency %.0f Hz', hm.UserData.data.eye.fs),'Tag','FsString','HorizontalAlignment','left');
+hm.UserData.ui.dataQuality.string2= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
 drawnow
-padding = hm.UserData.ui.dataQuality.panel.OuterPosition(3:4)-hm.UserData.ui.dataQuality.panel.InnerPosition(3:4);
-strWidth= hm.UserData.ui.dataQuality.string.Extent(3)+5;    % bit extra for safety
+padding     = hm.UserData.ui.dataQuality.panel.OuterPosition(3:4)-hm.UserData.ui.dataQuality.panel.InnerPosition(3:4);
+strWidth1   = hm.UserData.ui.dataQuality.string1.Extent(3)+5;    % bit extra for safety
+strWidth2   = hm.UserData.ui.dataQuality.string2.Extent(3)+5;    % bit extra for safety
 % settings area
-width   = ceil(max(strWidth,hm.UserData.ui.dataQuality.table.Position(3))+padding(1));
-height  = ceil(hm.UserData.ui.dataQuality.string.Position(4)+5+hm.UserData.ui.dataQuality.table.Position(4)+padding(2));
+width       = ceil(max([strWidth1,strWidth2,hm.UserData.ui.dataQuality.table.Position(3)])+padding(1));
+height      = ceil(hm.UserData.ui.dataQuality.string1.Position(4)+hm.UserData.ui.dataQuality.string2.Position(4)+5+hm.UserData.ui.dataQuality.table.Position(4)+padding(2));
 % center it
-leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
+leftBot     = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
 % position
 hm.UserData.ui.dataQuality.panel.Position = [leftBot width height];
-% resize string
-hm.UserData.ui.dataQuality.string.Position(1:3) = [3 0 strWidth+3];
+% resize string2
+hm.UserData.ui.dataQuality.string2.Position(1:3) = [3 0 strWidth2+3];
 % reparent table
 hm.UserData.ui.dataQuality.table.Parent = hm.UserData.ui.dataQuality.panel;
 h=(width-padding(1)-hm.UserData.ui.dataQuality.table.Position(3))/2;
-hm.UserData.ui.dataQuality.table.Position(1:2) = [h sum(hm.UserData.ui.dataQuality.string.Position([2 4]))+4];
+hm.UserData.ui.dataQuality.table.Position(1:2) = [h sum(hm.UserData.ui.dataQuality.string2.Position([2 4]))+4];
+% resize string1
+hm.UserData.ui.dataQuality.string1.Position(1:3) = [3 sum(hm.UserData.ui.dataQuality.table.Position([2 4])) strWidth1+3];
 end
 
 function focusChange(hm)
