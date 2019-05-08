@@ -4,6 +4,14 @@ function [time,i] = findNearestTime(time,ts,startTime,endTime)
 
 % 1. find which sample time is nearest to requested time
 for t=1:length(time)
+    if isinf(time(t))
+        if sign(time(t))==-1
+            time(t) = startTime;
+        else
+            time(t) =   endTime;
+        end
+    end
+            
     [~,i]   = min(abs(ts-time(t)));
     time(t) = ts(i);
 end
