@@ -38,7 +38,7 @@ qfix            = off - on > minfix;               % look for small fixations
 on              = on(qfix);                        % delete fixations smaller than minfix
 off             = off(qfix);                       % delete fixations smaller than minfix
 
-on(2:end)       = on(2:end);                       % 
-off(1:end-1)    = off(1:end-1);                    % 
+on(2:end)       = on(2:end);
+off(1:end-1)    = off(1:end-1);
 
 fmark           = sort([on;off]);                  % sort the markers

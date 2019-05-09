@@ -26,7 +26,7 @@ while 1
     counter     = counter + 1;
 end
 
-thr2            = meanvel + f.lambda*stdvel;              % determine new threshold based on data noise
+thr2            = meanvel + f.lambda*stdvel;        % determine new threshold based on data noise
 
 % make vector for thr2 of length mvel
 thrfinal        = repmat(thr2,numel(mvel),1);
