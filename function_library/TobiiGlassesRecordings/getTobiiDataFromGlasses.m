@@ -4,6 +4,14 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 % a newly generated cache file
 fileVersion = 6;
 
+if ~isempty(which('matlab.internal.webservices.fromJSON'))
+    jsondecoder = @matlab.internal.webservices.fromJSON;
+elseif ~isempty(which('jsondecode'))
+    jsondecoder = @matlab.internal.webservices.fromJSON;
+else
+    error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
+end
+
 qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
 if ~qGenCacheFile
     % we have a cache file, check its file version
@@ -14,10 +22,10 @@ end
 if qGenCacheFile
     % 0 get info about participant and recording
     fid = fopen(fullfile(recordingDir,'recording.json'),'rt');
-    recording = jsondecode(fread(fid,inf,'*char').');
+    recording = jsondecoder(fread(fid,inf,'*char').');
     fclose(fid);
     fid = fopen(fullfile(recordingDir,'participant.json'),'rt');
-    participant = jsondecode(fread(fid,inf,'*char').');
+    participant = jsondecoder(fread(fid,inf,'*char').');
     fclose(fid);
     expectedFs = round(recording.rec_et_samples/recording.rec_length/50)*50;    % find nearest 50Hz
     if qDEBUG

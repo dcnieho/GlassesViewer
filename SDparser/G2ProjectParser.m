@@ -6,6 +6,14 @@ function success = G2ProjectParser(projectfolder)
 
 [projects, nproj] = FolderFromFolder(projectfolder);
 
+if ~isempty(which('matlab.internal.webservices.fromJSON'))
+    jsondecoder = @matlab.internal.webservices.fromJSON;
+elseif ~isempty(which('jsondecode'))
+    jsondecoder = @matlab.internal.webservices.fromJSON;
+else
+    error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
+end
+
 fid = [];   % only open the lookup file once we have something to write in it
 for p = 1:nproj
     % for each folder in projects find projectName in project.json
@@ -15,7 +23,7 @@ for p = 1:nproj
         continue;
     end
     
-    json = jsondecode(fileread(projects(p).jsonfile));
+    json = jsondecoder(fileread(projects(p).jsonfile));
     
     projects(p).ID          = json.pr_id;
     projects(p).name        = json.pr_info.Name;
@@ -55,7 +63,7 @@ for p = 1:nproj
             recs(q).sysFWVersion,recs(q).sysHUSerial,recs(q).sysRUSerial,recs(q).sysEyeCamSetting,recs(q).sysSceneCamSetting...
             ] = deal('!!unknown');
         
-        recjson = jsondecode(fileread((fullfile(recorddir, recs(q).recID, 'recording.json'))));
+        recjson = jsondecoder(fileread((fullfile(recorddir, recs(q).recID, 'recording.json'))));
         
         % get recording info
         recs(q).recName = recjson.rec_info.Name;
@@ -71,7 +79,7 @@ for p = 1:nproj
             recs(q).partID = recjson.rec_participant;
             partjsonfile = fullfile(recorddir, recs(q).recID, 'participant.json');
             if exist(partjsonfile,'file')==2
-                partjson = jsondecode(fileread(partjsonfile));
+                partjson = jsondecoder(fileread(partjsonfile));
                 recs(q).partName = partjson.pa_info.Name;
                 if isfield(partjson.pa_info,'Notes')
                     recs(q).partNotes= partjson.pa_info.Notes;
@@ -84,7 +92,7 @@ for p = 1:nproj
             recs(q).calID = recjson.rec_calibration;
             caljsonfile = fullfile(calibdir,recs(q).calID,'calibration.json');
             if qHaveCalibs && exist(caljsonfile,'file')==2
-                calibjson = jsondecode(fileread(caljsonfile));
+                calibjson = jsondecoder(fileread(caljsonfile));
                 recs(q).calStatus = calibjson.ca_state;
             end
         end
@@ -92,7 +100,7 @@ for p = 1:nproj
         % get system/setup info
         sysjsonfile = fullfile(recorddir, recs(q).recID, 'sysinfo.json');
         if exist(sysjsonfile,'file')==2
-            sysjson = jsondecode(fileread(sysjsonfile));
+            sysjson = jsondecoder(fileread(sysjsonfile));
             if isfield(sysjson,'servicemanager_version')
                 recs(q).sysFWVersion = sysjson.servicemanager_version;
             end

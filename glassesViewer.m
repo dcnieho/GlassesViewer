@@ -7,8 +7,15 @@ if qDEBUG
 end
 
 if nargin<1 || isempty(settings)
+    if ~isempty(which('matlab.internal.webservices.fromJSON'))
+        jsondecoder = @matlab.internal.webservices.fromJSON;
+    elseif ~isempty(which('jsondecode'))
+        jsondecoder = @matlab.internal.webservices.fromJSON;
+    else
+        error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
+    end
     myDir     = fileparts(mfilename('fullpath'));
-    settings  = jsondecode(fileread(fullfile(myDir,'defaults.json')));
+    settings  = jsondecoder(fileread(fullfile(myDir,'defaults.json')));
 end
 
 addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'))
@@ -22,7 +29,7 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 %    is: projects\rkamrkb\recordings\zi4xmt2. Not the the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "zi4xmt2" of this example somewhere and open it in isolation.
-if 1
+if 0
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
