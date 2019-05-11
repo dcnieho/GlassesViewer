@@ -1,12 +1,18 @@
 function coding = loadCodingFile(options,tsData,startT,endT)
 % deal with special !!dataDir!! string if at start of path
+coding.wasLoaded = false;
 fname = options.file;
 special = '!!dataDir!!';
-if length(fname)>=length(special) && strcmp(fname(1:length(special)),special)
+if length(fname)>=length(special) && strcmpi(fname(1:length(special)),special)
     fname = [options.dataDir filesep fname(length(special)+1:end)];
 end
 fname   = getFullPath(fname);
+coding.fname = fname;
+if exist(fname,'file')~=2
+    return;
+end
 codeF   = fileread(fname);
+coding.wasLoaded = true;
 codeF   = reshape(sscanf(codeF,'%f'),2,[]);     % format: lines with [event start, event type]. this is sufficient as assumption of this code is that every sample is tagged with an event type. use event "none" or "other" for things that are not of interest to you
 ts      = codeF(1,:);
 type    = codeF(2,:);

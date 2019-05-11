@@ -46,6 +46,7 @@
         "lbl": "example file stream",
         "locked": false,
         "file": "testCodingFile.txt",
+	"skipIfDoesntExist":true,
         "alwaysReload": true,
 	"needToCorrectT0": false,
         "categories": [ "none", 20, "fix", 4, "sac", 1, "sp", 3 ]

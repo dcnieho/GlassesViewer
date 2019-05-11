@@ -73,6 +73,7 @@ else
 end
 
 % process some streams
+qSkipped = false(1,nStream);
 for p=1:nStream
     switch lower(coding.stream.type{p})
         case {'syncin','syncout'}
@@ -103,9 +104,20 @@ for p=1:nStream
             coding.stream.options{p}.dataDir = filedir;
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
                 tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,tFirst,endTime);
-                % store
-                coding.mark{p} = tempCoding.mark;
-                coding.type{p} = tempCoding.type;
+                if ~tempCoding.wasLoaded
+                    msg = sprintf('Coding file ''%s'', specified to be loaded for stream no. %d (''%s'') was not found.',tempCoding.fname,p,coding.stream.lbls{p});
+                    if coding.stream.options{p}.skipIfDoesntExist
+                        qSkipped(p) = true;
+                        warning('%s Skipped.\n',msg);
+                        continue;
+                    else
+                        error('%s',msg);
+                    end
+                else
+                    % store
+                    coding.mark{p} = tempCoding.mark;
+                    coding.type{p} = tempCoding.type;
+                end
             end
         case 'classifier'
             if ~isfield(coding.stream,'classifier') || ~isfield(coding.stream.classifier,'defaults') || length(coding.stream.classifier.defaults)<p
@@ -175,6 +187,24 @@ for p=1:nStream
     % valid combination
     for i=find(qMulti)
         assert(~any(typeBits(~(qIsFlag|qTakesFlag),i)),'event code for event %d in stream %d invalid: event code has multiple bits set, but at least one of these bits is not for a flag event or a flag-accepting event',i,p)
+    end
+end
+
+iSkipped = find(qSkipped);
+for p=length(iSkipped):-1:1
+    % remove all mention of a skipped stream
+    i = iSkipped(p);
+    fields = {'codeCats','mark','type','codeColors'};
+    for f=fields
+        coding.(f{1})(i) = [];
+    end
+    fields = {'type','lbls','isLocked','options'};
+    for f=fields
+        coding.stream.(f{1})(i) = [];
+    end
+    fields = {'defaults','currentSettings'};
+    for f=fields
+        coding.stream.classifier.(f{1})(i) = [];
     end
 end
 
