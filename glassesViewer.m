@@ -26,15 +26,22 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 % the software to:
 % 1. the projects folder itself
 % 2. the folder of a specific recording. An example of a specific recording
-%    is: projects\rkamrkb\recordings\zi4xmt2. Not the the higher level
+%    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
 %    folders are not needed when opening a recording, so you can just copy
-%    the "zi4xmt2" of this example somewhere and open it in isolation.
-if 0
+%    the "gzz7stc" of this example somewhere and open it in isolation.
+if 1
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
     mydir       = fileparts(mfilename('fullpath'));
-    selectedDir = fullfile(mydir,'demo_recording');
+    if 1
+        % example of where project directory is selected, shows recording
+        % selector
+        selectedDir = fullfile(mydir,'demo_data','projects');
+    else
+        % example of where a recording is directly selected
+        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
+    end
 end
 if ~selectedDir
     return
