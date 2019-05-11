@@ -172,12 +172,12 @@ for p=1:nStream
     % how flags work: an event whose name is suffixed with '+' can take as
     % flag an event whose name is prefixed with '*'. These are then
     % bit-anded together to make a special code
-    vals        = cat(1,coding.codeCats{p}{:,2});
     qIsFlag     = cellfun(@(x) x( 1 )=='*',coding.codeCats{p}(:,1));
     assert(sum(qIsFlag)<=1,'Error in code category definition for stream %d: User can only define up to a single flag code category per stream',p);
     qTakesFlag  = cellfun(@(x) x(end)=='+',coding.codeCats{p}(:,1));
     assert(~xor(any(qIsFlag),any(qTakesFlag)),'Error in code category definition for stream %d: User must define either no flag events (''*'' prefix) and flag-accepting events (''+'' suffix) or both a flag event and at least one flag-accepting event',p);
-    typeBits    = arrayfun(@(x) bitget(x,vals),coding.type{p},'uni',false);
+    bits        = log2(cat(1,coding.codeCats{p}{:,2}))+1;
+    typeBits    = arrayfun(@(x) bitget(x,bits),coding.type{p},'uni',false);
     typeBits    = [typeBits{:}];
     % check 1: more than one bit set for any coded event even though no
     % flags or flag-acceptors defined?
