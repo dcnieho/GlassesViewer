@@ -898,14 +898,16 @@ for s=1:nStream
 end
 % see if there are rows with flags, and if there is a flag in the widest
 % row, create some extra space
-qFlag = false(nStream,max(cellfun(@(x) size(x,1),buttons)));
+qFlag = cell(1,nStream);
 for s=1:nStream
     q = cellfun(@(x)x(1)=='*',buttons{s}(:,1));
-    qFlag(s,1:length(q)) = q;
+    qFlag{s} = q;
 end
-assert(all(ismember(sum(qFlag,2),[0 1])),'there can only be 0 or 1 flag buttons per stream')
-assert(~any(any(qFlag(:,1:end-1))),'flag buttons must be last in the list of categories of a stream') 
-rowWidths(qFlag(:,end)) = rowWidths(qFlag(:,end))+4*marginsB(2);
+flagCount = cellfun(@sum,qFlag);
+assert(all(ismember(flagCount,[0 1])),'there can only be 0 or 1 flag buttons per stream')
+assert(~any(cellfun(@(x)any(x(1:end-1)),qFlag)),'flag buttons must be last in the list of categories of a stream') 
+qHasFlag = ~~flagCount;
+rowWidths(qHasFlag) = rowWidths(qHasFlag)+4*marginsB(2);
 subPanelWidth   = max(rowWidths)+ceil(off(3));
 subPanelHeight  = rowHeight+ceil(off(4));
 panelWidth      = subPanelWidth+marginsP(1)*2;
@@ -930,9 +932,9 @@ end
 
 % make buttons in each
 for p=1:length(buttons)
-    assert(sum(qFlag(p,:))==0||sum(qFlag(p,:))==1)
-    if any(qFlag(p,:))
-        iFlag = find(qFlag(p,:));
+    assert(sum(qFlag{p})==0||sum(qFlag{p})==1)
+    if any(qFlag{p})
+        iFlag = find(qFlag{p});
         buttons{p} = [buttons{p}(1:iFlag-1,:); {'||',0}; buttons{p}(iFlag:end,:)];
         colors{p}  = [ colors{p}(1:iFlag-1  ); { []   };  colors{p}(iFlag:end)];
     end
