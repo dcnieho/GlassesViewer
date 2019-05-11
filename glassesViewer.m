@@ -442,12 +442,12 @@ if hm.UserData.ui.haveEyeVideo
         sceneVidAxSz = (sceneVidAxSz(1)+leftOver).*[1 1./hm.UserData.vid.objs(1,1).AspectRatio];
     end
     
-    axpos(1,:)  = [hm.Position(3)/2+1 hm.Position(4)-round(sceneVidAxSz(2)) round(sceneVidAxSz(1)) round(sceneVidAxSz(2))];
-    axpos(2,:)  = [axpos(1,1)+axpos(1,3)+1 hm.Position(4)-round(eyeVidAxSz(2)) round(eyeVidAxSz(1)) round(eyeVidAxSz(2))];
+    axpos(1,:)  = [hm.Position(3)/2 hm.Position(4)-round(sceneVidAxSz(2)) round(sceneVidAxSz(1)) round(sceneVidAxSz(2))];
+    axpos(2,:)  = [axpos(1,1)+axpos(1,3) hm.Position(4)-round(eyeVidAxSz(2)) round(eyeVidAxSz(1)) round(eyeVidAxSz(2))];
 else
     % 40% of interface is for scene video
     sceneVidAxSz  = hm.Position(3)*.4.*[1 1./hm.UserData.vid.objs(1,1).AspectRatio];
-    axpos(1,:)  = [hm.Position(3)*.6+1 hm.Position(4)-round(sceneVidAxSz(2)) round(sceneVidAxSz(1)) round(sceneVidAxSz(2))];
+    axpos(1,:)  = [hm.Position(3)*.6 hm.Position(4)-round(sceneVidAxSz(2)) round(sceneVidAxSz(1)) round(sceneVidAxSz(2))];
 end
 
 % create axes
