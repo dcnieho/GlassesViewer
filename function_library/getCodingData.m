@@ -204,7 +204,9 @@ for p=length(iSkipped):-1:1
     end
     fields = {'defaults','currentSettings'};
     for f=fields
-        coding.stream.classifier.(f{1})(i) = [];
+        if length(coding.stream.classifier.(f{1}))>=i
+            coding.stream.classifier.(f{1})(i) = [];
+        end
     end
 end
 
