@@ -206,7 +206,7 @@ an example.
 |`type`|Stream type. `fileStream`|
 |`lbl`|String to be shown in GUI, naming the stream|
 |`locked`|Boolean indicating whether annotations can be made, altered or deleted in this stream.|
-|`file`|String containing full path to file from which coding should be loaded. If only a filename is provided, the file is assumed to be in the current directory. The path can start with the special string `!!dataDir!!` to indicate that the path is relative to the selected recording directory that is opened in the GUI.|
+|`file`|String containing full path to file from which coding should be loaded. If only a filename is provided, the file is assumed to be in the current directory. The path can start with the special string `!!recordingDir!!` to indicate that the path is relative to the directory of the selected recording that is opened in the GUI.|
 |`skipIfDoesntExist`|If set to true, code will not error when the specified file does not exist, it will silently remove the coding stream instead.|
 |`alwaysReload`|Boolean indicating whether coding should be reloaded from file when opening the GUI if a `coding.mat` file already exists for the loaded Tobii Glasses data directory (true), or whether the coding stored in the `coding.mat` file should be shown instead (false). Setting this to true ensures that the displayed fileStream is updated if the file contents have changed (when the GUI is reloaded for the recording) |
 |`needToCorrectT0`|Set to true if t=0 in the file to be loaded corresponds to the first data sample instead of to the start of the video (which is t0 for this GUI and its output)|

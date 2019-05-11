@@ -1,10 +1,10 @@
 function coding = loadCodingFile(options,tsData,startT,endT)
-% deal with special !!dataDir!! string if at start of path
+% deal with special !!recordingDir!! string if at start of path
 coding.wasLoaded = false;
 fname = options.file;
-special = '!!dataDir!!';
+special = '!!recordingDir!!';
 if length(fname)>=length(special) && strcmpi(fname(1:length(special)),special)
-    fname = [options.dataDir filesep fname(length(special)+1:end)];
+    fname = [options.recordingDir filesep fname(length(special)+1:end)];
 end
 fname   = getFullPath(fname);
 coding.fname = fname;
