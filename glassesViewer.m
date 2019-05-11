@@ -29,7 +29,7 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "gzz7stc" of this example somewhere and open it in isolation.
-if 1
+if 0
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
@@ -109,6 +109,13 @@ hm.UserData.settings = settings;
 hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
+%% get coding setup
+if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
+    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
+    hm.UserData.coding.hasCoding = true;
+else
+    hm.UserData.coding.hasCoding = false;
+end
 % update figure title
 hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName ')'];
 
@@ -117,12 +124,8 @@ hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName '
 hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
 hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
 hm.UserData.time.currentTime        = 0;
-hm.UserData.time.startTime          = hm.UserData.data.eye.left.ts(find(hm.UserData.data.eye.left.ts<=0,1,'last'));
-if hm.UserData.ui.haveEyeVideo
-    hm.UserData.time.endTime = min([hm.UserData.data.video.scene.fts(end) hm.UserData.data.video.eye.fts(end)]);
-else
-    hm.UserData.time.endTime = hm.UserData.data.video.scene.fts(end);
-end
+hm.UserData.time.startTime          = hm.UserData.data.time.startTime;
+hm.UserData.time.endTime            = hm.UserData.data.time.endTime;
 hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
 hm.UserData.ui.doubleClickInterval  = java.awt.Toolkit.getDefaultToolkit.getDesktopProperty("awt.multiClickInterval");
 if isempty(hm.UserData.ui.doubleClickInterval)
@@ -135,14 +138,6 @@ end
 % this timer executes if there was no second click within double-click
 % interval
 hm.UserData.ui.doubleClickTimer     = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) clickOnAxis(hm), 'StartDelay', hm.UserData.ui.doubleClickInterval/1000);
-
-%% get coding setup
-if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
-    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data, hm.UserData.time.endTime);
-    hm.UserData.coding.hasCoding = true;
-else
-    hm.UserData.coding.hasCoding = false;
-end
 
 
 %% setup data axes

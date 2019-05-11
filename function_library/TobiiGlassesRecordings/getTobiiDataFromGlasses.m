@@ -2,7 +2,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 6;
+fileVersion = 7;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -351,7 +351,20 @@ if qGenCacheFile
         end
     end
     
-    % 13 store to cache file
+    % 13 add time information -- data interval to be used
+    % use data from last start of video (scene or eye, whichever is later)
+    % to first end of video.
+    % 13.1 start time: timestamps are already relative to last video start
+    % time, so just get time of first sample at 0 or just before
+    data.time.startTime   = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
+    % 13.2 end time
+    if qHasEyeVideo
+        data.time.endTime = min([data.video.scene.fts(end) data.video.eye.fts(end)]);
+    else
+        data.time.endTime = data.video.scene.fts(end);
+    end
+    
+    % 14 store to cache file
     data.subjName       = participant.pa_info.Name;
     data.recName        = recording.rec_info.Name;
     data.fileVersion    = fileVersion;

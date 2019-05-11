@@ -1,4 +1,4 @@
-function coding = getCodingData(filedir,fname,codeSettings,tobiiData, endTime)
+function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
 if isempty(codeSettings.streams)
     return;
 end
@@ -6,6 +6,9 @@ end
 if isempty(fname)
     fname = 'coding.mat';
 end
+
+startTime = tobiiData.time.startTime;
+endTime   = tobiiData.time.endTime;
 
 % deal with coding tags for each stream
 if ~iscell(codeSettings.streams)
@@ -47,9 +50,6 @@ if qHaveExistingCoding
     qHaveExistingCoding = isfield(coding,'fileVersion') && coding.fileVersion==fileVersion && isequal(coding.codeCats,theCats);
 end
 
-% for start of coding stream, need first timestamp equal to zero or
-% less
-tFirst = tobiiData.eye.left.ts(find(tobiiData.eye.left.ts<=0,1,'last'));
 if qHaveExistingCoding
     % load
     coding                  = load(fullfile(filedir,fname));
@@ -61,7 +61,7 @@ if qHaveExistingCoding
 else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
-    coding.mark             = repmat({tFirst},nStream,1);       % we code all samples, so always start with a mark at t is roughly 0
+    coding.mark             = repmat({startTime},nStream,1);       % we code all samples, so always start with a mark at t is roughly 0
     coding.type             = repmat({zeros(1,0)},nStream,1);   % always one less elements than in mark, as two marks define one event
     coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
     coding.codeColors       = theColors;                        % just cosmetics, can be ignored, but good to have in easy format
@@ -92,7 +92,7 @@ for p=1:nStream
             if isempty(ts)
                 warning('glassesViewer: no %s events found for stream %d',coding.stream.type{p},p);
             end
-            [ts,type]       = addStartEndCoding(ts,type,tFirst,endTime);
+            [ts,type]       = addStartEndCoding(ts,type,startTime,endTime);
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
@@ -103,7 +103,7 @@ for p=1:nStream
             % file
             coding.stream.options{p}.dataDir = filedir;
             if isscalar(coding.mark{p}) || (isfield(coding.stream.options{p},'alwaysReload') && coding.stream.options{p}.alwaysReload)
-                tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,tFirst,endTime);
+                tempCoding = loadCodingFile(coding.stream.options{p},tobiiData.eye.left.ts,startTime,endTime);
                 if ~tempCoding.wasLoaded
                     msg = sprintf('Coding file ''%s'', specified to be loaded for stream no. %d (''%s'') was not found.',tempCoding.fname,p,coding.stream.lbls{p});
                     if coding.stream.options{p}.skipIfDoesntExist
@@ -157,7 +157,7 @@ for p=1:nStream
                 else
                     settings = coding.stream.classifier.currentSettings{p};
                 end
-                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,tFirst,endTime);
+                tempCoding = doClassification(tobiiData,coding.stream.options{p}.function,settings,startTime,endTime);
                 % store
                 coding.mark{p} = tempCoding.mark;
                 coding.type{p} = tempCoding.type;
