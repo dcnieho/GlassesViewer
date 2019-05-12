@@ -7,7 +7,7 @@ fileVersion = 7;
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
 elseif ~isempty(which('jsondecode'))
-    jsondecoder = @matlab.internal.webservices.fromJSON;
+    jsondecoder = @jsondecode;
 else
     error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
 end
