@@ -26,12 +26,14 @@ When running the viewer GUI, `glassesViewer.m`, a file picker will
 appear. Select the folder of a recording to view. This needs to point to
 a specific recording's folder. If "projects" is the project folder on
 the SD card, an example of a specific recording is:
-    `projects/rkamrkb/recordings/zi4xmt2`
+`projects/rkamrkb/recordings/zi4xmt2`.
 
 If you just wish to parse the Tobii glasses data into a MATLAB readable
 file, you can directly call
 `./function_library/TobiiGlassesRecordings/getTobiiDataFromGlasses.m`
 with the same specific recording as above as the input argument.
+
+An overview of the viewer GUI's functionality is provided in the [manual](/manual.md).
 
 Default settings for the reader are in the `default.json` file. To alter
 these settings, read in the json file with `jsondecode()`, change any
