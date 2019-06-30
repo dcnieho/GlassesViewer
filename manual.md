@@ -1,12 +1,12 @@
 # Manual GlassesViewer
 
-## 1 - opening a Tobii Pro Glasses 2 recording in glassesViewer
+## 1 - Opening a Tobii Pro Glasses 2 recording in glassesViewer
 
 First, open MATLAB and open glassesViewer.m in the editor.
 
 ![](screenshots/001.png)
 
-When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder".
+When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, choose the `demo_data` directory included in this repository.
 
 ![](screenshots/002.png)
 
@@ -26,21 +26,21 @@ When reading the recording, glassesViewer produces some output in the MATLAB com
 
 ![](screenshots/006.png)
 
-## 2 - the glassesViewer interface
+## 2 - The glassesViewer interface
 
-General interface stuff
+Once the recording is loaded, the glassesViewer interface opens.
 
 ![](screenshots/007.png)
 
-Changing the amount of data visible
+The amount of visible data can be changed by dragging the sliders on the timeline underneath the scene video.
 
 ![](screenshots/008.png)
 
-Settings:
+Pressing the Settings button opens a panel with various interface configuration options.
 
 ![](screenshots/009.png)
 
-Modify what signals are visible:
+Using this panel, one can for instance modify which data stream plots should be shown.
 
 ![](screenshots/010.png)
 
@@ -48,57 +48,67 @@ Browse through the data:
 
 ![](screenshots/011.png)
 
-## 3 - fixation classification
+## 3 - Fixation classification
 
-
-Click on fixation classification results.
+Click on the lowest event stream in the scarf plot underneath the first data stream plot on the left of the interface. This makes the selected event stream active, meaning that its codes are displayed by means of highlighting in each of the data stream plots.
 
 ![](screenshots/012.png)
 
-Go to classifier settings:
+The current settings of the slow phase / fast phase classifier algorithm do not appear suitable as many gaze shifts are not labeled as fast phase. To change the classifier's settings, click the Classifier settings button.
 
 ![](screenshots/013.png)
 
-Classifier settings dialog:
+If multiple classifier event streams are defined, a dialog comes up where you chose the classifier for which you want to change the settings. Select the Hessels et al. (2019) one for this example.
 
 ![](screenshots/014.png)
 
-Modify settings and recalculate:.
+This opens the classifier settings dialog.
 
 ![](screenshots/015.png)
 
-Result of adjusted classifier settings, and save coding:
+Change the lambda threshold and click recalculate.
 
 ![](screenshots/016.png)
 
-Coding saved:
+When a new event coding is produced, it is updated in the interface. The red Save coding button indicates this new event classification has not been saved to file yet. Press Save coding to save it to the recording's coding.mat file.
 
 ![](screenshots/017.png)
 
-## 4 - manual annotation of eye-tracking data
-
-Click on empty coding stream. Then click somewhere in a signal to make the first annotation:
+When the coding is saved, the button turns green.
 
 ![](screenshots/018.png)
 
-First annotation:
+## 4 - Manual annotation of eye-tracking data
+
+Click on the second event stream in the event stream scarf, it is currently empty. Then click somewhere in a data stream plot to make the first annotation. On the dialogue box that opens, select the category to annotate the marked episode with.
 
 ![](screenshots/019.png)
 
-Add a second annotation of a different kind:
+The code is now applied.
 
 ![](screenshots/020.png)
 
-Adjust trim of an annotation:
+Click further in the stream to add a second event code of a different kind:
 
 ![](screenshots/021.png)
 
-Multiple labels:
+Drag the edge of an annotation to adjust its duration:
 
 ![](screenshots/022.png)
 
-## 5 - exiting GlassesViewer
-
-Dialog asking whether to save adjusted coding or not:
+Add some more event code:
 
 ![](screenshots/023.png)
+
+## 5 - exiting GlassesViewer
+
+When exiting glassesViewer, if the coding currently displayed is not saved, a dialog box will appear asking whether to save adjusted coding or not:
+
+![](screenshots/024.png)
+
+# Integration with GazeCode
+
+GlassesViewer furthermore offers a close integration with [GazeCode](https://github.com/jsbenjamins/gazecode). Below we document how GazeCode is used for manual mapping of the participant's fixations onto the visual stimulus. Please refer to GazeCode's manual for a complete description of GazeCode's functionality.
+
+# 1 - opening the recording in GazeCode.
+TODO
