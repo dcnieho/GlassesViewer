@@ -67,11 +67,11 @@ Change the lambda threshold and click recalculate.
 
 ![](screenshots/015.png)
 
-When a new event coding is produced, it is updated in the interface. The red Save coding button indicates this new event classification has not been saved to file yet. Press Save coding to save it to the recording's coding.mat file.
+When a new event coding is produced, it is updated in the interface. The red Save coding button indicates this new event classification has not been saved to file yet.
 
 ![](screenshots/016.png)
 
-When the coding is saved, the button turns green.
+Press Save coding to save it to the recording's coding.mat file. When the coding is saved, the button turns green.
 
 ![](screenshots/017.png)
 
