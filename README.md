@@ -248,30 +248,14 @@ The following settings are understood for classifier parameters:
 |`granularity`|For settable parameters of types `double` and `int`, denotes the stepsize by which the parameter changes when moving the spinner a tick in the GUI |
 
 # TODOs
-These items I will consider implementing in upcoming commits:
-- don't hardcode sizes and positions of elements in settings diagram
-- generalize this program by making the data importer also a callable function (and splitting the Tobii Glasses 2 parser code into a submodule that is referenced here). If user returns in an expected format, code can automatically detect which streams are in a data file, and display those.
-- known streams are indicated from this function instead of hardcoded as they are now.
-- support no video at all, then just show 2D view of data in place of video. Return must indicate resolution of recording space (video size for glasses, usually screen size for remotes). (NB: support to have 2D stream averaging the eyes, or two separate eyes in the 2D view)
-- with the above, would be ready to add a simple reader for files saved by [Titta](https://github.com/dcnieho/Titta). Should change name of this repository to ETDataViewer.
-- note that user could easily implement a screen recording + ET data viewer this way too, as long as their read-in function returns info for video sync as well.(NB: will support only a single video, except for the special Tobii glasses eye video. I do not want to generalize
-
-The below items could be also considered to be implemented. Currently, none are
+The below items could be considered to be implemented. Currently, none are
 planned to actually be executed
 - user own json decoder function (or get from mathworks FEX), so we can support
-  matlab version a little older than what i do currently
+  matlab version a little older than what i do currently. In terms of JSON parsing,
+  we however currently already support R2015b. This old version is otherwise untested,
+  and I am not interested in support even older versions.
 - progress bar when loading in data Tobii data (not linear time but can
   indicate steps completed or so)
-- support for viewing data from other systems (e.g. SMI glasses)
-- make fancier file picker (see undocumentedmatlab example at
-  https://undocumentedmatlab.com/blog/javacomponent). When selecting a folder,
-  autodetect which tracker the data comes from and sampling freq (and e.g. for
-  SMI, notify that you must run idfconverter if have not yet done that). User
-  can change detected system (and should file a defect)
-- file picker: In case of Tobii, read those json files upon folder
-  selection, show recording/PP name and such
-- file picker: if failed (e.g. wrong folder), outline the problem areas
-  in red
 
 # Known issues
 - matlab VideoReader (at least in R2017b on Windows 10) cannot read the
