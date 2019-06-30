@@ -151,7 +151,7 @@ example `categories` field, the events would be (internally) coded as follows:
 
 A stream can furthermore contain a single special code acting as a flag
 modifying a base event. An event whose name is suffixed with '+' can take as
-flag an event whose name is prefixed with '*'. These codes can then be
+flag an event whose name is prefixed with `*`. These codes can then be
 bit-anded together to denote an annotated flag. So for the following scheme:
 
 |events|code|
@@ -271,11 +271,27 @@ planned to actually be executed
   1.22.0-zucchinipaj and several later firmware releases.
 
 # Relation GlassesViewer export to Tobii Pro Lab export
-TODO: make nice text. Time in Tobii Pro Lab export start at first sample (t=0 is time of first sample), and exported video starts with some black frames. Time of my export starts at start of scene or eye video (if available), whichever is later. That means there are a bunch of gaze samples with negative time, as gaze recording stream seems to normally start earlier. So converting between the two is a matter of adding or subtracting the time difference between first sample's time and first video frame time.
+Tobii Pro Glasses 2 recordings can be exported to a plain text file and
+a scene video with overlaid gaze marker using the Tobii Pro Lab software.
+When doing so, a different time code is used than produced by
+GlassesViewer's recording parser:
+- For GlassesViewer's export, t=0 is at the start of the scene or the
+  eye video, whichever is later. That means that often there are some
+  gaze, gyroscope and/or accelerometer data with negative timestamps,
+  as the gaze recording stream often appears to start earlier than the
+  scene video.
+- For the Tobii Pro Lab export, t=0 appears to be when the gaze stream
+  starts. As this is often earlier than the start of the scene video,
+  the scene video exported by Tobii Pro Lab often contains a few black
+  frames at its beginning.
+While i have not tested this, converting timestamps between the two
+exports should thus be a matter of adding or subtracting the time difference
+between the timestamp of the first gaze sample and the timestamp of the first
+eye- or scene video frame (whichever is later).
 
 # License details
 Most parts of this repository are licensed under the Creative Commons
 Attribution 4.0 (CC BY 4.0) license.
 
 # Acknowledgments
-mp4 parsing code extracted from https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder
+mp4 parsing code extracted from https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder, and further extended for our purposes.
