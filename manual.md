@@ -54,57 +54,54 @@ Click on the lowest event stream in the scarf plot underneath the first data str
 
 ![](screenshots/012.png)
 
-The current settings of the slow phase / fast phase classifier algorithm do not appear suitable as many gaze shifts are not labeled as fast phase. To change the classifier's settings, click the Classifier settings button.
+The current settings of the slow phase / fast phase classifier algorithm do not appear ideal as some clear saccades are not labeled as fast phase. To change the classifier's settings, click the Classifier settings button.
+If multiple classifier event streams are defined, clicking this button brings up a dialog where you chose the classifier for which you want to change the settings. Select the Hessels et al. (2019) one for this example.
 
 ![](screenshots/013.png)
 
-If multiple classifier event streams are defined, a dialog comes up where you chose the classifier for which you want to change the settings. Select the Hessels et al. (2019) one for this example.
+This opens the classifier settings dialog.
 
 ![](screenshots/014.png)
 
-This opens the classifier settings dialog.
+Change the lambda threshold and click recalculate.
 
 ![](screenshots/015.png)
 
-Change the lambda threshold and click recalculate.
+When a new event coding is produced, it is updated in the interface. The red Save coding button indicates this new event classification has not been saved to file yet. Press Save coding to save it to the recording's coding.mat file.
 
 ![](screenshots/016.png)
 
-When a new event coding is produced, it is updated in the interface. The red Save coding button indicates this new event classification has not been saved to file yet. Press Save coding to save it to the recording's coding.mat file.
-
-![](screenshots/017.png)
-
 When the coding is saved, the button turns green.
 
-![](screenshots/018.png)
+![](screenshots/017.png)
 
 ## 4 - Manual annotation of eye-tracking data
 
 Click on the second event stream in the event stream scarf, it is currently empty. Then click somewhere in a data stream plot to make the first annotation. On the dialogue box that opens, select the category to annotate the marked episode with.
 
-![](screenshots/019.png)
+![](screenshots/018.png)
 
 The code is now applied.
 
-![](screenshots/020.png)
+![](screenshots/019.png)
 
 Click further in the stream to add a second event code of a different kind:
 
-![](screenshots/021.png)
+![](screenshots/020.png)
 
 Drag the edge of an annotation to adjust its duration:
 
-![](screenshots/022.png)
+![](screenshots/021.png)
 
 Add some more event code:
 
-![](screenshots/023.png)
+![](screenshots/022.png)
 
 ## 5 - exiting GlassesViewer
 
 When exiting glassesViewer, if the coding currently displayed is not saved, a dialog box will appear asking whether to save adjusted coding or not:
 
-![](screenshots/024.png)
+![](screenshots/023.png)
 
 # Integration with GazeCode
 
