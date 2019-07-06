@@ -28,50 +28,59 @@ startTime = tobiiData.time.startTime;
 endTime   = tobiiData.time.endTime;
 
 
+% deal with coding tags for each stream
+if ~iscell(codeSettings.streams)
+    codeSettings.streams = num2cell(codeSettings.streams);
+end
+nStream = length(codeSettings.streams);
 if ~qHaveExistingCoding
-    % deal with coding tags for each stream
-    if ~iscell(codeSettings.streams)
-        codeSettings.streams = num2cell(codeSettings.streams);
-    end
-    % 1. get categories for all streams
-    categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
-    % 2. transform into lookup table
-    categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
-    % 3. remove color info, that's just cosmetic
-    theCats = cellfun(@(x) x(:,1),categories,'uni',false).';
-    nStream = length(theCats);
-    % 4. create bitmask values for each stream
-    for p=1:nStream
-        theCats{p} = [theCats{p} num2cell(bitshift(1,[0:length(theCats{p})-1].'))];
-    end
-    % 5. get colors in easy format too
-    theColors = cellfun(@(x) x(:,2),categories,'uni',false).';
-    for p=1:nStream
-        theColors{p} = cellfun(@(x) codeSettings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
-    end
-    
-    % parse type of each stream, and other info
-    type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
-    locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
-    qSyncEvents = ismember(lower(type),{'syncin','syncout'});
-    locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
-    lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
-    options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
-
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
     coding.mark             = repmat({startTime},nStream,1);       % we code all samples, so always start with a mark at t is roughly 0
     coding.type             = repmat({zeros(1,0)},nStream,1);   % always one less elements than in mark, as two marks define one event
-    coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
-    coding.codeColors       = theColors;                        % just cosmetics, can be ignored, but good to have in easy format
-    coding.fileVersion      = fileVersion;
-    coding.stream.type      = type;
-    coding.stream.lbls      = lbls;
-    coding.stream.isLocked  = locked;
-    coding.stream.options   = options;
 else
-    nStream = length(coding.mark);
+    assert(nStream==length(coding.stream.available) && sum(coding.stream.available)==length(coding.mark),'coding.mat file is invalid. The coding settings stored in it suggest a different number of streams than the number of streams for which there are markers in the file')
+    assert(nStream==length(coding.stream.available) && sum(coding.stream.available)==length(coding.type),'coding.mat file is invalid. The coding settings stored in it suggest a different number of streams than the number of streams for which there are code types in the file')
+    coding.mark(coding.stream.available) = coding.mark;
+    coding.mark(~coding.stream.available)= cell(1);
+    coding.type(coding.stream.available) = coding.type;
+    coding.type(~coding.stream.available)= cell(1);
 end
+
+% 1. get categories for all streams
+categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
+% 2. transform into lookup table
+categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
+% 3. remove color info, that's just cosmetic
+theCats = cellfun(@(x) x(:,1),categories,'uni',false).';
+nStream = length(theCats);
+% 4. create bitmask values for each stream
+for p=1:nStream
+    theCats{p} = [theCats{p} num2cell(bitshift(1,[0:length(theCats{p})-1].'))];
+end
+% 5. get colors in easy format too
+theColors = cellfun(@(x) x(:,2),categories,'uni',false).';
+for p=1:nStream
+    theColors{p} = cellfun(@(x) codeSettings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
+end
+
+% parse type of each stream, and other info
+type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
+locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
+qSyncEvents = ismember(lower(type),{'syncin','syncout'});
+locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
+lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
+options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
+
+
+coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
+coding.codeColors       = theColors;                        % just cosmetics, can be ignored, but good to have in easy format
+coding.fileVersion      = fileVersion;
+coding.stream.available = true(1,nStream);
+coding.stream.type      = type;
+coding.stream.lbls      = lbls;
+coding.stream.isLocked  = locked;
+coding.stream.options   = options;
 
 % process some streams
 qSkipped = false(1,nStream);
@@ -209,6 +218,8 @@ for p=length(iSkipped):-1:1
             coding.stream.classifier.(f{1})(i) = [];
         end
     end
+    % and mark it as unavailable
+    coding.stream.available(i) = false;
 end
 
 % store back up of file and classifier streams. Allows checking if coding

@@ -156,7 +156,7 @@
 	"skipIfDoesntExist":true,
         "alwaysReload": true,
 	"needToCorrectT0": false,
-        "categories": [ "none", 20, "GC0", 1, "GC1", 2, "GC2", 3, "GC3", 4, "GC4", 5, "GC5", 6, "GC6", 7, "GC7", 8, "GC8", 9, "GC9", 10]
+        "categories": [ "other", 20, "uncoded", 1, "GC1", 2, "GC2", 3, "GC3", 4, "GC4", 5, "GC5", 6, "GC6", 7, "GC7", 8, "GC8", 9, "GC9", 10]
       }
     ],
     "colors": [
