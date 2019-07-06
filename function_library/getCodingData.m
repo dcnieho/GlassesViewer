@@ -1,64 +1,63 @@
-function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
-if isempty(codeSettings.streams)
-    return;
-end
-
+function [coding,codeSettings] = getCodingData(filedir,fname,codeSettings,tobiiData)
 if isempty(fname)
     fname = 'coding.mat';
+end
+
+
+% set file format version. coding files older than this version are ignored
+fileVersion = 3;
+
+qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
+if qHaveExistingCoding
+    % we have a cache file, check its file version
+    coding = load(fullfile(filedir,fname),'fileVersion');
+    qHaveExistingCoding = isfield(coding,'fileVersion') && coding.fileVersion==fileVersion;
+end
+
+if qHaveExistingCoding
+    % load
+    coding          = load(fullfile(filedir,fname));
+    codeSettings    = coding.settings;
+end
+
+if isempty(codeSettings.streams)
+    return;
 end
 
 startTime = tobiiData.time.startTime;
 endTime   = tobiiData.time.endTime;
 
-% deal with coding tags for each stream
-if ~iscell(codeSettings.streams)
-    codeSettings.streams = num2cell(codeSettings.streams);
-end
-% 1. get categories for all streams
-categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
-% 2. transform into lookup table
-categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
-% 3. remove color info, that's just cosmetic
-theCats = cellfun(@(x) x(:,1),categories,'uni',false).';
-nStream = length(theCats);
-% 4. create bitmask values for each stream
-for p=1:nStream
-    theCats{p} = [theCats{p} num2cell(bitshift(1,[0:length(theCats{p})-1].'))];
-end
-% 5. get colors in easy format too
-theColors = cellfun(@(x) x(:,2),categories,'uni',false).';
-for p=1:nStream
-    theColors{p} = cellfun(@(x) codeSettings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
-end
 
-% parse type of each stream, and other info
-type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
-locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
-qSyncEvents = ismember(lower(type),{'syncin','syncout'});
-locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
-lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
-options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
+if ~qHaveExistingCoding
+    % deal with coding tags for each stream
+    if ~iscell(codeSettings.streams)
+        codeSettings.streams = num2cell(codeSettings.streams);
+    end
+    % 1. get categories for all streams
+    categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
+    % 2. transform into lookup table
+    categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
+    % 3. remove color info, that's just cosmetic
+    theCats = cellfun(@(x) x(:,1),categories,'uni',false).';
+    nStream = length(theCats);
+    % 4. create bitmask values for each stream
+    for p=1:nStream
+        theCats{p} = [theCats{p} num2cell(bitshift(1,[0:length(theCats{p})-1].'))];
+    end
+    % 5. get colors in easy format too
+    theColors = cellfun(@(x) x(:,2),categories,'uni',false).';
+    for p=1:nStream
+        theColors{p} = cellfun(@(x) codeSettings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
+    end
+    
+    % parse type of each stream, and other info
+    type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
+    locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
+    qSyncEvents = ismember(lower(type),{'syncin','syncout'});
+    locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
+    lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
+    options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
 
-% set file format version. coding files older than this version are ignored
-fileVersion = 2;
-
-qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
-if qHaveExistingCoding
-    % we have a cache file, check its file version and if coding streams
-    % and categories are the same
-    coding = load(fullfile(filedir,fname),'fileVersion','codeCats');
-    qHaveExistingCoding = isfield(coding,'fileVersion') && coding.fileVersion==fileVersion && isequal(coding.codeCats,theCats);
-end
-
-if qHaveExistingCoding
-    % load
-    coding                  = load(fullfile(filedir,fname));
-    % always replace some things by values from settings
-    coding.codeColors       = theColors;
-    coding.stream.lbls      = lbls;
-    coding.stream.isLocked  = locked;
-    coding.stream.options   = options;
-else
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
     coding.mark             = repmat({startTime},nStream,1);       % we code all samples, so always start with a mark at t is roughly 0
@@ -70,6 +69,8 @@ else
     coding.stream.lbls      = lbls;
     coding.stream.isLocked  = locked;
     coding.stream.options   = options;
+else
+    nStream = length(coding.mark);
 end
 
 % process some streams
