@@ -117,7 +117,13 @@ hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
     hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
     hm.UserData.coding.hasCoding = true;
-    hm.UserData.settings.coding  = hm.UserData.coding.settings;     % if a coding.mat file already existed, the coding settings from there are taken, overwriting whatever was in the settings provided for this run. That is important, else an inadvertent settings change makes a coding.mar file unusable
+    % if a coding.mat file already existed, the coding settings from there
+    % are taken, overwriting whatever was in the settings provided for this
+    % run. That is important, else an inadvertent settings change makes a
+    % coding.mat file unusable
+    % Therefore, delete hm.UserData.settings.coding, and in the below only
+    % use hm.UserData.coding.settings
+    hm.UserData.settings = rmfield(hm.UserData.settings,'coding');
 else
     hm.UserData.coding.hasCoding = false;
 end
@@ -1095,7 +1101,7 @@ else
 end
 
 % close panel if adding code
-if hm.UserData.settings.coding.closePanelAfterCode && ~hm.UserData.ui.coding.panelIsEditingCode
+if hm.UserData.coding.settings.closePanelAfterCode && ~hm.UserData.ui.coding.panelIsEditingCode
     hm.UserData.ui.coding.panel.obj.Visible = 'off';
 end
 
