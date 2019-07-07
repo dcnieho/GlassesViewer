@@ -15,9 +15,8 @@ if qHaveExistingCoding
 end
 
 if qHaveExistingCoding
-    % load
+    % load file
     coding          = load(fullfile(filedir,fname));
-    codeSettings    = coding.settings;
 else
     coding.settings = codeSettings;
 end
