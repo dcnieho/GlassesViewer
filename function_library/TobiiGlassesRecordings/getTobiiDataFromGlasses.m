@@ -1,5 +1,9 @@
 function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
+% Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (in prep).
+% GlassesViewer: Open-source software for viewing and analyzing data from
+% the Tobii Pro Glasses 2 eye tracker.
+
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
 fileVersion = 7;

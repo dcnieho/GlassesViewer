@@ -1,6 +1,10 @@
 function hm = glassesViewer(settings)
 close all
 
+% Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (in prep).
+% GlassesViewer: Open-source software for viewing and analyzing data from
+% the Tobii Pro Glasses 2 eye tracker.
+
 qDEBUG = true;
 if qDEBUG
     dbstop if error
