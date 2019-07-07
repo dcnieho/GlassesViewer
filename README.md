@@ -7,15 +7,27 @@ be optionally annotated (e.g. as slow and fast phase intervals) by hand
 or by a classifier algorithm, or such annotations can be loaded from
 file. 
 
-NB: do not expect fluent playback. I get a few frames a second on my 4K
-display, the matlab GUI renderer can't handle all this.
+Cite as:
+Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (in prep).
+GlassesViewer: Open-source software for viewing and analyzing data from
+the Tobii Pro Glasses 2 eye tracker.
+
+GlassesViewer offers integration with the [GazeCode manual mapping
+tool](https://github.com/jsbenjamins/gazecode) for easily and efficiently
+mapping participant gaze or other event episodes to the visual stimulus.
+This integration is demoed in the [manual](/manual.md), see [the GazeCode
+repository](https://github.com/jsbenjamins/gazecode) for further details
+on how to acquire and use GazeCode.
 
 Tested on MATLAB R2017b and R2018b. Because a bunch of java hacks are
 used for the GUI, it is quite possible that the viewer part of this repository
 is not all that compatible with different matlab versions. Pull requests
-welcomed! Some used functionality was only introduced with R2016b
-(`jsondecode()`), so the code in this repository is not expected to run
+welcomed! Some used functionality was only introduced with R2015b
+(JSON decoder), so the code in this repository is not expected to run
 on versions of matlab older than that.
+
+NB: do not expect fluent playback. I get a few frames a second on my 4K
+display, the matlab GUI renderer can't handle all this.
 
 # Screenshot
 Click the screenshot to see a full-size version.
