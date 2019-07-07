@@ -115,9 +115,9 @@ hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserDat
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 %% get coding setup
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
-    [hm.UserData.coding,codeSet] = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
+    hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
     hm.UserData.coding.hasCoding = true;
-    hm.UserData.settings.coding  = codeSet;     % if a coding.mat file already existed, the coding settings from there are taken, overwriting whatever was in the settings provided for this run. That is important, else an inadvertent settings change makes a coding.mar file unusable
+    hm.UserData.settings.coding  = hm.UserData.coding.settings;     % if a coding.mat file already existed, the coding settings from there are taken, overwriting whatever was in the settings provided for this run. That is important, else an inadvertent settings change makes a coding.mar file unusable
 else
     hm.UserData.coding.hasCoding = false;
 end
@@ -647,7 +647,6 @@ end
 %% helpers etc
 function saveCodingData(hm)
 coding          = rmfield(hm.UserData.coding,'hasCoding');
-coding.settings = hm.UserData.settings.coding;
 fname           = 'coding.mat';
 save(fullfile(hm.UserData.fileDir,fname),'-struct', 'coding');
 % store copy of what we just saved, so we can check if new save is needed
@@ -690,7 +689,6 @@ end
 function hasUnsaved = hasUnsavedCoding(hm)
 % ignore log when checking for equality
 testCoding = hm.UserData.coding;
-testCoding.settings = hm.UserData.settings.coding;
 hasUnsaved = isfield(hm.UserData.ui,'savedCoding') && ~isequal(rmFieldOrContinue(hm.UserData.ui.savedCoding,'log'),rmFieldOrContinue(testCoding,{'log','hasCoding'}));
 end
 

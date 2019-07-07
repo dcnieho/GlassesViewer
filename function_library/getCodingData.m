@@ -1,4 +1,4 @@
-function [coding,codeSettings] = getCodingData(filedir,fname,codeSettings,tobiiData)
+function coding = getCodingData(filedir,fname,codeSettings,tobiiData)
 if isempty(fname)
     fname = 'coding.mat';
 end
@@ -18,9 +18,11 @@ if qHaveExistingCoding
     % load
     coding          = load(fullfile(filedir,fname));
     codeSettings    = coding.settings;
+else
+    coding.settings = codeSettings;
 end
 
-if isempty(codeSettings.streams)
+if isempty(coding.settings.streams)
     return;
 end
 
@@ -29,10 +31,10 @@ endTime   = tobiiData.time.endTime;
 
 
 % deal with coding tags for each stream
-if ~iscell(codeSettings.streams)
-    codeSettings.streams = num2cell(codeSettings.streams);
+if ~iscell(coding.settings.streams)
+    coding.settings.streams = num2cell(coding.settings.streams);
 end
-nStream = length(codeSettings.streams);
+nStream = length(coding.settings.streams);
 if ~qHaveExistingCoding
     % create empty
     coding.log              = cell(0,3);                        % timestamp, identifier, additional data
@@ -48,7 +50,7 @@ else
 end
 
 % 1. get categories for all streams
-categories = cellfun(@(x) x.categories, codeSettings.streams, 'uni', false);
+categories = cellfun(@(x) x.categories, coding.settings.streams, 'uni', false);
 % 2. transform into lookup table
 categories = cellfun(@(x) reshape(x,2,[]).', categories, 'uni', false);
 % 3. remove color info, that's just cosmetic
@@ -61,16 +63,16 @@ end
 % 5. get colors in easy format too
 theColors = cellfun(@(x) x(:,2),categories,'uni',false).';
 for p=1:nStream
-    theColors{p} = cellfun(@(x) codeSettings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
+    theColors{p} = cellfun(@(x) coding.settings.colors(x,:),theColors{p},'uni',false,'ErrorHandler',@(~,~)[]);
 end
 
 % parse type of each stream, and other info
-type    = cellfun(@(x) x.type, codeSettings.streams, 'uni', false);
+type    = cellfun(@(x) x.type, coding.settings.streams, 'uni', false);
 locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
 qSyncEvents = ismember(lower(type),{'syncin','syncout'});
-locked(~qSyncEvents) = cellfun(@(x) x.locked, codeSettings.streams(~qSyncEvents));
-lbls    = cellfun(@(x) x.lbl, codeSettings.streams, 'uni', false);
-options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), codeSettings.streams, 'uni', false);
+locked(~qSyncEvents) = cellfun(@(x) x.locked, coding.settings.streams(~qSyncEvents));
+lbls    = cellfun(@(x) x.lbl, coding.settings.streams, 'uni', false);
+options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), coding.settings.streams, 'uni', false);
 
 
 coding.codeCats         = theCats;                          % info about what each event in each stream is, and the bitmask it is coded with
@@ -139,7 +141,7 @@ for p=1:nStream
             %    loaded when user clicks "reset to defaults"
             % 2. currentSettings stores settings used for the currently
             %    stored event coding, may be equal to defaults.
-            coding.stream.classifier.defaults{p} = codeSettings.streams{p}.parameters;
+            coding.stream.classifier.defaults{p} = coding.settings.streams{p}.parameters;
             if ~isfield(coding.stream.classifier,'currentSettings') || isempty(coding.stream.classifier.currentSettings{p})
                 coding.stream.classifier.currentSettings{p} = coding.stream.classifier.defaults{p};
             else
