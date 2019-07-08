@@ -159,7 +159,7 @@ The right panel in the GazeCode interface shows the codes you can assign to an e
 
 ![](screenshots/032.png)
 
-This next event episode is a look at one of the dark blue pushpins on the notice board, and should thus be coded as `other color pushpin`. To do so, click the poster icon in the right panel, or, for greater efficiency, use the keys on the numpad area of the keyboard. The nine coding buttons in the GazeCode interface spatially correspond to the keys 1-9 on the numpad. In this case, press the key 4. The interface now indicates the selected code:
+This next event episode is a look at one of the dark blue pushpins on the notice board, and should thus be coded as `other color pushpin`. To do so, click the white pushpin icon in the right panel, or, for greater efficiency, use the keys on the numpad area of the keyboard. The nine coding buttons in the GazeCode interface spatially correspond to the keys 1-9 on the numpad. In this case, press the key 4. The interface now indicates the selected code:
 
 ![](screenshots/033.png)
 
