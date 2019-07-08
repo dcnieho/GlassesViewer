@@ -159,7 +159,7 @@ The right panel in the GazeCode interface shows the codes you can assign to an e
 
 ![](screenshots/032.png)
 
-This next event episode is a look at one of the posters on the notice board, and should thus be coded as `poster`. To do so, click the poster icon in the right panel, or, for greater efficiency, use the keys on the numpad area of the keyboard. The nine coding buttons in the GazeCode interface spatially correspond to the keys 1-9 on the numpad. In this case, press the key 5. The interface now indicates the selected code:
+This next event episode is a look at one of the dark blue pushpins on the notice board, and should thus be coded as `other color pushpin`. To do so, click the poster icon in the right panel, or, for greater efficiency, use the keys on the numpad area of the keyboard. The nine coding buttons in the GazeCode interface spatially correspond to the keys 1-9 on the numpad. In this case, press the key 4. The interface now indicates the selected code:
 
 ![](screenshots/033.png)
 
@@ -167,17 +167,21 @@ To remove a coding, press the zero (0) key on the keyboard.
 
 ![](screenshots/032.png)
 
-Work through all the events using the procedure above. Your coding will be automatically saved to the `coding.mat` file in the recording's directory when the interface is closed. The coding is also saved in text format to a file `gazeCodeCoding.txt` in the recording's directory. Close the interface now for the purpose of this demo.
+Work through all the events using the procedure above. The next event is a look at a poster, and should thus be coded `poster` with the 5 key.
+
+![](screenshots/034.png)
+
+Once done, close the GazeCode interface. Your coding will be automatically saved to the `coding.mat` file in the recording's directory when the interface is closed. The coding is also saved in text format to a file `gazeCodeCoding.txt` in the recording's directory. Close the interface now for the purpose of this demo.
 
 ## 3 - Reviewing or editing an existing manual mapping in GazeCode.
 
 As before, run `gazecode.m` and select the recording you have just coded above. The dialogue for selecting an event stream to view or code now includes a new stream, the `Slow phase mapping` stream we have just created. Select it.
 
-![](screenshots/034.png)
+![](screenshots/035.png)
 
 As the interface indicates, for streams created by GazeCode, there is no event code to select for further coding. So press the `Use selection` button to continue. You are now asked to indicate in what event stream to store the coding you will produce:
 
-![](screenshots/035.png)
+![](screenshots/036.png)
 
 The bold name indicates the stream that you have just selected to code. Selecting this also as the output stream allows you to modify a previous GazeCode coding. Selecting a new stream by providing a new name allows copying the GazeCode coding before modifying it. Select the `Slow phase mapping` stream. The previous coding now opens in the GazeCode interface, and allows you to review or edit it. Changes will be saved upon exit.
 
@@ -185,12 +189,12 @@ The bold name indicates the stream that you have just selected to code. Selectin
 
 A GazeCode event stream can also be reviewed or edited using GlassesViewer. As above, run `glassesViewer.m`. Select the recording that you have just coded in GazeCode. If you have been following this walkthrough, that likely is `<GazeCode_directory>\data\demoSD\projects`. As can be seen in the interface that opens, a new event stream has now been added, select it.
 
-![](screenshots/036.png)
+![](screenshots/037.png)
 
 This stream indicates event episodes that are not of interest in gray, uncoded event in red, and coded events in a unique color per category. When clicking in the timeline, the coding panel opens, showing what GazeCode category is currently assigned to an event.
 
-![](screenshots/037.png)
+![](screenshots/038.png)
 
 The assigned GazeCode category can be changed with the buttons on the coding panel, and the same options for editing the coding stream (e.g., dragging start or end time of an event) as for the other coding streams are available:
 
-![](screenshots/038.png)
+![](screenshots/039.png)
