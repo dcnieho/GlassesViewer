@@ -6,7 +6,7 @@ First, open MATLAB and open glassesViewer.m in the editor.
 
 ![](screenshots/001.png)
 
-When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, choose the `demo_data` directory included in this repository.
+When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, choose the `projects` directory located inside the `demo_data` directory that is included in this repository.
 
 ![](screenshots/002.png)
 
