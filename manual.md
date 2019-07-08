@@ -120,7 +120,7 @@ A dialogue then asks to select a directory of categories. Select `<GazeCode_dire
 
 ![](screenshots/026.png)
 
-A dialogue then asks to select a directory of SD card. Select `<GazeCode_directory>\data\demoSD\projects` for this demo. If you want to code a stream that you have produced with the steps of the GlassesViewer walkthrough above, instead select the directory `<GlassesViewer_directory>\demo_data\projects`, so that the right copy of the demo recording, the one with your coding in it, is loaded.
+A dialogue then asks to select a directory of SD card. Select `<GazeCode_directory>\data\demoTobiiSD\projects` for this demo. If you want to code a stream that you have produced with the steps of the GlassesViewer walkthrough above, instead select the directory `<GlassesViewer_directory>\demo_data\projects`, so that the right copy of the demo recording, the one with your coding in it, is loaded.
 
 ![](screenshots/027.png)
 
@@ -187,7 +187,7 @@ The bold name indicates the stream that you have just selected to code. Selectin
 
 ## 4 - Reviewing or editing an existing manual mapping using GlassesViewer.
 
-A GazeCode event stream can also be reviewed or edited using GlassesViewer. As above, run `glassesViewer.m`. Select the recording that you have just coded in GazeCode. If you have been following this walkthrough, that likely is `<GazeCode_directory>\data\demoSD\projects`. As can be seen in the interface that opens, a new event stream has now been added, select it.
+A GazeCode event stream can also be reviewed or edited using GlassesViewer. As above, run `glassesViewer.m`. Select the recording that you have just coded in GazeCode. If you have been following this walkthrough, that likely is `<GazeCode_directory>\data\demoTobiiSD\projects`. As can be seen in the interface that opens, a new event stream has now been added, select it.
 
 ![](screenshots/037.png)
 
