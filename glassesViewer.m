@@ -975,7 +975,14 @@ for p=1:length(buttons)
             else
                 clr = baseColor*(1-alpha)+alpha*colors{p}{q}./255;
             end
-            hm.UserData.ui.coding.buttons(butIdx).BackgroundColor = clr;
+            if ismac
+                % Mac buttons don't render background color, so we have to
+                % do it this way. This way we lose the toggle state, but
+                % thats a smaller price to pay than no color.
+                hm.UserData.ui.coding.buttons(butIdx).CData = repmat(permute(clr(:),[3 2 1]),buttonSz(2)-3,buttonSz(1)-3);
+            else
+                hm.UserData.ui.coding.buttons(butIdx).BackgroundColor = clr;
+            end
             
             % advance to next pos
             start(1) = start(1)+buttonSz(1)+marginsB(2);
