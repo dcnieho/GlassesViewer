@@ -225,7 +225,7 @@ end
 
 % store back up of file and classifier streams. Allows checking if coding
 % is manually changed
-if ~isfield(coding,'original')
+if ~isfield(coding,'original') || length(coding.original.mark)~=length(coding.mark)
     [coding.original.mark,coding.original.type] = deal(cell(size(coding.stream.type)));
 end
 qStoreOriginal              = false(size(coding.stream.type));
