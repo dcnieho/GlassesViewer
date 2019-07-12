@@ -116,7 +116,7 @@ hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 %% get coding setup
 if isfield(hm.UserData.settings,'coding') && isfield(hm.UserData.settings.coding,'streams') && ~isempty(hm.UserData.settings.coding.streams)
     hm.UserData.coding           = getCodingData(hm.UserData.fileDir, '', hm.UserData.settings.coding, hm.UserData.data);
-    hm.UserData.coding.hasCoding = true;
+    hm.UserData.coding.hasCoding = ~isempty(hm.UserData.coding.mark);
     % if a coding.mat file already existed, the coding settings from there
     % are taken, overwriting whatever was in the settings provided for this
     % run. That is important, else an inadvertent settings change makes a
@@ -413,11 +413,13 @@ if hm.UserData.coding.hasCoding
 end
 
 % crap data tick
-if ~isfield(hm.UserData.coding,'dataIsCrap')
-    hm.UserData.coding.dataIsCrap = false;
+if hm.UserData.coding.hasCoding
+    if ~isfield(hm.UserData.coding,'dataIsCrap')
+        hm.UserData.coding.dataIsCrap = false;
+    end
+    checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
+    hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.coding.dataIsCrap,'Callback',@(hndl,~,~) setCrapData(hm,hndl));
 end
-checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
-hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.coding.dataIsCrap,'Callback',@(hndl,~,~) setCrapData(hm,hndl));
 
 %% load videos
 segments = FolderFromFolder(fullfile(hm.UserData.fileDir,'segments'));
@@ -627,10 +629,12 @@ end
 createSettings(hm);
 
 % save coding data button
-butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(end,2) 100 30];
-hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
-hm.UserData.ui.savedCoding = [];
-saveCodingData(hm); % save starting point
+if hm.UserData.coding.hasCoding
+    butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(end,2) 100 30];
+    hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
+    hm.UserData.ui.savedCoding = [];
+    saveCodingData(hm); % save starting point
+end
 
 
 %% all done, make sure GUI is shown
@@ -2454,14 +2458,16 @@ for a=1:nVisible
 end
 
 % reorder handles and other plot attributes
-assert(isempty(setxor(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','coderMarks','codeShade','scarfs','zoom'})),'added new fields, check if need to reorder')
+assert(all(ismember(fieldnames(hm.UserData.plot),{'ax','defaultValueScale','axPos','axRect','timeIndicator','margin','coderMarks','codeShade','scarfs','zoom'})),'added new fields, check if need to reorder')
 hm.UserData.plot.ax                 = hm.UserData.plot.ax(newOrder);
 hm.UserData.plot.timeIndicator      = hm.UserData.plot.timeIndicator(newOrder);
 hm.UserData.plot.defaultValueScale  = hm.UserData.plot.defaultValueScale(:,newOrder);
 hm.UserData.plot.axPos              = hm.UserData.plot.axPos(newOrder,:);
 hm.UserData.plot.axRect             = hm.UserData.plot.axRect(newOrder,:);
 hm.UserData.plot.coderMarks         = hm.UserData.plot.coderMarks(newOrder);
-hm.UserData.plot.codeShade          = hm.UserData.plot.codeShade(newOrder);
+if isfield(hm.UserData.plot,'codeShade')
+    hm.UserData.plot.codeShade          = hm.UserData.plot.codeShade(newOrder);
+end
 
 % update this listbox and its selection
 listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
