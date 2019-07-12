@@ -227,6 +227,11 @@ for p=length(iSkipped):-1:1
     coding.stream.available(i) = false;
 end
 
+% if no streams left because all unavailable, we can exit here
+if ~any(coding.stream.available)
+    return;
+end
+
 % store back up of file and classifier streams. Allows checking if coding
 % is manually changed
 if ~isfield(coding,'original') || length(coding.original.mark)~=length(coding.mark)
