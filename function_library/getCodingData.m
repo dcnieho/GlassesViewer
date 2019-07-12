@@ -101,7 +101,9 @@ for p=1:nStream
             ts(iSame+1)     = [];
             type(iSame+1)   = [];
             if isempty(ts)
-                warning('glassesViewer: no %s events found for stream %d',coding.stream.type{p},p);
+                qSkipped(p) = true;
+                warning('glassesViewer: no %s events found for stream %d. Skipped.',coding.stream.type{p},p);
+                continue;
             end
             [ts,type]       = addStartEndCoding(ts,type,startTime,endTime);
             % store
@@ -119,7 +121,7 @@ for p=1:nStream
                     msg = sprintf('Coding file ''%s'', specified to be loaded for stream no. %d (''%s'') was not found.',tempCoding.fname,p,coding.stream.lbls{p});
                     if coding.stream.options{p}.skipIfDoesntExist
                         qSkipped(p) = true;
-                        warning('%s Skipped.\n',msg);
+                        warning('%s Skipped.',msg);
                         continue;
                     else
                         error('%s',msg);
