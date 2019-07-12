@@ -6,7 +6,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 7;
+fileVersion = 8;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -260,22 +260,26 @@ if qGenCacheFile
     
     % 8 add video sync data to output file
     assert(issorted( vts.ts,'monotonic'))
-    data.video.scene    =  vts;
+    assert(isscalar(unique(vts.ts-vts.vts)))    % this is an assumption of the fts calculation code below
+    data.video.scene.sync   =  vts;
     if qHasEyeVideo
         assert(issorted(evts.ts,'monotonic'))
-        data.video.eye      = evts;
+        assert(isscalar(unique(evts.ts-evts.evts)))     % this is an assumption of the fts calculation code below
+        data.video.eye.sync     = evts;
     end
+    clear vts evts
     
     % 9 add sync port data to output file
     data.syncPort = sig;
+    clear sig
     
     % 10 add API sync data to output file (TODO)
     
     % 11 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
-    t0s = min(data.video.scene.ts);
+    t0s = min(data.video.scene.sync.ts);
     if qHasEyeVideo
-        t0s = [t0s min(data.video.eye.ts)];
+        t0s = [t0s min(data.video.eye.sync.ts)];
     end
     t0 = max(t0s);
     data.eye.left.ts        = (data.eye.left.ts-t0)./1000000;
@@ -283,9 +287,9 @@ if qGenCacheFile
     data.eye.binocular.ts   = (data.eye.binocular.ts-t0)./1000000;
     data.gyroscope.ts       = (data.gyroscope.ts-t0)./1000000;
     data.accelerometer.ts   = (data.accelerometer.ts-t0)./1000000;
-    data.video.scene.ts     = (data.video.scene.ts-t0)./1000000;
+    data.video.scene.sync.ts= (data.video.scene.sync.ts-t0)./1000000;
     if qHasEyeVideo
-        data.video.eye.ts       = (data.video.eye.ts-t0)./1000000;
+        data.video.eye.sync.ts  = (data.video.eye.sync.ts-t0)./1000000;
     end
     data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
@@ -304,11 +308,11 @@ if qGenCacheFile
                 case 1
                     file = 'fullstream.mp4';
                     field= 'scene';
-                    tsoff= data.video.scene.ts(data.video.scene.vts==0);
+                    tsoff= data.video.scene.sync.ts(data.video.scene.sync.vts==0);
                 case 2
                     file = 'eyesstream.mp4';
                     field= 'eye';
-                    tsoff= data.video.  eye.ts(data.video.  eye.evts==0);
+                    tsoff= data.video.  eye.sync.ts(data.video.  eye.sync.evts==0);
             end
             fname = fullfile(recordingDir,'segments',segments(s).name,file);
             % get frame timestamps and such from info stored in the mp4
@@ -353,6 +357,16 @@ if qGenCacheFile
             data.video.(field).width  = atoms.tracks(videoTrack).tkhd.width;
             data.video.(field).height = atoms.tracks(videoTrack).tkhd.height;
         end
+    end
+    % clean up unneeded fields
+    for p=1:1+qHasEyeVideo
+        switch p
+            case 1
+                field= 'scene';
+            case 2
+                field= 'eye';
+        end
+        data.video.(field) = rmfield(data.video.(field),'sync');
     end
     
     % 13 add time information -- data interval to be used
