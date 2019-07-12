@@ -4,7 +4,7 @@ function data = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3)
 % gd : gaze direction (per eye)
 % gp : gaze position on scene video (binocular)
 % gp3: gaze convergence position in 3D space (binocular)
-assert(  all(ismember( gp.ts,pc.ts))) % we have less binocular samples because they can only be created if data from both eyes is ok. but binocular should not contain timestamps not in the monocular data
+assert(  all(ismember( gp.ts,pc.ts))) % binocular signal should not contain timestamps not in the monocular data, as need data from at least one eye for a binocular signal to be ejected
 assert(isempty(setxor(gp3.ts,gp.ts))) % both binocular channels should contain the same timestamps
 assert(isempty(setxor( pd.ts,pc.ts))) % monocular channels should contain the same timestamps
 assert(isempty(setxor( gd.ts,pc.ts))) % monocular channels should contain the same timestamps

@@ -18,10 +18,10 @@ assert(all(isnan(u) | u<1000))  % arbitrarily decide that less than one ms is sm
 % there is e.g. 13 ms between samples instead of 10. we'll just have to
 % live with that
 
-% gaps are places where ISI is 1.667 (5/3) times longer than expected given
+% gaps are places where ISI is 1.333 (4/3) times longer than expected given
 % sampling frequency expectedFs (arbitrarily chosen). Plug 'em, filling the
 % signals up with nan data
-thr = round(1000*1000/expectedFs*4/3); % consider a gap as more than thr time elapsed between consequtive samples (5/3 means gap when ISI is 1.667 times longer than expected)
+thr = round(1000*1000/expectedFs*4/3); % consider a gap as more than thr time elapsed between consequtive samples (4/3 means gap when ISI is 1.333 times longer than expected)
 thr2= round(1000*1000/expectedFs*3/4);
 for c=1:3
     switch c
@@ -62,6 +62,12 @@ for c=1:3
     % fill gaps in time with faked equally intersecting intervals
     data.(ch).ts = round(interp1(idxs,data.(ch).ts(idxs),1:idxs(end),'linear')).';
 end
-if ~isequal(data.left.ts,data.right.ts) || ~isequal(data.left.ts,data.binocular.ts)
+% tiny differences between timestamps for left and right eye have been
+% spotted in the wild, and are not caused by this code: they were indeed in
+% the original json file.
+% arbitrarily decide that differences less than 50 microseconds are not
+% worth reporting. If anyone spots anything larger, i'd love to have a look
+% at it.
+if (~isequal(size(data.left.ts),size(data.right.ts)) || any(abs(data.left.ts-data.right.ts)>50)) || (~isequal(size(data.left.ts),size(data.binocular.ts)) || any(abs(data.left.ts-data.binocular.ts)>50))
     warning('timestamps for the different eyes are not the same. please contact dcnieho@gmail.com if you are willing to share this recording, I would love to see it and check if this is a problem')
 end
