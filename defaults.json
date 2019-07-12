@@ -94,7 +94,7 @@
           }
         ],
         "categories": [ "none", 20, "slow", 4, "fast", 5 ]
-      }      ,
+      },
       {
         "type": "classifier",
         "lbl": "Hessels et al. (2019): slow/fast",
