@@ -215,10 +215,12 @@ for p=length(iSkipped):-1:1
     for f=fields
         coding.stream.(f{1})(i) = [];
     end
-    fields = {'defaults','currentSettings'};
-    for f=fields
-        if length(coding.stream.classifier.(f{1}))>=i
-            coding.stream.classifier.(f{1})(i) = [];
+    if isfield(coding.stream,'classifier')
+        fields = {'defaults','currentSettings'};
+        for f=fields
+            if length(coding.stream.classifier.(f{1}))>=i
+                coding.stream.classifier.(f{1})(i) = [];
+            end
         end
     end
     % and mark it as unavailable
