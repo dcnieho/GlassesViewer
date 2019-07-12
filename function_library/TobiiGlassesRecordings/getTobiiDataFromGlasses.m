@@ -209,7 +209,7 @@ if qGenCacheFile
     % in a while so we can see how the two clocks have progressed.
     vts = getDataTypeFromTobiiArray(dat,qData(:,8),'vts',1,{'ts'        },0,false );       % scene video
     if qHasEyeVideo
-        evts = getDataTypeFromTobiiArray(dat,qData(:,9),'evts',3,{'ts'        },0,false );       % eye video
+        evts = getDataTypeFromTobiiArray(dat,qData(:,9),'evts',1,{'ts'        },0,false );       % eye video
     end
     % clean up
     clear dat qData
