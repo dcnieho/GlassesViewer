@@ -6,7 +6,7 @@ First, open MATLAB and open glassesViewer.m in the editor.
 
 ![](screenshots/001.png)
 
-When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, navigate to the `demo_data` directory, click the `projects` folder and click the ìselect folderî button.
+When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, navigate to the `demo_data` directory, click the `projects` folder and click the ‚Äúselect folder‚Äù button.
 
 ![](screenshots/002.png)
 
@@ -63,7 +63,7 @@ This opens the classifier settings dialog.
 
 ![](screenshots/014.png)
 
-Change the lambda parameter and click `Recalculate`. As you can see, more episodes of the eye-tracking data are now labeled as ìfast phasesî.
+Change the lambda parameter and click `Recalculate`. As you can see, more episodes of the eye-tracking data are now labeled as ‚Äúfast phases‚Äù.
 
 ![](screenshots/015.png)
 
@@ -109,7 +109,7 @@ GlassesViewer furthermore offers a close integration with [GazeCode](https://git
 
 ## 1 - Opening the recording in GazeCode.
 First, download and set up GazeCode according to the instructions in the [GazeCode's manual](https://github.com/jsbenjamins/gazecode/blob/master/README.md).
-Then, open the file `<GazeCode_directory>\code\gazecode.m` in matlab. For now, make sure to use the `glassesviewer_integration` branch of the GazeCode repository.
+Then, open the file `<GazeCode_directory>\code\gazecode.m` in matlab. For now, make sure to use the `glasses-viewer-integration` branch of the GazeCode repository.
 
 ![](screenshots/024.png)
 
