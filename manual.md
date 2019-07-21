@@ -6,7 +6,7 @@ First, open MATLAB and open glassesViewer.m in the editor.
 
 ![](screenshots/001.png)
 
-When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, choose the `projects` directory located inside the `demo_data` directory that is included in this repository.
+When you run glassesViewer.m, a pop-up asks you to select the projects folder of the SD card on which your recordings are placed. Navigate to the projects folder and click "Select folder". For this example, navigate to the `demo_data` directory, click the `projects` folder and click the “select folder” button.
 
 ![](screenshots/002.png)
 
@@ -36,7 +36,7 @@ The amount of visible data can be changed by dragging the sliders on the timelin
 
 ![](screenshots/008.png)
 
-Pressing the Settings button opens a panel with various interface configuration options.
+Pressing the `Settings` button opens a panel with various interface configuration options.
 
 ![](screenshots/009.png)
 
@@ -44,7 +44,7 @@ Using this panel, one can for instance modify which data stream plots should be 
 
 ![](screenshots/010.png)
 
-Browse through the data:
+Browse through the data, by dragging the sliders on the video timeline under the video:
 
 ![](screenshots/011.png)
 
@@ -63,25 +63,25 @@ This opens the classifier settings dialog.
 
 ![](screenshots/014.png)
 
-Change the lambda threshold and click `Recalculate`.
+Change the lambda parameter and click `Recalculate`. As you can see, more episodes of the eye-tracking data are now labeled as “fast phases”.
 
 ![](screenshots/015.png)
 
-When a new event coding is produced, it is updated in the interface. The red `save coding` button indicates this new event classification has not been saved to file yet.
+When a new event coding is produced, it is updated in the interface. The red `save coding` button indicates this new event classification has not yet been saved to the recording's `coding.mat` file.
 
 ![](screenshots/016.png)
 
-Press `save coding` to save it to the recording's coding.mat file. When the coding is saved, the button turns green.
+Press `save coding` to save it to the recording's coding.mat file. When the coding is saved, the button turns green. The recording's `coding.mat` file has now been updated.
 
 ![](screenshots/017.png)
 
 ## 4 - Manual annotation of eye-tracking data
 
-Click on the second event stream in the event stream scarf (it is currently empty). Then click somewhere in a data stream plot to make the first annotation. On the dialogue box that opens, select the category to annotate the marked episode with.
+Click on the second event stream in the event stream scarf (it is currently empty). Then click somewhere in a data stream plot to make the first annotation. On the dialogue box that opens, select the category to annotate the marked episode with. Note that it is advised to change the time window to start from 0 seconds, as the first annotation will start from there.
 
 ![](screenshots/018.png)
 
-The code is now applied.
+The code is now applied, and shown as a colored block in the event stream scarf, and as a colored highlight in each data stream:
 
 ![](screenshots/019.png)
 
@@ -105,10 +105,11 @@ When exiting glassesViewer, if the coding currently displayed is not saved, a di
 
 # Integration with GazeCode
 
-GlassesViewer furthermore offers a close integration with [GazeCode](https://github.com/jsbenjamins/gazecode). Below we document how GazeCode is used for manual mapping of any of the events in any of the event streams introduced above onto the visual stimulus. Please refer to [GazeCode's manual](https://github.com/jsbenjamins/gazecode/blob/master/README.md) for a complete description of GazeCode's functionality.
+GlassesViewer furthermore offers a close integration with [GazeCode](https://github.com/jsbenjamins/gazecode). Below we document how GazeCode is used for manual mapping of any of the events in any of the event streams introduced above onto the visual stimulus. Please refer to [GazeCode's manual](https://github.com/jsbenjamins/gazecode/blob/master/README.md) for how to download and prepare GazeCode for first use, as well as for a complete description of GazeCode's functionality.
 
 ## 1 - Opening the recording in GazeCode.
-First, open the file `<GazeCode_directory>\code\gazecode.m` in matlab.
+First, download and set up GazeCode according to the instructions in the [GazeCode's manual](https://github.com/jsbenjamins/gazecode/blob/master/README.md).
+Then, open the file `<GazeCode_directory>\code\gazecode.m` in matlab. For now, make sure to use the `glassesviewer_integration` branch of the GazeCode repository.
 
 ![](screenshots/024.png)
 
@@ -163,7 +164,7 @@ This next event episode is a look at one of the dark blue pushpins on the notice
 
 ![](screenshots/033.png)
 
-To remove a coding, press the zero (0) key on the keyboard.
+To remove a coding, press the key corresponding to the active code (4 in this case) again on the keyboard.
 
 ![](screenshots/032.png)
 
@@ -179,7 +180,7 @@ As before, run `gazecode.m` and select the recording you have just coded above. 
 
 ![](screenshots/035.png)
 
-As the interface indicates, for streams created by GazeCode, there is no event code to select for further coding. So press the `Use selection` button to continue. You are now asked to indicate in what event stream to store the coding you will produce:
+As the interface indicates, for streams created by GazeCode, there is no event code to select for further coding (note that it does not matter if you select the event category to code or not, it doesn't do anything). So press the `Use selection` button to continue. You are now asked to indicate in what event stream to store the coding you will produce:
 
 ![](screenshots/036.png)
 
