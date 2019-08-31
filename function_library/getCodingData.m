@@ -5,7 +5,7 @@ end
 
 
 % set file format version. coding files older than this version are ignored
-fileVersion = 3;
+fileVersion = 4;
 
 qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
 if qHaveExistingCoding
@@ -234,8 +234,9 @@ end
 
 % store back up of file and classifier streams. Allows checking if coding
 % is manually changed
-if ~isfield(coding,'original') || length(coding.original.mark)~=length(coding.mark)
+if ~isfield(coding,'original') || length(coding.original.mark)~=length(coding.mark) || any(~strcmp(coding.original.lbl,lbls))
     [coding.original.mark,coding.original.type] = deal(cell(size(coding.stream.type)));
+    [coding.original.lbl]                       = lbls{:};
 end
 qStoreOriginal              = false(size(coding.stream.type));
 for p=1:length(coding.stream.type)
