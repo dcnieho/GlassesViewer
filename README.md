@@ -24,10 +24,9 @@ used for the GUI, it is quite possible that the viewer part of this repository
 is not all that compatible with different matlab versions. Pull requests
 welcomed! Some used functionality was only introduced with R2015b
 (JSON decoder), so the code in this repository is not expected to run
-on versions of matlab older than that.
+on versions of matlab older than that. Note that on smaller screens, the layout may not be optimal. If GUI elements overlap, consider using a larger screen.
 
-NB: do not expect fluent playback. I get a few frames a second on my 4K
-display, the matlab GUI renderer can't handle all this.
+NB: GlassesViewer is not able to provide fluent video playback due to performance issues with MATLAB figure windows. For instance, I get a few frames a second on my 4K display. We however do not see GlassesViewer as primarily a replay tool (the free Tobii Glasses Controller software serves this purpose well), but as a more advanced tool where all signals can be scrutinized together with the current view of the scene and eye cameras. Choppy playback is not an indication of user or software error--everything is working as expected.
 
 # Screenshot
 Click the screenshot to see a full-size version.
@@ -58,7 +57,7 @@ displayed Tobii Glasses data is loaded from. This file is created upon loading
 the GUI if any annotations are defined, and can be updated by pressing the
 "save coding" button in the GUI.  When opening the same folder again in the
 GUI, annotations are loaded from this file (and possibly overridden depending
-on the [settings of some annotation streams](#annotation-streams)).
+on the [settings of some annotation streams](#annotation-streams)). Note that the GUI contains a checkbox labeled `crap data`.  Checking this box sets the `dataIsCrap` field to true in the session's `coding.mat` file, allowing such files to easily be skipped in later analysis.
 
 # Viewer interface
 *mouse*:
@@ -261,13 +260,13 @@ The following settings are understood for classifier parameters:
 
 # TODOs
 The below items could be considered to be implemented. Currently, none are
-planned to actually be executed
+planned to actually be executed.
 - user own json decoder function (or get from mathworks FEX), so we can support
   matlab version a little older than what i do currently. In terms of JSON parsing,
   we however currently already support R2015b. This old version is otherwise untested,
   and I am not interested in support even older versions.
 - progress bar when loading in data Tobii data (not linear time but can
-  indicate steps completed or so)
+  indicate steps completed or so).
 
 # Known issues
 - matlab VideoReader (at least in R2017b on Windows 10) cannot read the
