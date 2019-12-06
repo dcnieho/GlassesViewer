@@ -5,6 +5,12 @@ close all
 % GlassesViewer: Open-source software for viewing and analyzing data from
 % the Tobii Pro Glasses 2 eye tracker.
 
+% temporarily silence two warnings while constructing GUI
+oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+c = onCleanup(@() warning(oldWarn));    % reset warning
+warning('off','MATLAB:ui:javaframe:PropertyToBeRemoved');
+warning('off','MATLAB:ui:javacomponent:FunctionToBeRemoved');
+
 qDEBUG = true;
 if qDEBUG
     dbstop if error
@@ -33,12 +39,12 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "gzz7stc" of this example somewhere and open it in isolation.
-if 1
+if 0
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
     mydir       = fileparts(mfilename('fullpath'));
-    if 1
+    if 0
         % example of where project directory is selected, shows recording
         % selector
         selectedDir = fullfile(mydir,'demo_data','projects');
@@ -1839,7 +1845,6 @@ end
 end
 
 function createClassifierPopups(hm,iStream)
-oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 nStream = length(iStream);
 
 % if more than one classifier stream, create popup to select which
@@ -2036,7 +2041,6 @@ for s=1:nStream
         'Callback',@(hBut,~) executeClassifierParamResetFnc(hm,hBut),'String','Restore defaults',...
         'Parent',hm.UserData.ui.coding.classifierPopup.setting(s).obj);
 end
-warning(oldWarn);
 end
 
 function changeClassifierParamCallback(hm,hndl,~)
@@ -2118,9 +2122,7 @@ nStream = length(iStream);
 
 hm.UserData.ui.coding.reloadPopup.obj   = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Reload coding','Visible','off');
 hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
-oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 hm.UserData.ui.coding.reloadPopup.jFig  = get(handle(hm.UserData.ui.coding.reloadPopup.obj), 'JavaFrame');
-warning(oldWarn);
 
 % create panel
 marginsP = [3 3];
@@ -2547,9 +2549,7 @@ hm.UserData.ui.VCR.slider.right= (w-find(diff(px2),1)-5+1)/hm.UserData.ui.DPISca
 % lets install our own mouse scroll listener. Yeah, done in a tricky way as
 % i want the java event which gives acces to modifiers and cursor location.
 % the matlab event from the figure is useless for me here
-oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 jFrame = get(gcf,'JavaFrame');
-warning(oldWarn);
 j=handle(jFrame.fHG2Client.getAxisComponent, 'CallbackProperties');
 j.MouseWheelMovedCallback = @(hndl,evt) scrollFunc(hm,hndl,evt);
 
