@@ -3689,7 +3689,8 @@ if left+hm.UserData.settings.plot.timeWindow > hm.UserData.time.endTime
     left = hm.UserData.time.endTime - hm.UserData.settings.plot.timeWindow;
 end
 
-if left~=hm.UserData.plot.ax(1).XLim(1) || left+hm.UserData.settings.plot.timeWindow~=hm.UserData.plot.ax(1).XLim(2)
+axlims = cat(1,hm.UserData.plot.ax.XLim);
+if any(left~=axlims(:,1)) || any(left+hm.UserData.settings.plot.timeWindow~=axlims(:,2))
     % changed, update data plots
     [hm.UserData.plot.ax.XLim] = deal(left+[0 hm.UserData.settings.plot.timeWindow]);
     % update data trail
