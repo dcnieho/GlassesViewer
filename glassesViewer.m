@@ -1235,9 +1235,11 @@ end
 end
 
 function disableCodingStreamInPanel(hm,stream)
-[hm.UserData.ui.coding.subpanel(stream).Children.Enable]= deal('off');
-hm.UserData.ui.coding.subpanel(stream).ForegroundColor  = deal([.6 .6 .6]);
-hm.UserData.ui.coding.subpanel(stream).HighlightColor   = deal([.6 .6 .6]);
+for c=1:length(hm.UserData.ui.coding.subpanel(stream).Children)
+    hm.UserData.ui.coding.subpanel(stream).Children(c).Enable = 'off';
+end
+hm.UserData.ui.coding.subpanel(stream).ForegroundColor  = [.6 .6 .6];
+hm.UserData.ui.coding.subpanel(stream).HighlightColor   = [.6 .6 .6];
 % if all disabled, close panel
 if all(strcmp({hm.UserData.ui.coding.buttons.Enable},'off'))
     hm.UserData.ui.coding.panel.obj.Visible = 'off';
