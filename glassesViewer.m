@@ -39,12 +39,12 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "gzz7stc" of this example somewhere and open it in isolation.
-if 0
+if 1
     selectedDir = uigetdir('','Select projects or recording folder');
 else
     % for easy use, hardcode a folder. 
     mydir       = fileparts(mfilename('fullpath'));
-    if 0
+    if 1
         % example of where project directory is selected, shows recording
         % selector
         selectedDir = fullfile(mydir,'demo_data','projects');
