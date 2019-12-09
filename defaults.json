@@ -45,7 +45,7 @@
         "type": "fileStream",
         "lbl": "example file stream",
         "locked": false,
-        "file": "demoCodingFile.txt",
+        "file": "!!recordingDir!!/demoCodingFile.txt",
 	"skipIfDoesntExist":true,
         "alwaysReload": true,
 	"needToCorrectT0": false,
