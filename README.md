@@ -241,7 +241,7 @@ provided by [GazeCode](https://github.com/jsbenjamins/gazecode).
 |`locked`|Boolean indicating whether annotations can be made, altered or deleted in this stream.|
 |`function`|String containing function to be called to produce event classification. This function should be on the MATLAB path.|
 |`alwaysRecalculate`|Boolean indicating whether coding should be reclassified with the classifier function if a `coding.mat` file already exists for the loaded Tobii Glasses data directory (true), or whether the coding stored in the `coding.mat` file should be shown instead (false). Setting this to true ensures that the displayed classifier stream is updated if the classifier or its settings have changed (when the GUI is reloaded for the recording) |
-|`alwaysRecalculateUseStoredSettings`|Boolean indicating whether recalculating classification (see `alwaysRecalculate`) should use the last-applied parameter settings stored in the `coding.mat` file (true) or instead use parameter settings from the user provided settings (true), overriding what may have been done in a previous session. |
+|`alwaysRecalculateUseDefaultSettings`|Boolean indicating whether recalculating classification (see `alwaysRecalculate`) should use the last-applied parameter settings stored in the `coding.mat` file (false) or instead use parameter settings from the user-provided settings (true), overriding what may have been done in a previous session. |
 |`categories`|Array defining the labels for each code, and the colors in which to show them.|
 |`parameters`|Array of parameters configuring the classifier, which can be marked as user settable in the GUI. See [Classifier parameters](#classifier-parameters).
 
@@ -261,7 +261,7 @@ The following settings are understood for classifier parameters:
 # TODOs
 The below items could be considered to be implemented. Currently, none are
 planned to actually be executed.
-- user own json decoder function (or get from mathworks FEX), so we can support
+- use own json decoder function (or get from mathworks FEX), so we can support
   matlab version a little older than what i do currently. In terms of JSON parsing,
   we however currently already support R2015b. This old version is otherwise untested,
   and I am not interested in support even older versions.

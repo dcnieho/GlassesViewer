@@ -57,7 +57,7 @@
         "locked": false,
         "function": "HC13",
         "alwaysRecalculate": true,
-        "alwaysRecalculateUseStoredSettings": false,
+        "alwaysRecalculateUseDefaultSettings": false,
         "parameters": [
           {
             "name": "thr",
@@ -101,7 +101,7 @@
         "locked": false,
         "function": "HesselsEtAl19",
         "alwaysRecalculate": true,
-        "alwaysRecalculateUseStoredSettings": false,
+        "alwaysRecalculateUseDefaultSettings": false,
         "parameters": [
           {
             "name": "thr",

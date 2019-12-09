@@ -165,7 +165,7 @@ for p=1:nStream
             % reclassify: always use default settings and recalculate
             if isempty(coding.type{p}) || (isfield(coding.stream.options{p},'alwaysRecalculate') && coding.stream.options{p}.alwaysRecalculate)
                 % run classification
-                if isfield(coding.stream.options{p},'alwaysRecalculateUseStoredSettings') && coding.stream.options{p}.alwaysRecalculateUseStoredSettings
+                if isfield(coding.stream.options{p},'alwaysRecalculateUseDefaultSettings') && coding.stream.options{p}.alwaysRecalculateUseDefaultSettings
                     settings = coding.stream.classifier.defaults{p};
                 else
                     settings = coding.stream.classifier.currentSettings{p};
