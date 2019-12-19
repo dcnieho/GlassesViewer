@@ -149,7 +149,7 @@ if qGenCacheFile
     qRemove     = ismember(dat.gidx,allGidx(gidxCount~=8));
     qData   (qRemove,:) = [];
     qLeftEye(qRemove,:) = [];
-    dat = replaceElementsInStruct(dat,qRemove,[],[],true);
+    dat = replaceElementsInStruct(dat,qRemove,[],[],1);
     % 4.2 first some global processing
     % 4.2.1 remove all gidx with more than 8 valid packets or less than 3 (should have 3 monocular for each eye and 2 binocular if recording succeeded for both eyes. due to bug, sometimes multiple monocular packets for single eye, resp. calculated based on single camera and stereo views, without knowing which is the right one)
     qBad    = validCount>8 | validCount<3;    % less than 3 packets, we probably have a lonely pc while even pd and such failed, better ignore it, must be crap
