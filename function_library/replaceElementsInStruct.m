@@ -16,6 +16,11 @@ function str = replaceElementsInStruct(str,idxOrBool,elem,fieldFilter,applyOverD
 % of used as a linear index. so if applyOverDim==2 and idxOrBool is a 1x10
 % vector, the operation is done as variable(:,idxOrBool,:,:,:,...)
 
+% 1. check inputs
+if isempty(idxOrBool)
+    % nothing to do
+    return;
+end
 qAllScalar = all(structfun(@isscalar,str));
 if nargin<5
     applyOverDim = [];
@@ -27,6 +32,7 @@ if nargin<4
     fieldFilter = [];
 end
 
+% do the work
 if isempty(fieldFilter)
     % apply on all (non-scalar) fields, we can use structfun
     str = structfun(@(x) replaceTheElements(x,idxOrBool,elem,qAllScalar,applyOverDim),str, 'uni',false);
