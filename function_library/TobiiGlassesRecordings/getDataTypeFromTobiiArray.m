@@ -19,7 +19,7 @@ x = sortByColumns(x,sortFields);
 if mode>0
     % remove data where time apparently went backward
     iNeg = find(diff(x.ts)<0);
-    iNeg(diff(x.gidx([iNeg iNeg+1]),[],2)==0) = []; % if negative timestep happened within same gidx, probably just slight time difference for different eyes. Don't worry about it
+    iNeg(diff(x.gidx([iNeg iNeg+1]))==0) = []; % if negative timestep happened within same gidx, probably just slight time difference for different eyes. Don't worry about it
     x = replaceElementsInStruct(x,iNeg+1,[],[],1);
 else
     % remove invalid data
