@@ -3570,7 +3570,7 @@ end
 
 % update gaze marker on scene video
 idxToShow = find(hm.UserData.data.eye.binocular.ts<=hm.UserData.time.currentTime,1,'last');
-pos = hm.UserData.data.eye.binocular.gp(idxToShow,:).*hm.UserData.vid.objs(1,1).Dimensions(2:-1:1);
+pos = hm.UserData.data.eye.binocular.gp(idxToShow,:);
 hm.UserData.vid.gm.XData = pos(1);
 hm.UserData.vid.gm.YData = pos(2);
 if hm.UserData.data.eye.binocular.nEye(idxToShow)==2
