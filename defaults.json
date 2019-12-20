@@ -5,13 +5,14 @@
     "timeWindow": 2,
     "initPanelOrder": [ "azi", "scarf", "ele", "vel", "pup", "gyro", "acc" ],
     "panelNames": {
-	    "azi": "azimuth",
-	    "ele": "elevation",
-	    "vel": "velocity",
-	    "pup": "pupil size",
-	    "gyro": "gyroscope",
-	    "acc": "acceleration",
-	    "scarf": "scarf"
+      "azi": "azimuth",
+      "ele": "elevation",
+      "videoGaze": "gaze point video",
+      "vel": "velocity",
+      "pup": "pupil size",
+      "gyro": "gyroscope",
+      "acc": "acceleration",
+      "scarf": "scarf"
     },
     "aziLim": 45,
     "eleLim": 30,
