@@ -6,8 +6,8 @@ function [smarks,type] = HesselsEtAl19(tobiiData,params)
 time    = tobiiData.eye.binocular.ts*1000;  % this classifier wants time in ms
 
 %%%%% determine velocity
-vx      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,1)*tobiiData.video.scene.width ,time);
-vy      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,2)*tobiiData.video.scene.height,time);
+vx      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,1),time);
+vy      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,2),time);
 v       = hypot(vx,vy);
 
 % prep params
