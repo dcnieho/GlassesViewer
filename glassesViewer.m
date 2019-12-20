@@ -2614,8 +2614,15 @@ end
 function makeDataQualityPanel(hm)
 % make table to show data quality in GUI
 temp = hm.UserData.data.quality;
-temp = {'Left azi',temp.RMSS2S.azi(1),temp.dataLoss.azi(1); 'Left ele',temp.RMSS2S.ele(1),temp.dataLoss.ele(1); 'Right azi',temp.RMSS2S.azi(2),temp.dataLoss.azi(2); 'Right ele',temp.RMSS2S.ele(2),temp.dataLoss.ele(2)};
-hm.UserData.ui.dataQuality.table = uitable('Data',temp,'ColumnName',{' Signal   ',' RMS-S2S (deg) ',' Data loss (%) '},'Parent',hm);
+temp = {
+    'Left azi',temp.RMSS2S.azi(1),temp.dataLoss.azi(1);
+    'Left ele',temp.RMSS2S.ele(1),temp.dataLoss.ele(1);
+    'Right azi',temp.RMSS2S.azi(2),temp.dataLoss.azi(2);
+    'Right ele',temp.RMSS2S.ele(2),temp.dataLoss.ele(2);
+    'Gaze point video X',temp.RMSS2S.bgp(1),temp.dataLoss.bgp(1);
+    'Gaze point video Y',temp.RMSS2S.bgp(2),temp.dataLoss.bgp(2)
+    };
+hm.UserData.ui.dataQuality.table = uitable('Data',temp,'ColumnName',{' Signal                  ',' RMS-S2S* ',' Data loss (%) '},'Parent',hm);
 hm.UserData.ui.dataQuality.table.RowName={''};
 drawnow;
 jScroll = findjobj(hm.UserData.ui.dataQuality.table);
@@ -2639,7 +2646,7 @@ idx = find(szs(:,2)==max(szs(:,2)));
 w = sum(arrayfun(@(x) jScroll.getComponent(x-1).getComponent(0).getWidth,idx));
 % now set size of container (note that Java sizes need to be corrected for DPI. Extra pixel to prevent scrollbar from appearing)
 hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIScale)+4;
-% 3. to size columns and center column contents:
+% 2. to size columns and center column contents:
 % jTable = jScroll.getViewport.getView;
 % jTable.setAutoResizeMode(jTable.AUTO_RESIZE_ALL_COLUMNS); % NB: doesn't
 % seem to do anything.
@@ -2654,8 +2661,9 @@ right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
 bottom  = hm.UserData.plot.axRect(end,2);
 hm.UserData.ui.dataQuality.panel = uipanel('Units','pixels', 'title','Data quality','Parent',hm,'Position',[100 100 100 100]);
-hm.UserData.ui.dataQuality.string1= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('Sampling frequency %.0f Hz', hm.UserData.data.eye.fs),'Tag','FsString','HorizontalAlignment','left');
-hm.UserData.ui.dataQuality.string2= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
+hm.UserData.ui.dataQuality.string1= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('Sampling frequency: %.0f Hz', hm.UserData.data.eye.fs),'Tag','FsString','HorizontalAlignment','left');
+hm.UserData.ui.dataQuality.string2= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window\n* Unit for azi/ele: deg, gaze point video: pix', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
+hm.UserData.ui.dataQuality.string2.Position(4) = hm.UserData.ui.dataQuality.string2.Position(4)*1.8;
 drawnow
 padding     = hm.UserData.ui.dataQuality.panel.OuterPosition(3:4)-hm.UserData.ui.dataQuality.panel.InnerPosition(3:4);
 strWidth1   = hm.UserData.ui.dataQuality.string1.Extent(3)+5;    % bit extra for safety
