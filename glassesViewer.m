@@ -356,7 +356,8 @@ hm.UserData.ui.coding.interveningTempLoc        = nan;
 hm.UserData.ui.coding.interveningTempElem       = matlab.graphics.GraphicsPlaceholder;
 
 % reset plot limits button
-butPos = [hm.UserData.plot.axRect(end,3)+10 hm.UserData.plot.axRect(end,2) 100 30];
+axRect = hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),:);
+butPos = [axRect(3)+10 axRect(2) 100 30];
 hm.UserData.ui.resetPlotLimitsButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Reset plot Y-limits','Tag','resetValueLimsButton','Callback',@(~,~,~) resetPlotValueLimits(hm));
 
 % legend (faked with just an axis)
@@ -636,7 +637,7 @@ createSettings(hm);
 
 % save coding data button
 if hm.UserData.coding.hasCoding
-    butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(end,2) 100 30];
+    butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2) 100 30];
     hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
     hm.UserData.ui.savedCoding = [];
     saveCodingData(hm); % save starting point
@@ -1407,7 +1408,7 @@ function createSettings(hm)
 left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
 right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
-bottom  = hm.UserData.plot.axRect(end,2);
+bottom  = hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2);
 % settings area, initial guess of size -- we'll scale it tightly later when
 % all elements are known
 width   = min(400,right-left-20);
@@ -2659,7 +2660,7 @@ hm.UserData.ui.dataQuality.table.Position(3:4) = ceil([w h]./hm.UserData.ui.DPIS
 left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
 right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
 top     = hm.UserData.ui.VCR.but(1).Position(2);
-bottom  = hm.UserData.plot.axRect(end,2);
+bottom  = hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2);
 hm.UserData.ui.dataQuality.panel = uipanel('Units','pixels', 'title','Data quality','Parent',hm,'Position',[100 100 100 100]);
 hm.UserData.ui.dataQuality.string1= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('Sampling frequency: %.0f Hz', hm.UserData.data.eye.fs),'Tag','FsString','HorizontalAlignment','left');
 hm.UserData.ui.dataQuality.string2= uicomponent('Style','text', 'Parent', hm.UserData.ui.dataQuality.panel,'Units','pixels', 'String',sprintf('* Median RMS-S2S using %.0fms moving window\n* Unit for azi/ele: deg, gaze point video: pix', hm.UserData.data.quality.windowMs),'Tag','RMSDataQualString','HorizontalAlignment','left');
