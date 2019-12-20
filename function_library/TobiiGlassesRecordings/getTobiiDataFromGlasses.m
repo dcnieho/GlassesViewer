@@ -70,11 +70,12 @@ if qGenCacheFile
     qUnwanted = strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts');
     qKeep   = ~qSplit & ~qUnwanted;  % remove non-zero s, split off fields and unwanted fields
     nKeep   = sum(qKeep);
-    dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[]);
+    dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[],'s',[]);
     dat.ts  = sscanf(cat(2,types{qKeep,1}),'%f,');
     dat.qValid = sscanf(cat(2,types{qKeep,2}),'%f,')==0;
     dat.dat = nan(nKeep,3);
     dat.gidx= nan(nKeep,1);
+    dat.s   = nan(nKeep,1);
     dat.eye = repmat('x',nKeep,1);
     % check where each packet begins and ends
     iNewLines = [1 find(txt==newline)];
@@ -101,14 +102,16 @@ if qGenCacheFile
     qHasEye  = any(qData(:,1:3),2);
     qHasGidx = any([qHasEye qData(:,4:5)],2);
     qHasEyeVideo = any(qData(:,9));
-    % parse in gidx and eye
+    % parse in gidx, eye and s
     gidx = regexp(txt,'(?<="gidx":)\d+,','match');
     assert(~isempty(gidx),'The data file does not fulfill the requirements of this code, the ''gidx'' field is missing. Possibly the firmware of the recording unit was too old.')
     dat.gidx(qHasGidx) = sscanf(cat(2,gidx{:}),'%f,');
     eye  = regexp(txt,'(?<="eye":")[lr]','match');
     dat.eye(qHasEye) = cat(1,eye{:});
     qLeftEye = qHasEye & dat.eye=='l';
-    clear gidx eye types qHasEye
+    s    = regexp(txt,'(?<="s":)\d+,','match');
+    dat.s   = sscanf(cat(2,s{:}),'%d,');
+    clear gidx eye s types qHasEye
     % parse in scalar data (only pd)
     dat.dat(qData(:,2),1  )   = parseTobiiGlassesData(txt,  'pd',1);
     % parse in 2-vector (only gp)
@@ -125,6 +128,8 @@ if qGenCacheFile
     if qHasEyeVideo
         dat.dat(qData(:,9),1  )   = parseTobiiGlassesData(txt,'evts',2);
     end
+    % set data to nan if status code is non-zero
+    dat.dat(~~dat.s,:) = nan;
     clear txt
     % 4 organize into types
     % the overall strategy to deal with crap in the files is to:
