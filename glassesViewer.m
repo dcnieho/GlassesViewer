@@ -207,6 +207,7 @@ for a=1:nPanel
             end
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
+            hm.UserData.plot.ax(a).YDir = 'reverse';    % left is up in plot, right is down in plot
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.azi,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.azi,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'ele'
@@ -219,7 +220,7 @@ for a=1:nPanel
             end
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
-            hm.UserData.plot.ax(a).YDir = 'reverse';
+            hm.UserData.plot.ax(a).YDir = 'reverse';    % so that left in plot is up, and right in plot is down
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.ele,'r','Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.ele,'b','Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
         case 'vel'
