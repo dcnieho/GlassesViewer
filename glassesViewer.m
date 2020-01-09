@@ -1,9 +1,10 @@
 function hm = glassesViewer(settings)
 close all
 
-% Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (in prep).
+% Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
-% the Tobii Pro Glasses 2 eye tracker.
+% the Tobii Pro Glasses 2 eye tracker. Behavior Research Methods. doi:
+% 10.3758/s13428-019-01314-1
 
 % temporarily silence two warnings while constructing GUI
 oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
