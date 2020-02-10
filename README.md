@@ -106,8 +106,8 @@ In `settings.plot`, the following fields are understood:
 
 |settings|description|
 | --- | --- |
-|`initPanelOrder`|Sets which data panels are initially shown on the left side of the interface and the order in which they are shown, as an array. E.g. `["azi", "ele"]`. Understood panels are `"azi"`, `"ele"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`. `"scarf"` is a special panel showing the annotations in one or multiple coding streams and allows switching for which stream annotations are shown in the other panels. |
-|`panelNames`|Table in which you can provide a name to be shown for each panel. E.g. `{"azi":"azimuth", "ele":"elevation"}`. Understood panels are `"azi"`, `"ele"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`.|
+|`initPanelOrder`|Sets which data panels are initially shown on the left side of the interface and the order in which they are shown, as an array. E.g. `["azi", "ele"]`. Understood panels are `"azi"`, `"ele"`, `"videoGaze"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`. `"scarf"` is a special panel showing the annotations in one or multiple coding streams and allows switching for which stream annotations are shown in the other panels. |
+|`panelNames`|Table in which you can provide a name to be shown for each panel. E.g. `{"azi":"azimuth", "ele":"elevation"}`. Understood panels are `"azi"`, `"ele"`, `"videoGaze"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`.|
 |`timeWindow`|Length (s) of the time window|
 |`aziLim`| The range (deg) of the `"azi"` panel. |
 |`eleLim`| The range (deg) of the `"ele"` panel. |
