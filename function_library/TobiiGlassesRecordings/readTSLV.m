@@ -26,15 +26,21 @@ i           = 0;
 
 % open tslv
 fid = fopen(filename,'rb');
+data.buffer = fread(fid, inf, '*uchar');
+fclose(fid);
+data.pos = 1;
 % loop
 endType = typeIDStringConversion('end');
-while true
+while data.pos<=length(data.buffer)
     % 1. read header of data package
-    [type,status,payloadLength,payloadLengthPadded] = readHeader(fid);
+    [data,type,status,payloadLength,payloadLengthPadded] = readHeader(data);
+    if isnan(type)
+        9;
+    end
     
     if isempty(typeList) || ismember(type,typeList)
         % 2. read data package
-        out = readDataPackage(fid,type,status,payloadLength);
+        [data,out] = readDataPackage(data,type,status,payloadLength);
         if ~isempty(out)
             i=i+1;
             if i>size(parsedData,1)
@@ -47,17 +53,16 @@ while true
         end
         
         % 3. go to next data package
-        skipBytes(fid,payloadLengthPadded-payloadLength);
+        data = skipBytes(data,payloadLengthPadded-payloadLength);
     else
         % 2. skip whole package
-        skipBytes(fid,payloadLengthPadded);
+        data = skipBytes(data,payloadLengthPadded);
     end
     % 4. check we're at end
     if type==endType
         break;
     end
 end
-fclose(fid);
 
 % trim off excess from output cell
 parsedData(i+1:end,:) = [];
@@ -67,50 +72,49 @@ end
 
 
 %%% helpers
-function [type,status,payloadLength,payloadLengthPadded] = readHeader(fid)
+function [data,type,status,payloadLength,payloadLengthPadded] = readHeader(data)
 
-type   = readInt(fid, 2);
-status = readInt(fid, 2);
-payloadLength = readInt(fid, 4, []);
+[type,data]         = readInt(data, 2);
+[status,data]       = readInt(data, 2);
+[payloadLength,data]= readInt(data, 4, []);
 payloadLengthPadded = ceil(payloadLength/4)*4; % payloads are padded to multiples of 4 bytes, calculate how much we have to skip later
 end
 
 
-function out = readDataPackage(fid, type, status, payloadLength)
+function [data,out] = readDataPackage(data, type, status, payloadLength)
 
 outputBuilder = @(varargin) buildOutput(type,status,typeIDStringConversion(type),varargin{:});
 switch type
     case 0
         % unknown, skip
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
         
     case 21332
         % FORMAT ID: depicts the stream data format. Always "TSLV1"
-        format = char(readInt(fid, 1, payloadLength));
+        [format,data] = readString(data, 1, payloadLength);
         assert(strcmp(format,'TSLV1'))
         out = outputBuilder('TSLVformat',format);
         
     case 2
         % STREAM TYPE: data stream content type: "ET" or "Mems".
-        streamType = char(readInt(fid, 1, payloadLength));
+        [streamType,data] = readString(data, 1, payloadLength);
         assert(ismember(streamType,{'ET','MEMS'}))
         out = outputBuilder('streamType',streamType);
         
     case 3
         % FREQUENCY: indicative (but not guaranteed or strict) data point frequency.
-        frequency = readInt(fid, 4);
+        [frequency,data] = readInt(data, 4);
         out = outputBuilder('frequency',frequency);
         
     case 4
         % VIDEO_INFO: Video information for the video.
-        videoId = readInt(fid, 1);
-        skipBytes(fid,1);   % padding
-        width = readInt(fid, 2);
-        height = readInt(fid, 2);
-        frequency = readInt(fid, 2);
-        name = char(readInt(fid, 1, payloadLength-8));
-        name(name==0) = [];
+        [videoId,data] = readInt(data, 1);
+        data = skipBytes(data,1);   % padding
+        [width,data] = readInt(data, 2);
+        [height,data] = readInt(data, 2);
+        [frequency,data] = readInt(data, 2);
+        [name,data] = readString(data, 1, payloadLength-8);
         out = outputBuilder('videoId',videoId,'width',width,'height',height,'frequency',frequency,'name',name);
         
     case 5
@@ -127,7 +131,7 @@ switch type
         %           Each CHECKSUM resets the checksum counting.
         %           Checksums are SHA1.
         % not implemented, skip
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
         
     case 10
@@ -135,8 +139,8 @@ switch type
         %           the next FRAME_ID (non-inclusive).
         %           The 'seq' is an ever-increasing (by one) frame sequence id.
         %           'sid' is the internal session id and should be ignored.
-        frameID   = readInt(fid, 8, [], @int64);
-        sessionID = readInt(fid, 4);                      %#ok<NASGU>
+        [frameID,data]   = readInt(data, 8, [], @int64);
+        [sessionID,data] = readInt(data, 4);                      %#ok<NASGU>
         out = outputBuilder('frameID',frameID);
         
     case 11
@@ -145,7 +149,7 @@ switch type
         %                ignored by any external readers.
         %                The session id is in the FRAME_ID TSLV.
         % not implemented, skip
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
         
     case 12
@@ -154,13 +158,13 @@ switch type
         %               ignored by any external readers.
         %               The session id is in the FRAME_ID TSLV.
         % not implemented, skip
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
         
     case 50
         % SYSTEM_TIMESTAMP: Monotonic system timestamp in microseconds (64-bits).
         %                   Included in every frame.
-        timestamp   = readInt(fid, 8, [], @int64);
+        [timestamp,data]   = readInt(data, 8, [], @int64);
         out = outputBuilder('timestamp',timestamp);
         
     case 51
@@ -168,146 +172,144 @@ switch type
         %                      Also indicates whether the time is synced by
         %                      external time source or not.
         %                      Included every 10 seconds.
-        timestamp   = readInt(fid, 8, [], @int64);
-        formattedTime = char(readInt(fid, 1, 8));
-        formattedTime(formattedTime==0) = [];
+        [timestamp,data]   = readInt(data, 8, [], @int64);
+        [formattedTime,data] = readString(data, 1, 8);
         out = outputBuilder('timestamp',timestamp,'formattedTime',formattedTime);
         
     case 53
         % VIDEOCLOCK_TIMESTAMP: The current video clock timestamp.
-        videoId = readInt(fid, 1);
-        skipBytes(fid,3);   % padding
-        timestamp   = readInt(fid, 8, [], @int64);
+        [videoId,data] = readInt(data, 1);
+        data = skipBytes(data,3);   % padding
+        [timestamp,data]   = readInt(data, 8, [], @int64);
         out = outputBuilder('videoId',videoId,'timestamp',timestamp);
         
     case 54
         % VIDEOFILE_TIMESTAMP: The current video file timestamp.
-        videoId = readInt(fid, 1);
-        skipBytes(fid,3);   % padding
-        timestamp   = readInt(fid, 8, [], @int64);
+        [videoId,data] = readInt(data, 1);
+        data = skipBytes(data,3);   % padding
+        [timestamp,data]   = readInt(data, 8, [], @int64);
         out = outputBuilder('videoId',videoId,'timestamp',timestamp);
         
     case 57
         % GazeFrameCounter
-        frameCounter   = readInt(fid, 8, [], @int64);
+        [frameCounter,data]   = readInt(data, 8, [], @int64);
         out = outputBuilder('counter',frameCounter);
         
     case 103
         % PUPIL_CENTER: Position in glasses 3D coordinate frame.
         %               (Origin at scene camera center of projection, z-axis pointing forward,
         %               y-axis pointing down?).
-        eye = eyeIDToEye(readInt(fid, 1));
-        skipBytes(fid,3);   % padding
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [eye,data] = readInt(data, 1);
+        eye = eyeIDToEye(eye);
+        data = skipBytes(data,3);   % padding
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         out = outputBuilder('eye',eye,'pos',[x y z]);
         
     case 104
         % GAZE_DIRECTION: Direction in glasses 3D coordinate frame (unit vector).
-        eye = eyeIDToEye(readInt(fid, 1));
-        skipBytes(fid,3);   % padding
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [eye,data] = readInt(data, 1);
+        eye = eyeIDToEye(eye);
+        data = skipBytes(data,3);   % padding
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         out = outputBuilder('eye',eye,'vec',[x y z]);
         
     case 105
         % pupil diameter
-        eye = eyeIDToEye(readInt(fid, 1));
-        skipBytes(fid,3);   % padding
-        diam = readFloat(fid, 'single');
+        [eye,data] = readInt(data, 1);
+        eye = eyeIDToEye(eye);
+        data = skipBytes(data,3);   % padding
+        [diam,data] = readFloat(data, 'single');
         out = outputBuilder('eye',eye,'diam',diam);
         
     case 110
         % 3D GAZE POINT: Position in glasses 3D coordinate frame.
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         out = outputBuilder('vec',[x y z]);
         
     case 112
         % 2D GAZE POINT: Normalized x,y axis (0-1,0-1) according to the  full stream aspect ratio.
         %                May be outside 0-1 if point falls outside scene camera view scope.
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
         out = outputBuilder('vec',[x y]);
         
     case 200
         % Gyro data
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         out = outputBuilder('vec',[x y z]);
         
     case 201
         % Accelerometer data
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         out = outputBuilder('vec',[x y z]);
         
     case 250
         % logged event
         % not implemented, skip
         warning('todo: implement');
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
         
     case 251
         % sync signal
         % not implemented, skip
-        signal = readInt(fid, 1);
-        direction = directionToString(readInt(fid, 1));
+        [signal,data] = readInt(data, 1);
+        [direction,data] = readInt(data, 1);
+        direction = directionToString(direction);
         out = outputBuilder('signal',signal,'direction',direction);
         
     case 300
         % CAMERA: Camera positioning, manufacturing calibration, etc.
         %         Position and rotation in glasses 3D coordinate frame.
-        id = readInt(fid, 1);
-        location = readInt(fid, 1);
+        [id,data] = readInt(data, 1);
+        [location,data] = readInt(data, 1);
         
-        skipBytes(fid,2);   % padding
+        data = skipBytes(data,2);   % padding
         
-        x = readFloat(fid, 'single');
-        y = readFloat(fid, 'single');
-        z = readFloat(fid, 'single');
+        [x,data] = readFloat(data, 'single');
+        [y,data] = readFloat(data, 'single');
+        [z,data] = readFloat(data, 'single');
         
-        r11 = readFloat(fid, 'single');
-        r12 = readFloat(fid, 'single');
-        r13 = readFloat(fid, 'single');
+        [r11,data] = readFloat(data, 'single');
+        [r12,data] = readFloat(data, 'single');
+        [r13,data] = readFloat(data, 'single');
         
         % the camera parameters contain a 3x3 matrix for the rotation. we have to skip the next 6 floats since we don't use them.
-        readFloat(fid, 'single'); % r21
-        readFloat(fid, 'single'); % r22
-        readFloat(fid, 'single'); % r23
-        readFloat(fid, 'single'); % r31
-        readFloat(fid, 'single'); % r32
-        readFloat(fid, 'single'); % r33
+        [~,data] = readFloat(data, 'single', 6); % r21, r22, r23, r31, r32, r33
         
-        fx = readFloat(fid, 'single');
-        fy = readFloat(fid, 'single');
+        [fx,data] = readFloat(data, 'single');
+        [fy,data] = readFloat(data, 'single');
         
-        skew = readFloat(fid, 'single');
+        [skew,data] = readFloat(data, 'single');
         
-        px = readFloat(fid, 'single');
-        py = readFloat(fid, 'single');
+        [px,data] = readFloat(data, 'single');
+        [py,data] = readFloat(data, 'single');
         
-        rd1 = readFloat(fid, 'single');
-        rd2 = readFloat(fid, 'single');
-        rd3 = readFloat(fid, 'single');
+        [rd1,data] = readFloat(data, 'single');
+        [rd2,data] = readFloat(data, 'single');
+        [rd3,data] = readFloat(data, 'single');
         
-        t1 = readFloat(fid, 'single');
-        t2 = readFloat(fid, 'single');
-        t3 = readFloat(fid, 'single');
-        sx = readInt(fid, 2);
-        sy = readInt(fid, 2);
+        [t1,data] = readFloat(data, 'single');
+        [t2,data] = readFloat(data, 'single');
+        [t3,data] = readFloat(data, 'single');
+        [sx,data] = readInt(data, 2);
+        [sy,data] = readInt(data, 2);
         out = outputBuilder('id',id,'location',location,'position',[x y z],'rodriguesRotation',[r11 r12 r13],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'sensorDimensions',[sx sy]);
         
     otherwise
         % not implemented, skip
         warning('todo: implement');
-        skipBytes(fid,payloadLength);
+        data = skipBytes(data,payloadLength);
         out = [];
 end
 end
@@ -337,39 +339,61 @@ else
 end
 end
 
-function out = readInt(fid, nBit, nElem, classfun)
+function [out,data] = readFromBuffer(data, nElem)
+out = data.buffer(data.pos+[0:nElem-1]);
+data.pos = data.pos+nElem;
+end
+
+function [out,data] = readInt(data, nBit, nElem, classfun)
 if nargin<3 || isempty(nElem)
     nElem = 1;
 end
 if nargin<4
     classfun = @double;
 end
-[temp,count] = fread(fid, nBit*nElem, '*uchar');
+toRead = nBit*nElem;
+count = min(toRead,length(data.buffer)-data.pos+1);
 if count<nBit*nElem
     out = nan;
     return
 end
+[temp,data] = readFromBuffer(data, toRead);
 temp = classfun(reshape(temp, nBit, nElem));
 p = repmat(classfun(2).^classfun(8*(0:nBit-1))', 1, nElem);
 out = sum(temp .* p, 1, 'native');
 end
 
-function out = readFloat(fid, type, nElem)
+function [out,data] = readFloat(data, type, nElem)
 if nargin<3 || isempty(nElem)
     nElem = 1;
 end
-[temp,count] = fread(fid, nElem, type);
-if count<nElem
+switch type
+    case 'single'
+        nBit = 4;
+    case 'double'
+        nBit = 8;
+    otherwise
+        error('readFloat: type %s not understood',type)
+end
+
+toRead = nBit*nElem;
+count = min(toRead,length(data.buffer)-data.pos+1);
+if count<nBit*nElem
     out = nan;
     return
 end
-out = double(temp);
+[temp,data] = readFromBuffer(data, toRead);
+out = double(typecast(temp,type));
 end
 
-function skipBytes(fid,nSkip)
-if nSkip~=0
-    fread(fid, nSkip, '*uchar');
+function [out,data] = readString(data, nElem)
+[out,data] = readInt(data, 1, nElem);
+out = char(out);
+out(out==0) = [];
 end
+
+function data = skipBytes(data,nSkip)
+data.pos = data.pos+nSkip;
 end
 
 function typeIDOrString = typeIDStringConversion(typeIDOrString)
