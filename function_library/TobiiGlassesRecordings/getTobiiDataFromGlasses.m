@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 9;
+fileVersion = 10;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -393,7 +393,18 @@ if qGenCacheFile
         data.time.endTime = data.video.scene.fts(end);
     end
     
-    % 15 store to cache file
+    % 15 read scene camera calibration info from tslv file
+    tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera');
+    idxs = find(strcmp(tslv(:,2),'camera'));
+    if isempty(idxs)
+        % no camera calibration info found, weird but ok
+        data.video.scene.calibration = [];
+    else
+        assert(isscalar(idxs),'more than one camera calibration info found in tslv, contact dcnieho@gmail.com')
+        data.video.scene.calibration = rmfield(tslv{idxs,3},'status');  % remove status field, 0==ok is unimportant info for user
+    end
+    
+    % 16 store to cache file
     data.subjName       = participant.pa_info.Name;
     data.recName        = recording.rec_info.Name;
     data.fileVersion    = fileVersion;
