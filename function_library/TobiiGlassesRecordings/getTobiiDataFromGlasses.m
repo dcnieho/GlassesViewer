@@ -394,7 +394,7 @@ if qGenCacheFile
     end
     
     % 15 read scene camera calibration info from tslv file
-    tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera');
+    tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera',true);
     idxs = find(strcmp(tslv(:,2),'camera'));
     if isempty(idxs)
         % no camera calibration info found, weird but ok

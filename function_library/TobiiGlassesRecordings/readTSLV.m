@@ -1,4 +1,4 @@
-function parsedData = readTSLV(filename,typeList)
+function parsedData = readTSLV(filename,typeList,exitAfterFirst)
 
 % if gz file passed and filename and unpacked version doesn't exist yet, unpack it
 if strcmp(filename(max(1,end-2):end),'.gz')
@@ -44,6 +44,9 @@ while true
             parsedData{i,1} = out.typeID;
             parsedData{i,2} = out.type;
             parsedData{i,3} = out.payload;
+            if nargin>2 && exitAfterFirst
+                break;
+            end
         end
         
         % 3. go to next data package
