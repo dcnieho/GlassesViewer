@@ -1,4 +1,9 @@
 function parsedData = readTSLV(filename,typeList,exitAfterFirst)
+% NB: This reads TSLV files until an "End" package is found. According to
+% docs, such an End package may be missing e.g. if the device is suddenly
+% switched off. This here will then crash upon trying to read after the end
+% of the file. If you have such files and need this to work, contact the
+% developer.
 
 % if gz file passed and filename and unpacked version doesn't exist yet, unpack it
 if strcmp(filename(max(1,end-2):end),'.gz')
