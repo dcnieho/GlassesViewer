@@ -227,12 +227,11 @@ an example.
 
 #### 4. classifier
 `classifier` streams allow showing annotations produced by a MATLAB function.
-An example classifier is included in the file
-`./user_functions/HoogeCamps2013/HC13.m`. This implementation of [Hooge, I. T. C.,
-& Camps, G. (2013). Scan path entropy and arrow plots: Capturing scanning
-behavior of multiple observers. Frontiers in Psychology, 4(996).
-doi:10.3389/fpsyg.2013.00996](https://doi.org/10.3389/fpsyg.2013.00996) was
-provided by [GazeCode](https://github.com/jsbenjamins/gazecode).
+Two example classifiers are included:
+1) `./user_functions/HoogeCamps2013/HC13.m`. This implementation of [Hooge, I. T. C., & Camps, G. (2013). Scan path entropy and arrow plots: Capturing scanning behavior of multiple observers. Frontiers in Psychology, 4(996). doi:10.3389/fpsyg.2013.00996](https://doi.org/10.3389/fpsyg.2013.00996) was provided by [GazeCode](https://github.com/jsbenjamins/gazecode).
+2) `./user_functions/HesselsEtAl2020/HesselsEtAl2020.m`, an implementation of the classifier used in [Roy S. Hessels, Andrea J. van Doorn, Jeroen S. Benjamins, Gijs A. Holleman & Ignace T. C. Hooge (2020). Task-related gaze control in human crowd navigation. Attention, Perception, & Psychophysics 82, pp. 2482–2501. doi: 10.3758/s13414-019-01952-9](https://doi.org/10.3758/s13414-019-01952-9).
+
+Please cite the respective paper if you use either of these classifiers.
 
 |setting|description|
 | --- | --- |
