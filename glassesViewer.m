@@ -3496,7 +3496,7 @@ end
 function setDataTrail(hm)
 firstIToShow = find(hm.UserData.data.eye.binocular.ts<=hm.UserData.plot.ax(1).XLim(1),1,'last');
 lastIToShow  = find(hm.UserData.data.eye.binocular.ts<=hm.UserData.plot.ax(1).XLim(2),1,'last');
-pos = hm.UserData.data.eye.binocular.gp(firstIToShow:lastIToShow,:).*hm.UserData.vid.objs(1,1).Dimensions(2:-1:1);
+pos = hm.UserData.data.eye.binocular.gp(firstIToShow:lastIToShow,:);
 hm.UserData.vid.gt.XData = pos(:,1);
 hm.UserData.vid.gt.YData = pos(:,2);
 end
