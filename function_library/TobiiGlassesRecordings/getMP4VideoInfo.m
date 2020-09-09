@@ -133,7 +133,7 @@ destination = ftell(data.fid) + size;
 
 switch type
     case 'mdhd'
-        version = read_int(data.fid, 4);
+        version = read_int(data.fid, 4);    % TODO: this should really be 1 8bit for version and 24bit for flags
         if version==1
             fread(data.fid,2,'int64');
             data.tracks(data.total_tracks).mdhd.time_scale = read_int(data.fid, 4);
@@ -146,8 +146,8 @@ switch type
         data.tracks(data.total_tracks).mdhd.duration_ms = floor(data.tracks(data.total_tracks).mdhd.duration*1000/data.tracks(data.total_tracks).mdhd.time_scale);
         
     case 'tkhd'
-        fread(data.fid,1,'uchar');
-        fread(data.fid,3,'uchar');
+        fread(data.fid,1,'uchar');  % version (TODO: below creation time and such can also be 64 bit if version==1)
+        fread(data.fid,3,'uchar');  % flags
         data.tracks(data.total_tracks).tkhd.creationTime    = read_int(data.fid, 4);
         data.tracks(data.total_tracks).tkhd.modificationTime= read_int(data.fid, 4);
         data.tracks(data.total_tracks).tkhd.trackId         = read_int(data.fid, 4);
@@ -164,8 +164,8 @@ switch type
         
         
     case 'stsd'
-        fread(data.fid,1,'uchar');
-        fread(data.fid,3,'uchar');
+        fread(data.fid,1,'uchar');  % version
+        fread(data.fid,3,'uchar');  % flags
         data.tracks(data.total_tracks).stsd.entry_count = read_int(data.fid, 4);
         % there's a box in this box
         [~,~,typeTxt,~,data] = read_atom_header(data);
