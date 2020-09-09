@@ -1372,7 +1372,7 @@ qAx = ~strcmp({hm.UserData.plot.ax.Tag},'scarf');
 % draw
 for iAx=find(qAx)
     lims = hm.UserData.plot.defaultValueScale(:,iAx);
-    lims = lims+[-1;1]*.2.*diff(lims);  % 20% extra at both sides
+    lims = lims+[-1;1]*2.*diff(lims);  % 200% extra at both sides
     if strcmp(hm.UserData.plot.ax(iAx).YDir,'reverse')
         lims = flipud(lims);
     end
