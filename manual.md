@@ -55,7 +55,7 @@ Click on the lowest event stream in the scarf plot underneath the first data str
 ![](screenshots/012.png)
 
 The current settings of the slow phase / fast phase classifier algorithm do not appear ideal as some clear saccades are not labeled as fast phase. To change the classifier's settings, click the `Classifier settings` button.
-If multiple classifier event streams are defined, clicking this button brings up a dialog where you chose the classifier for which you want to change the settings. Select the `Hessels et al. (2019): slow/fast` one for this example.
+If multiple classifier event streams are defined, clicking this button brings up a dialog where you chose the classifier for which you want to change the settings. Select the `Hessels et al. (2020): slow/fast` one for this example.
 
 ![](screenshots/013.png)
 
@@ -137,7 +137,7 @@ Finally select the recording and click "Use selected recording".
 
 ![](screenshots/005.png)
 
-You are then asked to select an event stream to code. Select `Hessels et al. (2019): slow/fast`
+You are then asked to select an event stream to code. Select `Hessels et al. (2020): slow/fast`
 
 ![](screenshots/028.png)
 

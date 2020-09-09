@@ -98,9 +98,9 @@
       },
       {
         "type": "classifier",
-        "lbl": "Hessels et al. (2019): slow/fast",
+        "lbl": "Hessels et al. (2020): slow/fast",
         "locked": false,
-        "function": "HesselsEtAl19",
+        "function": "HesselsEtAl2020",
         "alwaysRecalculate": true,
         "alwaysRecalculateUseDefaultSettings": false,
         "parameters": [

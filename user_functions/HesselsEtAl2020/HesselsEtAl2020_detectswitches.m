@@ -1,4 +1,4 @@
-function [on2,off2] = HesselsEtAl19_detectswitches(data)
+function [on2,off2] = HesselsEtAl2020_detectswitches(data)
 % feed this fucntion a boolean vector (zeros and ones only). 
 % if it contains a series of ones it will return the start and end position
 

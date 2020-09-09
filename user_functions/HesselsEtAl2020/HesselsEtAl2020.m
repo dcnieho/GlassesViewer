@@ -1,4 +1,9 @@
-function [smarks,type] = HesselsEtAl19(tobiiData,params)
+function [smarks,type] = HesselsEtAl2020(tobiiData,params)
+%
+% Classifier as used in Roy S. Hessels, Andrea J. van Doorn, Jeroen S.
+% Benjamins, Gijs A. Holleman & Ignace T. C. Hooge (2020). Task-related
+% gaze control in human crowd navigation. Attention, Perception, &
+% Psychophysics 82, pp. 2482–2501. doi: 10.3758/s13414-019-01952-9
 
 % NB! classifier function should output event mark times in original times
 % as passed in here, so t=0 should correspond to the same sample as what
@@ -6,8 +11,8 @@ function [smarks,type] = HesselsEtAl19(tobiiData,params)
 time    = tobiiData.eye.binocular.ts*1000;  % this classifier wants time in ms
 
 %%%%% determine velocity
-vx      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,1),time);
-vy      = HesselsEtAl19_detvel(tobiiData.eye.binocular.gp(:,2),time);
+vx      = HesselsEtAl2020_detvel(tobiiData.eye.binocular.gp(:,1),time);
+vy      = HesselsEtAl2020_detvel(tobiiData.eye.binocular.gp(:,2),time);
 v       = hypot(vx,vy);
 
 % prep params
@@ -24,7 +29,7 @@ for b=1:lastwinstart
     idxs    = b:b+params.windowsize-1;
     
     % get fixation-classification threshold
-    thrwindow = HesselsEtAl19_detectfixaties2018thr(v(idxs),params);
+    thrwindow = HesselsEtAl2020_detectfixaties2018thr(v(idxs),params);
     
     % add threshod
     thr(idxs)       = thr(idxs)+thrwindow;
@@ -35,7 +40,7 @@ end
 % now get final thr
 thr = thr./ninwin;
 
-emark = HesselsEtAl19_detectfixaties2018fmark(v,time,thr,params);
+emark = HesselsEtAl2020_detectfixaties2018fmark(v,time,thr,params);
 
 %%%%% prep output
 % "emark" denotes slow events, now add fast in and turn into expected

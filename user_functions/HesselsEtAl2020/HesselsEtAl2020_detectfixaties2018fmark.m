@@ -1,9 +1,9 @@
-function [fmark] = HesselsEtAl19_detectfixaties2018fmark(mvel,time,thr2,f)
+function [fmark] = HesselsEtAl2020_detectfixaties2018fmark(mvel,time,thr2,f)
 
 minfix          = f.minfix;                        % minfix in ms
 
 qvel            = mvel < thr2;                     % look for velocity below threshold
-[on,off]        = HesselsEtAl19_detectswitches(qvel');  % determine fixations
+[on,off]        = HesselsEtAl2020_detectswitches(qvel');  % determine fixations
 
 on              = time(on);                        % convert to time
 off             = time(off);                       % convert to time

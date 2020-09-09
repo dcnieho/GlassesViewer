@@ -1,4 +1,4 @@
-function [thrfinal] = HesselsEtAl19_detectfixaties2018thr(mvel,f)
+function [thrfinal] = HesselsEtAl2020_detectfixaties2018thr(mvel,f)
 
 % cleaned up on
 % 16 october 2011 IH
