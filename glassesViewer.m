@@ -182,7 +182,7 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-panels = {'azi','scarf','ele','videoGaze','vel','pup','gyro','acc'};
+panels = {'azi','scarf','ele','videoGaze','gazePoint3D','vel','pup','pupCentLeft','pupCentRight','gyro','acc'};
 if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf panel is not in list of panels that can be shown, nor in user setup
     panels(strcmp(panels,'scarf')) = [];
     hm.UserData.settings.plot.initPanelOrder(strcmp(hm.UserData.settings.plot.initPanelOrder,'scarf')) = [];
@@ -234,6 +234,18 @@ for a=1:nPanel
             hm.UserData.plot.ax(a).YDir = 'reverse';    % to be consistent with azi and ele
             plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|X',commonPropPlot{:});
             plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|Y',commonPropPlot{:});
+        case 'gazePoint3D'  % 3D gaze point (intersection of gaze vectors)
+            hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.binocular.gp3(:)),-hm.UserData.settings.plot.gazePoint3DLim) min(nanmax(hm.UserData.data.eye.binocular.gp3(:)),hm.UserData.settings.plot.gazePoint3DLim)];
+            if isfield(hm.UserData.settings.plot.panelNames,'gazePoint3D')
+                lbl = hm.UserData.settings.plot.panelNames.gazePoint3D;
+            else
+                lbl = 'gazePoint3D';
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
+            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
+            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
+            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
         case 'vel'  % velocity
             hm.UserData.settings.plot.SGWindowVelocity = max(2,round(hm.UserData.settings.plot.SGWindowVelocity/1000*hm.UserData.data.eye.fs))*1000/hm.UserData.data.eye.fs;    % min SG window is 2*sample duration
             velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
@@ -259,6 +271,23 @@ for a=1:nPanel
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.pd,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.pd,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
+        case {'pupCentLeft','pupCentRight'}  % pupil center
+            if strcmp(panels{a},'pupCentLeft')
+                lbl = 'pupCentLeft';
+                field = 'left';
+            else
+                lbl = 'pupCentRight';
+                field = 'right';
+            end
+            if isfield(hm.UserData.settings.plot.panelNames,panels{a})
+                lbl = hm.UserData.settings.plot.panelNames.(panels{a});
+            end
+            hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',lbl);
+            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
+            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
+            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
+            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
         case 'gyro' % gyroscope
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
             if isfield(hm.UserData.settings.plot.panelNames,'gyro')
