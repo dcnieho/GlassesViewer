@@ -62,6 +62,7 @@ for v=1:length(vars)
         assert(all(data.(eye).gidx(qIdxs) == monoc.(vars{v}).gidx(qEye)))
     end
 end
+
 % deal with binocular data
 vars = {'gp','gp3'};    % both field in monoc struct, and the field in the input, so will index actual data by applying field twice in a row. Looks weird but is correct.
 for v=1:length(vars)
@@ -91,14 +92,24 @@ for v=1:length(vars)
     % check gidxs match
     assert(all(data.(eye).gidx(qIdxs) == binoc.(vars{v}).gidx))
 end
-% for each binocular gidx, check how number of eyes from which monocular
-% data was available
+
+% for each binocular gidx, check whether monocular data for left and right
+% eye was available
 qLeftEye = monoc.pc.eye=='l';
-data.binocular.nEye = sum([ismember(data.binocular.gidx,monoc.pc.gidx(qLeftEye)) ismember(data.binocular.gidx,monoc.pc.gidx(~qLeftEye))],2);
+il = find( qLeftEye);
+ir = find(~qLeftEye);
+% check if we have monocular sample at all for each binocular
+[hasLeft ,ifl] = ismember(data.binocular.gidx,monoc.pc.gidx(il));
+[hasRight,ifr] = ismember(data.binocular.gidx,monoc.pc.gidx(ir));
+% for those for which we have a sample, check if there was gaze
+hasLeft  = hasLeft  & ~any(isnan(monoc.gd.gd(il(ifl),:)),2);
+hasRight = hasRight & ~any(isnan(monoc.gd.gd(ir(ifr),:)),2);
+% now count on how many monocular samples each binocular sample is based
+data.binocular.nEye = sum([hasLeft hasRight],2);
+
 % check gidx is still monotonically increasing and then remove, it has
 % served its purpose
 for eye={'left','right','binocular'}
     assert(issorted(data.(eye{1}).gidx,'monotonic'))
     data.(eye{1}) = rmfield(data.(eye{1}),'gidx');
-end
 end
