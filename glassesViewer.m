@@ -206,7 +206,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
             hm.UserData.plot.ax(a).YDir = 'reverse';    % left is up in plot, right is down in plot
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.azi,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
@@ -219,7 +219,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
             hm.UserData.plot.ax(a).YDir = 'reverse';    % so that left in plot is up, and right in plot is down
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.ele,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
@@ -232,7 +232,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (pix)',lbl);
             hm.UserData.plot.ax(a).YDir = 'reverse';    % to be consistent with azi and ele
             plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|X',commonPropPlot{:});
@@ -245,7 +245,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
             plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
@@ -261,7 +261,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
             plot(hm.UserData.data.eye. left.ts,velL,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,velR,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
@@ -273,7 +273,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.pd,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
             plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.pd,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
@@ -291,7 +291,7 @@ for a=1:nPanel
                 lbl = tag;
             end
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
@@ -304,7 +304,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
@@ -321,7 +321,7 @@ for a=1:nPanel
             else
                 lbl = tag;
             end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag);
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (m/s^2)',lbl);
             plot(hm.UserData.data.accelerometer.ts,ac(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
             plot(hm.UserData.data.accelerometer.ts,ac(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
@@ -329,7 +329,12 @@ for a=1:nPanel
         case 'scarf'    % scarf plot special axis
             hm.UserData.plot.defaultValueScale(:,a) = [.5 length(hm.UserData.coding.codeCats)+.5];
             tag = 'scarf';
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
+            if isfield(hm.UserData.settings.plot.panelNames,'scarf')
+                lbl = hm.UserData.settings.plot.panelNames.scarf;
+            else
+                lbl = tag;
+            end
+            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl,'YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
             % for arrow indicating current stream
             hm.UserData.plot.ax(a).YAxis.FontSize = 12;
             hm.UserData.plot.ax(a).YAxis.TickLength(1) = 0;
@@ -1510,15 +1515,13 @@ comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10
 
 % 3.2 listbox
 c=c+1;
-listItems   = {hm.UserData.plot.ax.Tag};
+listItems   = {hm.UserData.plot.ax.UserData};
 comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
-listbox     = comps(c);
 
 % 3.3 listbox
 c=c+1;
 listItems   = {};
 comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerHidden','Max',2,'Min',0,'Value',[]);
-listboxJail = comps(c);
 
 
 % 3.4 buttons
