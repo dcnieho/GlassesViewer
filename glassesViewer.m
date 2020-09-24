@@ -80,7 +80,7 @@ end
 
 %% init figure
 hm=figure();
-hm.Name='Tobii Glasses 2 Viewer';
+hm.Name='Tobii Pro Glasses 2 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
 hm.MenuBar = 'none';
