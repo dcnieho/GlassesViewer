@@ -1710,6 +1710,7 @@ thePos(1) = thePos(1)+thePos(3)+butSep(1);
 thePos(3:4) = [lWidth{2}(2) height(2)];
 obj = findobj(comps,'Tag','plotArrangerShown');
 obj.Position = thePos;
+shownPos = thePos;
 
 thePos(2) = thePos(2)+butOff;
 thePos(1) = thePos(1)+thePos(3)+butSep(1);
@@ -1724,6 +1725,21 @@ thePos(2) = thePos(2)-thePos(4)-butSep(2)-butOff;
 thePos(1) = thePos(1)+thePos(3)+butSep(1);
 thePos(3:4) = [lWidth{2}(2) height(2)];
 obj = findobj(comps,'Tag','plotArrangerHidden');
+obj.Position = thePos;
+hiddenPos = thePos;
+%---
+thePos(2) = thePos(2)+thePos(4)+labelSpinSep(2);
+thePos([1 3 4]) = [shownPos(1) lWidth{3}(1) labelHeight];
+obj = findobj(comps,'Tag','plotArrangerLabelLeft');
+obj.Position = thePos;
+
+thePos([1 3]) = [hiddenPos(1) lWidth{3}(2)];
+obj = findobj(comps,'Tag','plotArrangerLabelRight');
+obj.Position = thePos;
+
+thePos(2) = thePos(2)+thePos(4)+labelSpinSep(2);
+thePos([1 3]) = [sepMargin(1) lWidth{4}(1)];
+obj = findobj(comps,'Tag','plotArrangerLabelMain');
 obj.Position = thePos;
 %---
 thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
