@@ -2430,7 +2430,8 @@ if strcmp(action,'jail')
     items       = [items(~qSel) items(qSel)];
     moveThePlots(hm,items);
     % determine new plot positions
-    setupPlots(hm,shown,length(hm.UserData.plot.ax))
+    tags        = {hm.UserData.plot.ax(1:length(shown)).Tag}.';
+    setupPlots(hm,tags,length(hm.UserData.plot.ax))
     % update axes
     newPos = num2cell(hm.UserData.plot.axPos,2);
     nShown = length(shown);
@@ -2467,7 +2468,8 @@ else
     moveThePlots(hm,items);
     % determine new plot positions
     toShow      = [shownList; toShow];
-    setupPlots(hm,toShow,length(hm.UserData.plot.ax));
+    tags        = {hm.UserData.plot.ax(1:length(toShow)).Tag}.';
+    setupPlots(hm,tags,length(hm.UserData.plot.ax));
     % update axes
     newPos    = num2cell(hm.UserData.plot.axPos,2);
     nShownNew = length(toShow);
