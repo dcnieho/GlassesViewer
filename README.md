@@ -33,6 +33,8 @@ Click the screenshot to see a full-size version.
 ![Glasses viewer screenshot](/screenshot.jpg?raw=true)
 
 # Usage
+To run GlassesViewer, after downloading this repository, open the file
+`glassesViewer.m` in MATLAB and run it.
 When running the viewer GUI, `glassesViewer.m`, a file picker will
 appear. Select the folder of a recording to view. This needs to point to
 a specific recording's folder. If "projects" is the project folder on
