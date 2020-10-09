@@ -1,4 +1,4 @@
-function data = getTobiiDataFromGlasses(recordingDir,userStreams,qDEBUG)
+function data = readG2DataFiles(recordingDir,userStreams,qDEBUG)
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
