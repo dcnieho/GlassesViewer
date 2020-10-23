@@ -26,7 +26,11 @@ for p = 1:nproj
     json = jsondecoder(fileread(projects(p).jsonfile));
     
     projects(p).ID          = json.pr_id;
-    projects(p).name        = json.pr_info.Name;
+    if isfield(json.pr_info,'Name')
+        projects(p).name = json.pr_info.Name;
+    else
+        projects(p).name = json.pr_info.name;
+    end
     projects(p).createdate  = datenum(json.pr_created,'yyyy-mm-ddTHH:MM:SS');    % G2 times are always UTC (denoted by +0000 suffix), which we can ignore.
     
     % get what recording folders we have -- required
@@ -66,9 +70,15 @@ for p = 1:nproj
         recjson = jsondecoder(fileread((fullfile(recorddir, recs(q).recID, 'recording.json'))));
         
         % get recording info
-        recs(q).recName = recjson.rec_info.Name;
+        if isfield(recjson.rec_info,'Name')
+            recs(q).recName = recjson.rec_info.Name;
+        else
+            recs(q).recName = recjson.rec_info.name;
+        end
         if isfield(recjson.rec_info,'Notes')
             recs(q).recNotes= recjson.rec_info.Notes;
+        elseif isfield(recjson.rec_info,'notes')
+            recs(q).recNotes= recjson.rec_info.notes;
         end
         if isfield(recjson,'rec_created')
             recs(q).recStartT = datenum(recjson.rec_created,'yyyy-mm-ddTHH:MM:SS');
@@ -80,9 +90,15 @@ for p = 1:nproj
             partjsonfile = fullfile(recorddir, recs(q).recID, 'participant.json');
             if exist(partjsonfile,'file')==2
                 partjson = jsondecoder(fileread(partjsonfile));
-                recs(q).partName = partjson.pa_info.Name;
+                if isfield(partjson.pa_info,'Name')
+                    recs(q).partName = partjson.pa_info.Name;
+                else
+                    recs(q).partName = partjson.pa_info.name;
+                end
                 if isfield(partjson.pa_info,'Notes')
                     recs(q).partNotes= partjson.pa_info.Notes;
+                elseif isfield(partjson.pa_info,'notes')
+                    recs(q).partNotes= partjson.pa_info.notes;
                 end
             end
         end
