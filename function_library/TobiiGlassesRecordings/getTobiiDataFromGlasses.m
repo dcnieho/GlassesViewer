@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 10;
+fileVersion = 11;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -67,9 +67,10 @@ if qGenCacheFile || qDEBUG
     % its crap, failed or otherwise shouldn't be used), split off and
     % remove fields requiring custom processing (sig, type) and remove
     % unwanted fields (pts, epts)
-    qSplit  = strcmp(types(:,3),'sig')|strcmp(types(:,3),'type');
+    qSyncPort = strcmp(types(:,3),'sig');
+    qSyncAPI  = strcmp(types(:,3),'type');
     qUnwanted = strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts');
-    qKeep   = ~qSplit & ~qUnwanted;  % remove non-zero s, split off fields and unwanted fields
+    qKeep   = ~qSyncPort & ~qSyncAPI & ~qUnwanted;  % remove non-zero s, split off fields to process separately and unwanted fields
     nKeep   = sum(qKeep);
     dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[],'s',[]);
     dat.ts  = sscanf(cat(2,types{qKeep,1}),'%f,');
@@ -85,9 +86,10 @@ if qGenCacheFile || qDEBUG
     end
     assert(length(iNewLines)==length(qKeep)+1,'must have missed a type in the above regexp, or the assumption that each element has only one of the above strings is no longer true')
     % split off the ones we process separately
-    q = bounds2bool(iNewLines([qSplit; false])+1,iNewLines([false; qSplit]));
-    syncPortAPISyncTxt  = txt(q);
-    syncPortAPISyncType = types(qSplit,3);
+    q = bounds2bool(iNewLines([qSyncPort; false])+1,iNewLines([false; qSyncPort]));
+    syncPortTxt = txt(q);
+    q = bounds2bool(iNewLines([qSyncAPI; false])+1,iNewLines([false; qSyncAPI]));
+    syncAPITxt  = txt(q);
     % get types for main packets
     types   = types(qKeep,3);
     % now remove these packets from string
@@ -219,27 +221,37 @@ if qGenCacheFile || qDEBUG
     end
     % clean up
     clear dat qData
-    % 4.7 parse sync signal (parse directly as it has extra field of interest)
-    temp = regexp(syncPortAPISyncTxt,'(?:"ts":)(\d+,).*?(?:"dir":")(in|out)(?:","sig":)(\d})','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf
-    temp = cat(1,temp{:});
-    qOut = strcmp(temp(:,2),'out');
-    if any(qOut)
-        sig.out.ts    = sscanf(cat(2,temp{qOut,1}),'%f,');
-        sig.out.state = sscanf(cat(2,temp{qOut,3}),'%f}');
+    
+    % 4.7 parse sync port signals
+    if ~isempty(syncPortTxt)
+        % 4.7.1 parse json
+        syncPortStr = jsondecoder(['[' syncPortTxt ']']);
+        % 4.7.2 organize port signals
+        qOut = strcmp({syncPortStr.dir},'out');
+        sig.out.ts      = cat(1,syncPortStr( qOut).ts);
+        sig.out.state   = cat(1,syncPortStr( qOut).sig);
+        sig.in.ts       = cat(1,syncPortStr(~qOut).ts);
+        sig.in.state    = cat(1,syncPortStr(~qOut).sig);
     else
         [sig.out.ts,sig.out.state] = deal([]);
-    end
-    if any(~qOut)
-        sig.in.ts    = sscanf(cat(2,temp{~qOut,1}),'%f,');
-        sig.in.state = sscanf(cat(2,temp{~qOut,3}),'%f}');
-    else
-        [sig.in.ts,sig.in.state] = deal([]);
+        [sig. in.ts,sig. in.state] = deal([]);
     end
     
-    % 4.8 TODO: parse API sync-packages
-    % qAPISync = strcmp(syncPortAPISyncType,'type');
+    % 4.8 parse sync API signals
+    if ~isempty(syncAPITxt)
+        % 4.8.1 parse json
+        syncAPIStr  = jsondecoder(['[' syncAPITxt ']']);
+        % 4.8.2 organize port signals
+        syncAPI.ts  = cat(1,syncAPIStr.ts);
+        syncAPI.ets = cat(1,syncAPIStr.ets);
+        syncAPI.type= {syncAPIStr.type}.';
+        syncAPI.tag = {syncAPIStr.tag}.';
+    else
+        [syncAPI.ts,syncAPI.ets,syncAPI.type,syncAPI.tag] = deal([],[],{},{});
+    end
+    
     % clean up
-    clear temp syncPortAPISyncTxt syncPortAPISyncType;
+    clear syncPortTxt syncPortStr syncAPITxt syncAPIStr;
     
     
     % 5 reorganize eye data into binocular data, left eye data and right eye data
@@ -279,7 +291,9 @@ if qGenCacheFile || qDEBUG
     data.syncPort = sig;
     clear sig
     
-    % 10 add API sync data to output file (TODO)
+    % 10 add API sync data to output file
+    data.syncAPI = syncAPI;
+    clear syncAPI
     
     % 11 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
@@ -299,6 +313,7 @@ if qGenCacheFile || qDEBUG
     end
     data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
+    data.syncAPI.ts         = (data.syncAPI.ts-t0)./1000000;
     
     % 12 open video files for each segment, check how many frames, and make
     % frame timestamps
