@@ -24,7 +24,7 @@ if ~qGenCacheFile
     qGenCacheFile = cache.fileVersion~=fileVersion;
 end
 
-if qGenCacheFile
+if qGenCacheFile || qDEBUG
     % 0 get info about participant and recording
     fid = fopen(fullfile(recordingDir,'recording.json'),'rt');
     recording = jsondecoder(fread(fid,inf,'*char').');
