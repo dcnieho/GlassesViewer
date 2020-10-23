@@ -405,9 +405,17 @@ if qGenCacheFile || qDEBUG
     end
     
     % 16 store to cache file
-    data.subjName       = participant.pa_info.Name;
-    data.recName        = recording.rec_info.Name;
-    data.fileVersion    = fileVersion;
+    if isfield(participant.pa_info,'Name')
+        data.subjName = participant.pa_info.Name;
+    else
+        data.subjName = participant.pa_info.name;
+    end
+    if isfield(recording.rec_info,'Name')
+        data.recName = recording.rec_info.Name;
+    else
+        data.recName = recording.rec_info.name;
+    end
+    data.fileVersion = fileVersion;
     save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
 else
     data = load(fullfile(recordingDir,'livedata.mat'));
