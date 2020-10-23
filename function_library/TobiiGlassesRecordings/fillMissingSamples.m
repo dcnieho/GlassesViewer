@@ -2,11 +2,8 @@ function data = fillMissingSamples(data,expectedFs)
 % NB!! we have data for each eye and binocular for matched gidx (gidx by
 % now removed from data as no longer needed). Data for same gidx doesn't
 % however always come with exactly the same timestamps. As differences are
-% (should be) tiny, we can ignore this. check differences are tiny though.
-u=unique(data.left.ts-data.right.ts);
-assert(all(isnan(u) | u<1000))  % arbitrarily decide that less than one ms is small
-u=unique(data.left.ts-data.binocular.ts);
-assert(all(isnan(u) | u<1000))  % arbitrarily decide that less than one ms is small
+% (should be) tiny, we can ignore this. There is a check yielding a warning
+% for this at the end of this function.
 
 % fill gaps with nans (just split time interval between two samples
 % into equally sized bits). You may think we can do this based on gidx.
