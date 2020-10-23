@@ -12,7 +12,7 @@ c = onCleanup(@() warning(oldWarn));    % reset warning
 warning('off','MATLAB:ui:javaframe:PropertyToBeRemoved');
 warning('off','MATLAB:ui:javacomponent:FunctionToBeRemoved');
 
-qDEBUG = true;
+qDEBUG = false;
 if qDEBUG
     dbstop if error
 end
