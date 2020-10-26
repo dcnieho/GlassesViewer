@@ -188,7 +188,7 @@ Each annotation stream in the array of defined streams should have a `type`
 field. The following annotation stream types are understood:
 
 #### 1. syncIn and syncOut
-`syncIn` and `syncOut` streams are special streams that are view-only, and
+The `syncIn` and `syncOut` streams are special streams that are view-only, and
 cannot be edited through the GUI. The Tobii Glasses 2 has a sync port that
 takes a single-channel TTL input and provides a single-channel TTL output.
 These streams visualize the activity of those channels. Understood options are:
@@ -199,7 +199,20 @@ These streams visualize the activity of those channels. Understood options are:
 |`lbl`|String to be shown in GUI, naming the stream|
 |`categories`|Array defining the labels for each code, and the colors in which to show them. `syncIn` and `syncOut` streams have two events, up/inactive (1) and down/active (2). |
 
-#### 2. handStream
+#### 2. syncAPI
+The `syncAPI` is a special streams that is view-only, and
+cannot be edited through the GUI. The Tobii Glasses 2 has an API through which events
+can be logged to the data stream, with this stream these events can be visualized.
+Understood options are:
+
+|setting|description|
+| --- | --- |
+|`type`|Stream type. `syncAPI`|
+|`lbl`|String to be shown in GUI, naming the stream|
+|`mapping`|Array defining mapping from syncAPI event types to GUI labels, list of "type_name","new_label",.... It is optional to provide this option, and only part of the types may be renamed through it while for others the original name can be kept.|
+|`categories`|Array defining the labels for each code, and the colors in which to show them. `syncAPI` streams have a special first event (1) to which any encountered types that are not in this category array will be mapped, as well as episodes before the first sync API event. `null` is likely a good color for this event category. |
+
+#### 3. handStream
 `handStream` streams start empty and annotations are made in them through hand coding.
 
 |setting|description|
@@ -209,7 +222,7 @@ These streams visualize the activity of those channels. Understood options are:
 |`locked`|Boolean indicating whether annotations can be made, altered or deleted in this stream.|
 |`categories`|Array defining the labels for each code, and the colors in which to show them.|
 
-#### 3. fileStream
+#### 4. fileStream
 `fileStream` streams allow showing annotations loaded from a file. These files
 should contain two tab-separated columns. The first denotes the sample index of
 an annotation start mark, and the second column the code attached to the
@@ -227,7 +240,7 @@ an example.
 |`needToCorrectT0`|Set to true if t=0 in the file to be loaded corresponds to the first data sample instead of to the start of the video (which is t0 for this GUI and its output)|
 |`categories`|Array defining the labels for each code, and the colors in which to show them. |
 
-#### 4. classifier
+#### 5. classifier
 `classifier` streams allow showing annotations produced by a MATLAB function.
 Two example classifiers are included:
 1) `./user_functions/HoogeCamps2013/HC13.m`. This implementation of [Hooge, I. T. C., & Camps, G. (2013). Scan path entropy and arrow plots: Capturing scanning behavior of multiple observers. Frontiers in Psychology, 4(996). doi:10.3389/fpsyg.2013.00996](https://doi.org/10.3389/fpsyg.2013.00996) was provided by [GazeCode](https://github.com/jsbenjamins/gazecode).

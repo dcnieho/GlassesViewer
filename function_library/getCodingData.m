@@ -5,7 +5,7 @@ end
 
 
 % set file format version. coding files older than this version are ignored
-fileVersion = 4;
+fileVersion = 5;
 
 qHaveExistingCoding = exist(fullfile(filedir,fname),'file');
 if qHaveExistingCoding
@@ -68,7 +68,7 @@ end
 % parse type of each stream, and other info
 type    = cellfun(@(x) x.type, coding.settings.streams, 'uni', false);
 locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
-qSyncEvents = ismember(lower(type),{'syncin','syncout'});
+qSyncEvents = ismember(lower(type),{'syncin','syncout','syncapi'});
 locked(~qSyncEvents) = cellfun(@(x) x.locked, coding.settings.streams(~qSyncEvents));
 lbls    = cellfun(@(x) x.lbl, coding.settings.streams, 'uni', false);
 options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), coding.settings.streams, 'uni', false);
@@ -106,6 +106,38 @@ for p=1:nStream
                 continue;
             end
             [ts,type]       = addStartEndCoding(ts,type,startTime,endTime);
+            % store
+            coding.mark{p} = ts;
+            coding.type{p} = type;
+        case 'syncapi'
+            ts = tobiiData.syncAPI.ts(:).';
+            if isempty(ts)
+                qSkipped(p) = true;
+                warning('glassesViewer: no %s events found for stream %d. Skipped.',coding.stream.type{p},p);
+                continue;
+            end
+            
+            % get type using map
+            % 1. take code cats and replace each entry with one in mapping,
+            % if found
+            mapping = coding.codeCats{2};
+            if isfield(coding.stream.options{p},'mapping')
+                optMapping = reshape(coding.stream.options{p}.mapping,2,[]).';
+                for q=1:size(optMapping,1)
+                    [mapping{strcmp(mapping(:,1),optMapping{q,2}),1}] = deal(optMapping{q,1});
+                end
+            end
+            % 2. check all types against type map--unmatched stay category 1
+            type = ones(size(ts));
+            for q=1:size(mapping,1)
+                type(strcmp(tobiiData.syncAPI.type,mapping{q,1})) = mapping{q,2};
+            end
+            % 3. trim any beyond range of data off the end
+            qTooMuch = ts>=endTime;
+            ts(qTooMuch) = [];
+            type(qTooMuch) = [];
+            % make ready for GUI
+            [ts,type]       = addStartEndCoding([ts inf],type,startTime,endTime);
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
