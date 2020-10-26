@@ -293,9 +293,9 @@ for a=1:nPanel
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
             hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
             hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye.(field).pc(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
+            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
+            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
+            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
         case 'gyro' % gyroscope
             hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
             tag = 'gyro';
