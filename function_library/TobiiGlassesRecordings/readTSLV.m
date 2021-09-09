@@ -134,7 +134,7 @@ switch type
         %           The CHECKSUM TSLV itself is not included in the stream.
         %           Each CHECKSUM resets the checksum counting.
         %           Checksums are SHA1.
-        % not implemented, skip
+        % not interesting, skip
         skipBytes(fid,payloadLength);
         out = [];
         
@@ -152,7 +152,7 @@ switch type
         %                This functions as an internal state synchronization and should be
         %                ignored by any external readers.
         %                The session id is in the FRAME_ID TSLV.
-        % not implemented, skip
+        % not interesting, skip
         skipBytes(fid,payloadLength);
         out = [];
         
@@ -161,7 +161,7 @@ switch type
         %               This functions as an internal state synchronization and should be
         %               ignored by any external readers.
         %               The session id is in the FRAME_ID TSLV.
-        % not implemented, skip
+        % not interesting, skip
         skipBytes(fid,payloadLength);
         out = [];
         
@@ -235,7 +235,7 @@ switch type
         out = outputBuilder('vec',[x y z]);
         
     case 112
-        % 2D GAZE POINT: Normalized x,y axis (0-1,0-1) according to the  full stream aspect ratio.
+        % 2D GAZE POINT: Normalized x,y axis (0-1,0-1) according to the full stream aspect ratio.
         %                May be outside 0-1 if point falls outside scene camera view scope.
         x = readFloat(fid, 'single');
         y = readFloat(fid, 'single');
@@ -255,16 +255,8 @@ switch type
         z = readFloat(fid, 'single');
         out = outputBuilder('vec',[x y z]);
         
-    case 250
-        % logged event
-        % not implemented, skip
-        warning('todo: implement');
-        skipBytes(fid,payloadLength);
-        out = [];
-        
     case 251
         % sync signal
-        % not implemented, skip
         signal = readInt(fid, 1);
         direction = directionToString(readInt(fid, 1));
         out = outputBuilder('signal',signal,'direction',direction);
@@ -281,17 +273,16 @@ switch type
         y = readFloat(fid, 'single');
         z = readFloat(fid, 'single');
         
+        % the camera parameters contain a 3x3 matrix for the rotation
         r11 = readFloat(fid, 'single');
         r12 = readFloat(fid, 'single');
         r13 = readFloat(fid, 'single');
-        
-        % the camera parameters contain a 3x3 matrix for the rotation. we have to skip the next 6 floats since we don't use them.
-        readFloat(fid, 'single'); % r21
-        readFloat(fid, 'single'); % r22
-        readFloat(fid, 'single'); % r23
-        readFloat(fid, 'single'); % r31
-        readFloat(fid, 'single'); % r32
-        readFloat(fid, 'single'); % r33
+        r21 = readFloat(fid, 'single');
+        r22 = readFloat(fid, 'single');
+        r23 = readFloat(fid, 'single');
+        r31 = readFloat(fid, 'single');
+        r32 = readFloat(fid, 'single');
+        r33 = readFloat(fid, 'single');
         
         fx = readFloat(fid, 'single');
         fy = readFloat(fid, 'single');
@@ -310,11 +301,11 @@ switch type
         t3 = readFloat(fid, 'single');
         sx = readInt(fid, 2);
         sy = readInt(fid, 2);
-        out = outputBuilder('id',id,'location',location,'position',[x y z],'rodriguesRotation',[r11 r12 r13],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'sensorDimensions',[sx sy]);
+        out = outputBuilder('id',id,'location',location,'position',[x y z],'rotation',[r11 r12 r13; r21 r22 r23; r31 r32 r33],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'sensorDimensions',[sx sy]);
         
     otherwise
         % not implemented, skip
-        warning('todo: implement');
+        warning('todo: implement type %s',typeIDStringConversion(type));
         skipBytes(fid,payloadLength);
         out = [];
 end
@@ -387,21 +378,33 @@ table = {
     3,'frequency'
     4,'videoInfo'
     5,'end'
+    6,'checksum'
     10,'frameID'
+    11,'sessionStart'
+    12,'sessionStop'
     50,'systemTimestamp'
     51,'wallClockTimestamp'
     53,'videoClockTimestamp'
     54,'videoFileTimestamp'
-    57,'gazePackageCounter'
+    57,'gazeFrameCounter'
+    100,'trackerState'
+    101,'glint'
+    102,'pupil'
     103,'pupilCenter'
     104,'gazeDirection'
     105,'pupilDiameter'
     110,'gazePoint3D'
+    111,'gazePoint3DFiltered'
     112,'gazePoint2D'
+    113,'gazePoint2DFiltered'
+    120,'markerPoint3D'
+    121,'markerPoint2D'
     200,'gyro'
     201,'accelerometer'
+    250,'loggedEvent'
     251,'syncSignal'
     300,'camera'
+    301,'illuminator'
     };
 
 if ischar(typeIDOrString)
