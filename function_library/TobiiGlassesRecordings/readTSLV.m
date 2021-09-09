@@ -1,4 +1,7 @@
 function parsedData = readTSLV(filename,typeList,exitAfterFirst)
+% reader for tslv files of Tobii Glasses 2 recordings (et.tslv.gz and
+% mems.tslv.gz).
+%
 % NB: This reads TSLV files until an "End" package is found. According to
 % docs, such an End package may be missing e.g. if the device is suddenly
 % switched off. This here will then crash upon trying to read after the end
