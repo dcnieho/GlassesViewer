@@ -272,11 +272,11 @@ switch type
         
         skipBytes(fid,2);   % padding
         
+        % extrinsics
         x = readFloat(fid, 'single');
         y = readFloat(fid, 'single');
         z = readFloat(fid, 'single');
         
-        % the camera parameters contain a 3x3 matrix for the rotation
         r11 = readFloat(fid, 'single');
         r12 = readFloat(fid, 'single');
         r13 = readFloat(fid, 'single');
@@ -287,6 +287,7 @@ switch type
         r32 = readFloat(fid, 'single');
         r33 = readFloat(fid, 'single');
         
+        % intrinsics
         fx = readFloat(fid, 'single');
         fy = readFloat(fid, 'single');
         
@@ -295,6 +296,7 @@ switch type
         px = readFloat(fid, 'single');
         py = readFloat(fid, 'single');
         
+        % distortion
         rd1 = readFloat(fid, 'single');
         rd2 = readFloat(fid, 'single');
         rd3 = readFloat(fid, 'single');
@@ -302,8 +304,11 @@ switch type
         t1 = readFloat(fid, 'single');
         t2 = readFloat(fid, 'single');
         t3 = readFloat(fid, 'single');
+        
+        % information about sensor
         sx = readInt(fid, 2);
         sy = readInt(fid, 2);
+        
         out = outputBuilder('id',id,'location',location,'position',[x y z],'rotation',[r11 r12 r13; r21 r22 r23; r31 r32 r33],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'sensorDimensions',[sx sy]);
         
     otherwise
