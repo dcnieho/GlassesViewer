@@ -10,7 +10,7 @@ When you run glassesViewer.m, a pop-up asks you to select the projects folder of
 
 ![](screenshots/002.png)
 
-A second pop-up asks you to select the recording that you wish to open in GlassesViewer. Recordings are organized by study and participant. First select the study.
+A second pop-up asks you to select the recording that you wish to open in GlassesViewer. Recordings are organized by study (project) and participant. First select the study.
 
 ![](screenshots/003.png)
 
@@ -18,7 +18,7 @@ Next, select the participant.
 
 ![](screenshots/004.png)
 
-Finally select the recording and click "Use selected recording".
+Finally select the recording and click "Use selected recording". Note that you cannot manually add recordings to a project by copying recording folders into a project. In this case you should instead directly select a recording folder for glassesViewer to open.
 
 ![](screenshots/005.png)
 
