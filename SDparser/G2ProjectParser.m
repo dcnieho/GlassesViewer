@@ -1,8 +1,12 @@
-function success = G2ProjectParser(projectfolder)
+function success = G2ProjectParser(projectfolder,dontFailOnLockedFile)
 % function to read in relevant JSON files of a Tobii Projects folder and
 % create a human-readable lookup table in the project folder that can then
 % be used by recordingSelector, which selects a recording for the
-% glassesviewer or GazeCode
+% glassesViewer or GazeCode
+
+if nargin<2 || isempty(dontFailOnLockedFile)
+    dontFailOnLockedFile = false;
+end
 
 [projects, nproj] = FolderFromFolder(projectfolder);
 
@@ -135,7 +139,17 @@ for p = 1:nproj
         end
         
         if isempty(fid)
-            fid = fopen(fullfile(projectfolder,'lookup.xls'),'wt');
+            lookupFile = fullfile(projectfolder,'lookup.xls');
+            fid = fopen(lookupFile,'wt');
+            if fid==-1
+                if dontFailOnLockedFile && ~~exist(lookupFile,'file')
+                    warning('Could not open the lookup.xls file for writing, probably because you have it open. Any changes in projects/recordings will not be picked up. Make sure ''%s'' is writeable and not opened in another program.',lookupFile)
+                    success = true;
+                    return;
+                else
+                    error('Could not open the lookup.xls file for writing. Full filename: ''%s''',lookupFile);
+                end
+            end
             fprintf(fid,'ProjectID\tParticipantID\tRecordingID\tCalibrationID\tProjectName\tProjectCreateTime\tParticipantName\tParticipantNotes\tRecordingName\tRecordingStartTime\tRecordingNotes\tCalibrationStatus\tFirmwareVersion\tHeadUnitSerial\tRecordingUnitSerial\tEyeCameraSetting\tSceneCameraSetting\n');
         end
         

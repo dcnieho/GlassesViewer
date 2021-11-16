@@ -64,11 +64,9 @@ if exist(fullfile(selectedDir,'segments'),'dir') && exist(fullfile(selectedDir,'
     recordingDir = selectedDir;
 else
     % assume this is a project dir. G2ProjectParser will fail if it is not
-    if ~exist(fullfile(selectedDir,'lookup.xls'),'file')
-        success = G2ProjectParser(selectedDir);
-        if ~success
-            error('Could not find projects in the folder: %s',selectedDir);
-        end
+    success = G2ProjectParser(selectedDir,true);
+    if ~success
+        error('Could not find projects in the folder: %s',selectedDir);
     end
     recordingDir = recordingSelector(selectedDir);
     if isempty(recordingDir)
