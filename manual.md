@@ -18,7 +18,7 @@ Next, select the participant.
 
 ![](screenshots/004.png)
 
-Finally select the recording and click "Use selected recording". Note that you cannot manually add recordings to a project by copying recording folders into a project. In this case you should instead directly select a recording folder for glassesViewer to open.
+Finally select the recording and click "Use selected recording".
 
 ![](screenshots/005.png)
 
