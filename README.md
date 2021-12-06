@@ -36,9 +36,11 @@ Click the screenshot to see a full-size version.
 To run GlassesViewer, after downloading this repository, open the file
 `glassesViewer.m` in MATLAB and run it.
 When running the viewer GUI, `glassesViewer.m`, a file picker will
-appear. Select the folder of a recording to view. This needs to point to
-a specific recording's folder. If "projects" is the project folder on
-the SD card, an example of a specific recording is:
+appear. As shown in the [manual](/manual.md), select either a folder
+containing one or multiple projects, or a specific recording's folder
+to view. If "projects" is the project folder on the SD card, either
+select this folder "projects" in the file picker, or a specific recording
+in a project. An example of a specific recording is:
 `projects/rkamrkb/recordings/zi4xmt2`.
 
 If you just wish to parse the Tobii glasses data into a MATLAB readable
@@ -59,7 +61,10 @@ displayed Tobii Glasses data is loaded from. This file is created upon loading
 the GUI if any annotations are defined, and can be updated by pressing the
 "save coding" button in the GUI.  When opening the same folder again in the
 GUI, annotations are loaded from this file (and possibly overridden depending
-on the [settings of some annotation streams](#annotation-streams)). Note that the GUI contains a checkbox labeled `crap data`.  Checking this box sets the `dataIsCrap` field to true in the session's `coding.mat` file, allowing such files to easily be skipped in later analysis.
+on the [settings of some annotation streams](#annotation-streams)). Note that
+the GUI contains a checkbox labeled `crap data`.  Checking this box sets the
+`dataIsCrap` field to true in the session's `coding.mat` file, allowing such
+files to easily be skipped in later analysis.
 
 # Viewer interface
 *mouse*:
