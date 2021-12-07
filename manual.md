@@ -22,7 +22,7 @@ Finally select the recording and click "Use selected recording".
 
 ![](screenshots/005.png)
 
-When reading the recording, glassesViewer produces some output in the MATLAB command window, among which several measures of eye-tracking data quality.
+When reading the recording, glassesViewer produces some output in the MATLAB command window, among which several measures of eye-tracking data quality. When opening a recording, the Tobii Glasses 2 data format is read in, and converted to a MATLAB struct. This converted data is stored to a `livedata.mat` file in the recording's directory, which in the case of the included demo data is the directory `<GlassesViewer_directory>\demo_data\projects\raoscyb\recordings\gzz7stc`. In the same folder, you will also find the file `dataquality.mat`, containing the same data quality info as output on the command line when loading a recording, and shown in the glassesViewer interface.
 
 ![](screenshots/006.png)
 
@@ -63,15 +63,15 @@ This opens the classifier settings dialog.
 
 ![](screenshots/014.png)
 
-Change the lambda parameter and click `Recalculate`. As you can see, more episodes of the eye-tracking data are now labeled as “fast phases”.
+Change (lower) the lambda parameter and click `Recalculate`. As you can see, more episodes of the eye-tracking data are now labeled as “fast phases”.
 
 ![](screenshots/015.png)
 
-When a new event coding is produced, it is updated in the interface. The red `save coding` button indicates this new event classification has not yet been saved to the recording's `coding.mat` file.
+When a new event coding is produced, it is updated in the interface. The red `save coding` button indicates this new event classification has not yet been saved to the recording's `coding.mat` file, which in the case of the included demo data can be found in the directory `<GlassesViewer_directory>\demo_data\projects\raoscyb\recordings\gzz7stc`.
 
 ![](screenshots/016.png)
 
-Press `save coding` to save it to the recording's coding.mat file. When the coding is saved, the button turns green. The recording's `coding.mat` file has now been updated.
+Press `save coding` to save it to the recording's coding.mat file, which in the case of the included demo data can be found in the directory `<GlassesViewer_directory>\demo_data\projects\raoscyb\recordings\gzz7stc`. When the coding is saved, the button turns green. The recording's `coding.mat` file has now been updated.
 
 ![](screenshots/017.png)
 
@@ -99,7 +99,7 @@ Add some more event annotations:
 
 ## 5 - Exiting GlassesViewer
 
-When exiting glassesViewer, if the coding currently displayed is not saved, a dialog box will appear asking whether to save the changes or not. As before, these will be saved to the `coding.mat` file in the recording's directory.
+When exiting glassesViewer, if the coding currently displayed is not saved, a dialog box will appear asking whether to save the changes or not. As before, these will be saved to the `coding.mat` file in the recording's directory, which in the case of the included demo data can be found in the directory `<GlassesViewer_directory>\demo_data\projects\raoscyb\recordings\gzz7stc`.
 
 ![](screenshots/023.png)
 
