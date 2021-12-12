@@ -716,6 +716,10 @@ hm.UserData.ui.savedCoding = coding;
 updateMainButtonStates(hm);
 end
 
+function bits = getCodeBits(code)
+bits = fliplr(rem(floor(code*pow2(1-16:0)),2)); % up to 16 codes
+end
+
 function updateMainButtonStates(hm)
 % save button
 if isfield(hm.UserData.ui,'savedCoding')
@@ -1106,8 +1110,8 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
                 % selected event in middle of coded stream, remove whole
                 % event
                 % check flanking events to see what action to take
-                evt1Bits = fliplr(rem(floor(hm.UserData.coding.type{stream}(idx-1)*pow2(1-8:0)),2));
-                evt2Bits = fliplr(rem(floor(hm.UserData.coding.type{stream}(idx+1)*pow2(1-8:0)),2));
+                evt1Bits = getCodeBits(hm.UserData.coding.type{stream}(idx-1));
+                evt2Bits = getCodeBits(hm.UserData.coding.type{stream}(idx+1));
                 if find(evt1Bits,1)==find(evt2Bits,1)   % check if first bits equal: ignore flags
                     % equal events on both sides: merge by removing both
                     % markers and two event type indicators. Flags of left
@@ -1378,7 +1382,7 @@ else
     % now set colors and alpha per element
     for c=1:length(types)
         % for color, get first set bit (flags are highest bits)
-        bits    = fliplr(rem(floor(types(c)*pow2(1-8:0)),2));
+        bits    = getCodeBits(types(c));
         clrIdx  = find(bits,1);
         if isempty(hm.UserData.coding.codeColors{stream}{clrIdx})
             alphas(c) = 0;
