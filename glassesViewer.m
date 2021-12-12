@@ -681,10 +681,15 @@ createSettings(hm);
 
 % save coding data button
 if hm.UserData.coding.hasCoding
+    % save coding to matlab
     butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2) 100 30];
     hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
     hm.UserData.ui.savedCoding = [];
     saveCodingData(hm); % save starting point
+    
+    % save coding to xls
+    butPos = [butPos(1) sum(butPos([2 4]))+10 100 30];
+    hm.UserData.ui.saveCodingDataXLSButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding to xls','Tag','saveCodingDataXLSButton','Callback',@(~,~,~) saveCodingDataXLS(hm));
 end
 
 
@@ -714,6 +719,36 @@ save(fullfile(hm.UserData.fileDir,fname),'-struct', 'coding');
 % by user
 hm.UserData.ui.savedCoding = coding;
 updateMainButtonStates(hm);
+end
+
+function saveCodingDataXLS(hm)
+coding          = rmfield(hm.UserData.coding,'hasCoding');
+nStream         = length(coding.mark);
+for s=1:nStream
+    fname = makeValidFilename(sprintf('coding_%s.xls',coding.stream.lbls{s}));
+    fid = fopen(fullfile(hm.UserData.fileDir,fname),'wt');
+    fprintf(fid,'index\tcategory\tstart_time\tend_time\n');
+    % make labels
+    catNames= coding.codeCats{s}(:,1);
+    for c=1:size(catNames,1)
+        catNames{c}(catNames{c}=='*'|catNames{c}=='+') = [];
+    end
+    % run through codings, store to file
+    for c=1:length(coding.type{s})
+        bits  = find(getCodeBits(coding.type{s}(c)));
+        times = coding.mark{s}(c:c+1);
+        for b=1:length(bits)
+            fprintf(fid,'%d\t%s\t%.4f\t%.4f\n',c,catNames{bits(b)},times);
+        end
+    end
+    fclose(fid);
+end
+end
+
+function filename = makeValidFilename(filename)
+% just delete illegal characters (cross-platform set of illegal chars)
+illegal = [ '/', char(10), char(13), char(9), char(0), char(12), '`', '?', '*', '\', '<', '>', '|', '"', ':' ]; %#ok<CHARTEN>
+filename(ismember(filename,illegal)) = [];
 end
 
 function bits = getCodeBits(code)
