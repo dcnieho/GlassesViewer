@@ -4,6 +4,8 @@
 *.swp
 *.bak
 
+*.xls
+
 *.suo
 
 # build output
