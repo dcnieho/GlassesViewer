@@ -727,7 +727,7 @@ nStream         = length(coding.mark);
 for s=1:nStream
     fname = makeValidFilename(sprintf('coding_%s.xls',coding.stream.lbls{s}));
     fid = fopen(fullfile(hm.UserData.fileDir,fname),'wt');
-    fprintf(fid,'index\tcategory\tstart_time\tend_time\n');
+    fprintf(fid,'index\tcategory\tstart_time\tend_time\tcam_pos_x\tcam_pos_y\tleft_azi\tleft_ele\tright_azi\tright_ele\n');
     % make labels
     catNames= coding.codeCats{s}(:,1);
     for c=1:size(catNames,1)
@@ -737,8 +737,14 @@ for s=1:nStream
     for c=1:length(coding.type{s})
         bits  = find(getCodeBits(coding.type{s}(c)));
         times = coding.mark{s}(c:c+1);
+        qDat  = hm.UserData.data.eye.binocular.ts>=times(1) & hm.UserData.data.eye.binocular.ts<=times(2);
+        camPos= mean(hm.UserData.data.eye.binocular.gp(qDat,:),1,'omitnan');
+        qDat  = hm.UserData.data.eye.     left.ts>=times(1) & hm.UserData.data.eye.     left.ts<=times(2);
+        oriL  = mean([hm.UserData.data.eye.     left.azi(qDat) hm.UserData.data.eye. left.ele(qDat)],1,'omitnan');
+        qDat  = hm.UserData.data.eye.    right.ts>=times(1) & hm.UserData.data.eye.    right.ts<=times(2);
+        oriR  = mean([hm.UserData.data.eye.    right.azi(qDat) hm.UserData.data.eye.right.ele(qDat)],1,'omitnan');
         for b=1:length(bits)
-            fprintf(fid,'%d\t%s\t%.4f\t%.4f\n',c,catNames{bits(b)},times);
+            fprintf(fid,'%d\t%s\t%.4f\t%.4f\t%.2f\t%.2f\t%.4f\t%.4f\t%.4f\t%.4f\n',c,catNames{bits(b)},times,camPos,oriL,oriR);
         end
     end
     fclose(fid);
