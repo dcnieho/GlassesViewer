@@ -82,7 +82,7 @@
           },
           {
             "name": "minfix",
-            "label": "minimum fixation duration (ms)",
+            "label": "minimum slow phase duration (ms)",
             "type": "double",
             "value": 60,
             "range": [ 0, 10000 ],
@@ -126,7 +126,7 @@
           },
           {
             "name": "minfix",
-            "label": "minimum fixation duration (ms)",
+            "label": "minimum slow phase duration (ms)",
             "type": "double",
             "value": 80,
             "range": [ 0, 10000 ],
