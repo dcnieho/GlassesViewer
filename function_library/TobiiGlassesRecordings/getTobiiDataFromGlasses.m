@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 11;
+fileVersion = 12;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
