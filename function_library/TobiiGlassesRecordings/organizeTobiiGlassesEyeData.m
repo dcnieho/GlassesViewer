@@ -95,15 +95,12 @@ end
 
 % for each binocular gidx, check whether monocular data for left and right
 % eye was available
-qLeftEye = monoc.pc.eye=='l';
-il = find( qLeftEye);
-ir = find(~qLeftEye);
 % check if we have monocular sample at all for each binocular
-[hasLeft ,ifl] = ismember(data.binocular.gidx,monoc.pc.gidx(il));
-[hasRight,ifr] = ismember(data.binocular.gidx,monoc.pc.gidx(ir));
+[hasLeft ,ifl] = ismember(data.binocular.gidx,data. left.gidx);
+[hasRight,ifr] = ismember(data.binocular.gidx,data.right.gidx);
 % for those for which we have a sample, check if there was gaze
-hasLeft  = hasLeft  & ~any(isnan(monoc.gd.gd(il(ifl),:)),2);
-hasRight = hasRight & ~any(isnan(monoc.gd.gd(ir(ifr),:)),2);
+hasLeft  = hasLeft  & ~any(isnan(data. left.gd(ifl,:)),2);
+hasRight = hasRight & ~any(isnan(data.right.gd(ifr,:)),2);
 % now count on how many monocular samples each binocular sample is based
 data.binocular.nEye = sum([hasLeft hasRight],2);
 
