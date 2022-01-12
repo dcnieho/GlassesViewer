@@ -397,16 +397,21 @@ if qGenCacheFile || qDEBUG
     
     % 14 add time information -- data interval to be used
     % use data from last start of video (scene or eye, whichever is later)
-    % to first end of video.
+    % to first end of video. To make sure we have data during the entire
+    % interval, these start and end times are adjusted such that startTime
+    % is the timestamp of the last sample before t=0 if there is no sample
+    % at t=0, and similarly endTime is adjusted to the timestamp of the
+    % first sample after t=end if there is no sample at t=end.
     % 14.1 start time: timestamps are already relative to last video start
     % time, so just get time of first sample at 0 or just before
-    data.time.startTime   = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
+    data.time.startTime = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
     % 14.2 end time
     if qHasEyeVideo
-        data.time.endTime = min([data.video.scene.fts(end) data.video.eye.fts(end)]);
+        te = min([data.video.scene.fts(end) data.video.eye.fts(end)]);
     else
-        data.time.endTime = data.video.scene.fts(end);
+        te = data.video.scene.fts(end);
     end
+    data.time.endTime   = data.eye.left.ts(find(data.eye.left.ts>=te,1));
     
     % 15 read scene camera calibration info from tslv file
     tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera',true);
