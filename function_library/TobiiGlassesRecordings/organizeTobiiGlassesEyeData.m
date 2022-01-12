@@ -4,12 +4,24 @@ function data = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3)
 % gd : gaze direction (per eye)
 % gp : gaze position on scene video (binocular)
 % gp3: gaze convergence position in 3D space (binocular)
-assert(  all(ismember( gp.ts,pc.ts))) % binocular signal should not contain timestamps not in the monocular data, as need data from at least one eye for a binocular signal to be ejected
+
+% binocular signal should not contain timestamps not in the monocular data, as need data from at least one eye for a binocular signal to be ejected
+[qFound,iBinTs] = ismember( gp.ts,pc.ts);
+if ~all(qFound)
+    % i've seen recordings where ts from one of the eyes is a little off
+    % from the binocular (4-5 microseconds). Do further check thats the
+    % case here and not some bigger problem: max 100 microseconds allowed
+    % (arbitrary)
+    i = find(iBinTs==0);
+    for p=1:length(i)
+        assert(min(abs(pc.ts-gp.ts(i(p)))))
+    end
+end
 assert(isempty(setxor(gp3.ts,gp.ts))) % both binocular channels should contain the same timestamps
 assert(isempty(setxor( pd.ts,pc.ts))) % monocular channels should contain the same timestamps
 assert(isempty(setxor( gd.ts,pc.ts))) % monocular channels should contain the same timestamps
 
-gidx = unique(pc.gidx);
+gidx            = unique(pc.gidx);
 data.left       = struct('gidx',gidx);
 data.right      = struct('gidx',gidx);
 data.binocular  = struct('gidx',gidx);
