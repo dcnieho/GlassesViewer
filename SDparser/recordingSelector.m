@@ -35,6 +35,7 @@ if exist(fullfile(projectfolder,'lookup.xls'),'file')
     data.uProjDate = data.ProjDate(i);
     data.uProjLabel= cellfun(@(x,y) [x ', created: ' y],data.uProjName,data.uProjDate,'uni',false);
     set(f,'userdata',data);
+    qOnlyOneProject = isscalar(data.uProjID);
 else
     disp('No lookup table available for this projects folder');
     return
@@ -74,6 +75,13 @@ movegui(f,'center');
 data.recfolder = '';
 set(f,'userdata',data);
 recfolder =[];
+
+if qOnlyOneProject
+    % only one project available, preselect
+    set(data.popupProj,'Value',2);
+    changeProj(data.popupProj,[]);
+end
+
 waitfor(f);
 
     function changeProj(src,~)
