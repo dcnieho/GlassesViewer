@@ -110,6 +110,12 @@ waitfor(f);
         set(data.pProj,'BackgroundColor',[0.5 1 0.5]);
         
         set(hf,'userdata',data);
+        
+        if sum(index) == 1
+            % only one participant available, preselect
+            set(data.popupPart,'Value',2);
+            changePart(data.popupPart,[]);
+        end
     end
 
     function changePart(src,~)
@@ -153,7 +159,6 @@ waitfor(f);
         
         if sum(index) == 1
             % only one recording available, preselect
-            set(data.pRec,'BackgroundColor',[0.5 1 0.5]);
             set(data.popupRec,'Value',2);
             changeRec(data.popupRec,[]);
         end
