@@ -1,4 +1,4 @@
-function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
+function data = checkMissingFrames(data, toleranceRatio, reportThresholdSec)
 %CHECKMISSINGFRAMES looks for missing frames in the eye and scene video
 %   This function first tries to estimate the intersample period for the
 %   video using the median of intersample differences. It then searches for
@@ -7,15 +7,15 @@ function checkMissingFrames(data, toleranceRatio, reportThresholdSec)
 %   b) data for faulty periods >= reportThresholdSec (given in seconds)
 
 
-if isfield(data.video,'eye')
-    checkMissingFramesImpl(data.video.eye.fts, 'eye', toleranceRatio, reportThresholdSec);
+if isfield(data,'eye')
+    data.eye.missProp = checkMissingFramesImpl(data.eye.fts, 'eye', toleranceRatio, reportThresholdSec);
 end
-checkMissingFramesImpl(data.video.scene.fts, 'scene', toleranceRatio, reportThresholdSec);
+data.scene.missProp = checkMissingFramesImpl(data.scene.fts, 'scene', toleranceRatio, reportThresholdSec);
 
 
 
 
-function checkMissingFramesImpl(ts, id, toleranceRatio, reportThresholdSec)
+function missProp = checkMissingFramesImpl(ts, id, toleranceRatio, reportThresholdSec)
 %toleranceRatio = 0.05;
 %reportThresholdMs = 0.1;
 
@@ -26,7 +26,8 @@ faulty = dt > ifp + tolerance | dt < ifp - tolerance;
 dtFaulty = dt(faulty);
 totalFaulty = sum(dtFaulty);
 totalVideo = ts(end) - ts(1);
-percFaulty = 100 * totalFaulty / totalVideo;
+missProp   = totalFaulty / totalVideo;
+percFaulty = 100 * missProp;
 if totalFaulty > 0
     warning('Missing %.2f/%.2f seconds of the %s video (%.2f%%)\n', ...
         totalFaulty, totalVideo, id, percFaulty);

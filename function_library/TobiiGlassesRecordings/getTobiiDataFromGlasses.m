@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 12;
+fileVersion = 13;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -390,12 +390,15 @@ if qGenCacheFile || qDEBUG
         data.video.(field) = rmfield(data.video.(field),'sync');
     end
     
-    % 13 scale binocular gaze point on video data to pixels
+    % 13 check video file quality
+    data.video = checkMissingFrames(data.video, 0.05, 0.1);
+    
+    % 14 scale binocular gaze point on video data to pixels
     % we can do so now that we know how big the scene video is
     data.eye.binocular.gp(:,1) = data.eye.binocular.gp(:,1)*data.video.scene.width;
     data.eye.binocular.gp(:,2) = data.eye.binocular.gp(:,2)*data.video.scene.height;
     
-    % 14 add time information -- data interval to be used
+    % 15 add time information -- data interval to be used
     % use data from last start of video (scene or eye, whichever is later)
     % to first end of video. To make sure we have data during the entire
     % interval, these start and end times are adjusted such that startTime
@@ -413,7 +416,7 @@ if qGenCacheFile || qDEBUG
     end
     data.time.endTime   = data.eye.left.ts(find(data.eye.left.ts>=te,1));
     
-    % 15 read scene camera calibration info from tslv file
+    % 16 read scene camera calibration info from tslv file
     tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera',true);
     idxs = find(strcmp(tslv(:,2),'camera'));
     if isempty(idxs)
@@ -424,7 +427,7 @@ if qGenCacheFile || qDEBUG
         data.video.scene.calibration = rmfield(tslv{idxs,3},'status');  % remove status field, 0==ok is unimportant info for user
     end
     
-    % 16 store to cache file
+    % 17 store to cache file
     if isfield(participant.pa_info,'Name')
         data.subjName = participant.pa_info.Name;
     else
@@ -440,5 +443,3 @@ if qGenCacheFile || qDEBUG
 else
     data = load(fullfile(recordingDir,'livedata.mat'));
 end
-
-checkMissingFrames(data, 0.05, 0.1);
