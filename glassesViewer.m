@@ -33,7 +33,7 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 
 % select either the folder of a specific recording to open, or the projects
 % directory copied from the SD card itself. So, if "projects" is the
-% project folder on the SD card, there are two places that you can point
+% project folder on the SD card, there are three places that you can point
 % the software to:
 % 1. the projects folder itself
 % 2. the folder of a specific project. An example of a specific project is:
@@ -48,7 +48,7 @@ else
     % for easy use, hardcode a folder. 
     mydir       = fileparts(mfilename('fullpath'));
     if 1
-        % example of where project directory is selected, shows recording
+        % example of where projects directory is selected, shows recording
         % selector
         selectedDir = fullfile(mydir,'demo_data','projects');
     elseif 0
