@@ -278,11 +278,11 @@ if qGenCacheFile || qDEBUG
     
     % 8 add video sync data to output file
     assert(issorted( vts.ts,'monotonic'))
-    assert(isscalar(unique(vts.ts-vts.vts)))    % this is an assumption of the fts calculation code below
+    assert(numel(unique(vts.ts-vts.vts))==length(segments))    % this is an assumption of the fts calculation code below
     data.video.scene.sync   =  vts;
     if qHasEyeVideo
         assert(issorted(evts.ts,'monotonic'))
-        assert(isscalar(unique(evts.ts-evts.evts)))     % this is an assumption of the fts calculation code below
+        assert(numel(unique(evts.ts-evts.evts))==length(segments))     % this is an assumption of the fts calculation code below
         data.video.eye.sync     = evts;
     end
     clear vts evts
