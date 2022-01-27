@@ -1,14 +1,25 @@
-function success = G2ProjectParser(projectfolder,dontFailOnLockedFile)
+function [success,qIsSpecificProject] = G2ProjectParser(projectfolder,dontFailOnLockedFile)
 % function to read in relevant JSON files of a Tobii Projects folder and
 % create a human-readable lookup table in the project folder that can then
 % be used by recordingSelector, which selects a recording for the
 % glassesViewer or GazeCode
+%
+% can also be passed a specific project's folder, in which case it will
+% list all the recordings belonging to the project.
 
 if nargin<2 || isempty(dontFailOnLockedFile)
     dontFailOnLockedFile = false;
 end
 
-[projects, nproj] = FolderFromFolder(projectfolder);
+qIsSpecificProject = exist(fullfile(projectfolder,'recordings'),'dir') && exist(fullfile(projectfolder,'project.json'),'file');
+storeFolder = projectfolder;
+if qIsSpecificProject
+    [projects.folder,projects.name] = fileparts(projectfolder);
+    projectfolder = projects.folder;
+    nproj = 1;
+else
+    [projects, nproj] = FolderFromFolder(projectfolder);
+end
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -142,7 +153,7 @@ for p = 1:nproj
         end
         
         if isempty(fid)
-            lookupFile = fullfile(projectfolder,'lookup.xls');
+            lookupFile = fullfile(storeFolder,'lookup.xls');
             fid = fopen(lookupFile,'wt');
             if fid==-1
                 if dontFailOnLockedFile && ~~exist(lookupFile,'file')

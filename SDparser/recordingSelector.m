@@ -211,7 +211,13 @@ waitfor(f);
         end
         
         set(data.pRec,'BackgroundColor',[0.5 1 0.5]);
-        data.recfolder = fullfile(data.projfolder,data.ProjID{index},'recordings',data.RecID{index});
+        temprecfolder = fullfile(data.projfolder,data.ProjID{index},'recordings',data.RecID{index});
+        if exist(temprecfolder,'dir')~=7
+            % data.projfolder might be a specific project's folder, retry
+            % with that
+            temprecfolder = fullfile(data.projfolder,'recordings',data.RecID{index});
+        end
+        data.recfolder = temprecfolder;
         set(hf,'userdata',data)
     end
 

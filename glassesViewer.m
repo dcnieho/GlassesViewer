@@ -36,12 +36,14 @@ addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'
 % project folder on the SD card, there are two places that you can point
 % the software to:
 % 1. the projects folder itself
-% 2. the folder of a specific recording. An example of a specific recording
+% 2. the folder of a specific project. An example of a specific project is:
+%    projects\raoscyb.
+% 3. the folder of a specific recording. An example of a specific recording
 %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
 %    folders are not needed when opening a recording, so you can just copy
 %    the "gzz7stc" of this example somewhere and open it in isolation.
 if 1
-    selectedDir = uigetdir('','Select projects or recording folder');
+    selectedDir = uigetdir('','Select projects, project or recording folder');
 else
     % for easy use, hardcode a folder. 
     mydir       = fileparts(mfilename('fullpath'));
@@ -49,6 +51,10 @@ else
         % example of where project directory is selected, shows recording
         % selector
         selectedDir = fullfile(mydir,'demo_data','projects');
+    elseif 0
+        % example of where directory of a specific project is selected,
+        % shows recording selector
+        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb');
     else
         % example of where a recording is directly selected
         selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
