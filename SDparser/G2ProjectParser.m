@@ -65,7 +65,7 @@ for p = 1:nproj
     [recs(1:length(recmappen)).recID] = recmappen.name;
     for q=1:length(recs)
         [...
-            recs(q).recName,recs(q).recStartT,recs(q).recNotes,...
+            recs(q).recName,recs(q).recStartT,recs(q).durationSecs,recs(q).recNotes,...
             recs(q).partID,recs(q).partName,recs(q).partNotes,...
             recs(q).calID,recs(q).calStatus,...
             recs(q).sysFWVersion,recs(q).sysHUSerial,recs(q).sysRUSerial,recs(q).sysEyeCamSetting,recs(q).sysSceneCamSetting...
@@ -86,6 +86,9 @@ for p = 1:nproj
         end
         if isfield(recjson,'rec_created')
             recs(q).recStartT = datenum(recjson.rec_created,'yyyy-mm-ddTHH:MM:SS');
+        end
+        if isfield(recjson,'rec_length')
+            recs(q).durationSecs = recjson.rec_length;
         end
         
         % get participant info
@@ -150,11 +153,11 @@ for p = 1:nproj
                     error('Could not open the lookup.xls file for writing. Full filename: ''%s''',lookupFile);
                 end
             end
-            fprintf(fid,'ProjectID\tParticipantID\tRecordingID\tCalibrationID\tProjectName\tProjectCreateTime\tParticipantName\tParticipantNotes\tRecordingName\tRecordingStartTime\tRecordingNotes\tCalibrationStatus\tFirmwareVersion\tHeadUnitSerial\tRecordingUnitSerial\tEyeCameraSetting\tSceneCameraSetting\n');
+            fprintf(fid,'ProjectID\tParticipantID\tRecordingID\tCalibrationID\tProjectName\tProjectCreateTime\tParticipantName\tParticipantNotes\tRecordingName\tRecordingStartTime\tRecordingDurationSecs\tRecordingNotes\tCalibrationStatus\tFirmwareVersion\tHeadUnitSerial\tRecordingUnitSerial\tEyeCameraSetting\tSceneCameraSetting\n');
         end
         
-        fmt = repmat('%s\t',1,17); fmt(end) = 'n';
-        fprintf(fid,fmt,projects(p).ID,recs(q).partID,recs(q).recID,recs(q).calID,projects(p).name,datestr(projects(p).createdate,'yyyy-mm-dd HH:MM:SS'),recs(q).partName,recs(q).partNotes,recs(q).recName,datestr(recs(q).recStartT,'yyyy-mm-dd HH:MM:SS'),recs(q).recNotes,recs(q).calStatus,recs(q).sysFWVersion,recs(q).sysHUSerial,recs(q).sysRUSerial,recs(q).sysEyeCamSetting,recs(q).sysSceneCamSetting);
+        fmt = repmat('%s\t',1,18); fmt(end) = 'n';
+        fprintf(fid,fmt,projects(p).ID,recs(q).partID,recs(q).recID,recs(q).calID,projects(p).name,datestr(projects(p).createdate,'yyyy-mm-dd HH:MM:SS'),recs(q).partName,recs(q).partNotes,recs(q).recName,datestr(recs(q).recStartT,'yyyy-mm-dd HH:MM:SS'),sprintf('%.0f',recs(q).durationSecs),recs(q).recNotes,recs(q).calStatus,recs(q).sysFWVersion,recs(q).sysHUSerial,recs(q).sysRUSerial,recs(q).sysEyeCamSetting,recs(q).sysSceneCamSetting);
     end
 end
 success = ~isempty(fid);

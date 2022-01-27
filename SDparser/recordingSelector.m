@@ -13,7 +13,7 @@ set(f,'Units','pixels');
 if exist(fullfile(projectfolder,'lookup.xls'),'file')
     fid = fopen(fullfile(projectfolder,'lookup.xls'));
     fgetl(fid);
-    C = textscan(fid,repmat('%s',1,17),'delimiter','\t');
+    C = textscan(fid,repmat('%s',1,18),'delimiter','\t');
     fclose(fid);
     
     data.ProjID = C{1};
@@ -26,9 +26,10 @@ if exist(fullfile(projectfolder,'lookup.xls'),'file')
     data.RecID = C{3};
     data.RecName = C{9};
     data.RecDate = C{10};
+    data.RecDur = C{11};
     
     data.CalID = C{4};
-    data.CalStatus = C{12};
+    data.CalStatus = C{13};
     
     [data.uProjID,i] = unique(data.ProjID);
     data.uProjName = data.ProjName(i);
@@ -154,7 +155,8 @@ waitfor(f);
         
         data.uRecName = data.RecName(index);
         data.uRecDate = data.RecDate(index);
-        data.uRecLabel= cellfun(@(x,y) [x ', recorded: ' y],data.uRecName,data.uRecDate,'uni',false);
+        data.uRecDur  = data.RecDur(index);
+        data.uRecLabel= cellfun(@(x,y,z) [x ', recorded: ' y ', duration: ' z ' (s)'],data.uRecName,data.uRecDate,data.uRecDur,'uni',false);
         
         set(data.popupRec,'String',[{'<select recording>'}; data.uRecLabel]);
         set(data.popupRec,'Value',1);
