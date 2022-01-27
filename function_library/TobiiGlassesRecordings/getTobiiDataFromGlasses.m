@@ -442,4 +442,6 @@ if qGenCacheFile || qDEBUG
     save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
 else
     data = load(fullfile(recordingDir,'livedata.mat'));
+    % still output warning messages about holes in video, if any
+    checkMissingFrames(data.video, 0.05, 0.1);
 end
