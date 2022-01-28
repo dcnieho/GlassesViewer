@@ -17,10 +17,11 @@ else
     error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
 end
 
-qGenCacheFile = ~exist(fullfile(recordingDir,'livedata.mat'),'file');
+cacheFile = fullfile(recordingDir,'livedata.mat');
+qGenCacheFile = ~exist(cacheFile,'file');
 if ~qGenCacheFile
     % we have a cache file, check its file version
-    cache = load(fullfile(recordingDir,'livedata.mat'),'fileVersion');
+    cache = load(cacheFile,'fileVersion');
     qGenCacheFile = cache.fileVersion~=fileVersion;
 end
 
@@ -444,9 +445,10 @@ if qGenCacheFile || qDEBUG
         data.recName = recording.rec_info.name;
     end
     data.fileVersion = fileVersion;
-    save(fullfile(recordingDir,'livedata.mat'),'-struct','data');
+    save(cacheFile,'-struct','data');
 else
-    data = load(fullfile(recordingDir,'livedata.mat'));
+    fprintf('loading: %s\n',cacheFile);
+    data = load(cacheFile);
     % still output warning messages about holes in video, if any
     checkMissingFrames(data.video, 0.05, 0.1);
 end
