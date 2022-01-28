@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 13;
+fileVersion = 14;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -404,7 +404,8 @@ if qGenCacheFile || qDEBUG
     % interval, these start and end times are adjusted such that startTime
     % is the timestamp of the last sample before t=0 if there is no sample
     % at t=0, and similarly endTime is adjusted to the timestamp of the
-    % first sample after t=end if there is no sample at t=end.
+    % first sample after t=end if there is no sample at t=end. If data ends
+    % before end of any video, endTime is end of data.
     % 14.1 start time: timestamps are already relative to last video start
     % time, so just get time of first sample at 0 or just before
     data.time.startTime = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
@@ -415,6 +416,10 @@ if qGenCacheFile || qDEBUG
         te = data.video.scene.fts(end);
     end
     data.time.endTime   = data.eye.left.ts(find(data.eye.left.ts>=te,1));
+    if isempty(data.time.endTime)
+        % if video continues after end of data, take data end as end time
+        data.time.endTime = data.eye.left.ts(end);
+    end
     
     % 16 read scene camera calibration info from tslv file
     tslv = readTSLV(fullfile(recordingDir,'segments',segments(s).name,'et.tslv.gz'),'camera',true);
