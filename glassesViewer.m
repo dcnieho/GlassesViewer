@@ -2100,15 +2100,17 @@ for s=1:nStream
     q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels);
     temp(q) = arrayfun(@(x) [x.PreferredSize.width x.PreferredSize.height]./hm.UserData.ui.DPIScale,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(q),'uni',false);
     lblSzs(q,:) = cat(1,temp{:});
-    lblPad  = lbl.Position(4)-lblSzs(find(q,1),2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
+    lblPad  = hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(find(q,1)).Position(4)-lblSzs(find(q,1),2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
     lblFull = lblSzs;
     lblFull(q,:) = ceil(lblSzs(q,:)+lblPad);
+    clear temp
     % get size of range labels if any
     lblRSzs = zeros(size(lblSzs));
     q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR);
     temp(q) = arrayfun(@(x) x.Extent(3),hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(q),'uni',false);
     lblRSzs(q,1) = ceil(cat(1,temp{:})+4);
     lblRSzs(q,2) = lblFull(1,2);    % same height for these labels
+    clear temp
     
     % layout the panel
     marginsH = [4 8];
