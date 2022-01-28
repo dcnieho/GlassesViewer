@@ -1945,13 +1945,16 @@ end
 
 function resetClassifierParameters(hm,idx,params)
 for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
-    info = sscanf(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dSpinner');
-    if strcmpi(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID,'CheckBoxUI')
-        % checkbox
-        hm.UserData.ui.coding.classifierPopup.setting(1).uiEditor(2).JavaPeer.setSelected(params{info(3)}.value);
-    else
-        % spinner
-        hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+    info = sscanf(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dControl');
+    switch hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID
+        case 'CheckBoxUI'
+            % checkbox
+            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).JavaPeer.setSelected(params{info(3)}.value);
+        case 'SpinnerUI'
+            % spinner
+            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+        otherwise
+            error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID)
     end
 end
 end
@@ -2022,7 +2025,7 @@ for s=1:nStream
         % spinner/checkbox
         param = params{iParam(p)};
         type  = lower(param.type);
-        tag   = sprintf('Stream%dSetting%dParam%dSpinner',iStream(s),s,iParam(p));
+        tag   = sprintf('Stream%dSetting%dParam%dControl',iStream(s),s,iParam(p));
         switch type
             case {'double','int'}
                 granularity = param.granularity;
@@ -2072,6 +2075,8 @@ for s=1:nStream
                 comp.StateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
                 lbl         = gobjects(1);
                 lblRange    = gobjects(1);
+            otherwise
+                error('classifier settings type ''%s'' not understood',type)
         end
          
         % store
@@ -2157,16 +2162,19 @@ end
 
 function changeClassifierParamCallback(hm,hndl,~)
 % get new value
-if strcmpi(hndl.UIClassID,'CheckBoxUI')
-    % checkbox
-    newVal = ~~hndl.Selected;
-else
-    % spinner
-    newVal = hndl.getValue;
+switch hndl.UIClassID
+    case 'CheckBoxUI'
+        % checkbox
+        newVal = ~~hndl.Selected;
+    case 'SpinnerUI'
+        % spinner
+        newVal = hndl.getValue();
+    otherwise
+        error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID)
 end
 
 % set in temp parameter store
-info = sscanf(hndl.MatlabHGContainer.Tag,'Stream%dSetting%dParam%dSpinner');
+info = sscanf(hndl.MatlabHGContainer.Tag,'Stream%dSetting%dParam%dControl');
 hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams{info(3)}.value = newVal;
 
 % update buttons
