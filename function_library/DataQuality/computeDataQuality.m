@@ -20,18 +20,18 @@ if qGenCacheFile
     windowLengthSamp = round(windowLengthMs/1000*data.eye.fs);
     
     % RMS noise
-    RMSeleL = computeRMSnoise(data.eye.left.ele,windowLengthSamp);
-    RMSaziL = computeRMSnoise(data.eye.left.azi,windowLengthSamp);
-    RMSeleR = computeRMSnoise(data.eye.right.ele,windowLengthSamp);
-    RMSaziR = computeRMSnoise(data.eye.right.azi,windowLengthSamp);
-    RMSbgpX = computeRMSnoise(data.eye.binocular.gp(:,1),windowLengthSamp);
-    RMSbgpY = computeRMSnoise(data.eye.binocular.gp(:,2),windowLengthSamp);
+    RMSeleL = computeRMSnoise(data.eye. left.ele, windowLengthSamp);
+    RMSaziL = computeRMSnoise(data.eye. left.azi, windowLengthSamp);
+    RMSeleR = computeRMSnoise(data.eye.right.ele, windowLengthSamp);
+    RMSaziR = computeRMSnoise(data.eye.right.azi, windowLengthSamp);
+    RMSbgpX = computeRMSnoise(data.eye.binocular.gp(:,1), windowLengthSamp);
+    RMSbgpY = computeRMSnoise(data.eye.binocular.gp(:,2), windowLengthSamp);
     
     % data loss
-    DLeleL = sum(isnan(data.eye.left.ele))/length(data.eye.left.ele);
-    DLaziL = sum(isnan(data.eye.left.azi))/length(data.eye.left.azi);
-    DLeleR = sum(isnan(data.eye.right.ele))/length(data.eye.right.ele);
+    DLaziL = sum(isnan(data.eye. left.azi))/length(data.eye. left.azi);
+    DLeleL = sum(isnan(data.eye. left.ele))/length(data.eye. left.ele);
     DLaziR = sum(isnan(data.eye.right.azi))/length(data.eye.right.azi);
+    DLeleR = sum(isnan(data.eye.right.ele))/length(data.eye.right.ele);
     DLbgpX = sum(isnan(data.eye.binocular.gp(:,1)))/size(data.eye.binocular.gp,1);
     DLbgpY = sum(isnan(data.eye.binocular.gp(:,2)))/size(data.eye.binocular.gp,1);
     
