@@ -1950,6 +1950,9 @@ for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
         case 'CheckBoxUI'
             % checkbox
             hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).JavaPeer.setSelected(params{info(3)}.value);
+        case 'ComboBoxUI'
+            % dropdown
+            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).JavaPeer.setSelectedItem(params{info(3)}.value);
         case 'SpinnerUI'
             % spinner
             hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
@@ -2075,6 +2078,20 @@ for s=1:nStream
                 comp.StateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
                 lbl         = gobjects(1);
                 lblRange    = gobjects(1);
+            case 'select'
+                % dropdown
+                jComboBox   = com.mathworks.mwswing.MJComboBox(param.values);
+                jComboBox.setToolTipText(param.name);
+                jComboBox.setSelectedItem(param.value);
+                comp        = uicomponent(jComboBox,'Parent',parent,'Units','pixels','Tag',tag);
+                comp.ItemStateChangedCallback = @(hndl,evt) changeClassifierParamCallback(hm,hndl,evt);
+                
+                % label name
+                jLabel = com.mathworks.mwswing.MJLabel(param.label);
+                jLabel.setLabelFor(comp.JavaComponent);
+                jLabel.setToolTipText(param.name);
+                lbl = uicomponent(jLabel,'Parent',parent,'Units','pixels','Tag',[tag 'Label']);
+                lblRange = gobjects(1);
             otherwise
                 error('classifier settings type ''%s'' not understood',type)
         end
@@ -2168,6 +2185,9 @@ switch hndl.UIClassID
     case 'CheckBoxUI'
         % checkbox
         newVal = ~~hndl.Selected;
+    case 'ComboBoxUI'
+        % dropdown
+        newVal = hndl.getSelectedItem();
     case 'SpinnerUI'
         % spinner
         newVal = hndl.getValue();
