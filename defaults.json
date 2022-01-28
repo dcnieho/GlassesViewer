@@ -150,6 +150,14 @@
             "range": [ 0, 36000000 ],
             "granularity": 1,
             "settable": true
+          },
+          {
+            "name": "signal",
+            "label": "which signal to run the classifier on",
+            "type": "select",
+            "value": "videoGaze",
+            "values": ["videoGaze", "leftVec", "rightVec"],
+            "settable": true
           }
         ],
         "categories": [ "none", 20, "slow", 4, "fast", 5 ]

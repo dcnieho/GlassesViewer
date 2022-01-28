@@ -11,8 +11,21 @@ function [smarks,type] = HesselsEtAl2020(tobiiData,params)
 time    = tobiiData.eye.binocular.ts*1000;  % this classifier wants time in ms
 
 %%%%% determine velocity
-vx      = HesselsEtAl2020_detvel(tobiiData.eye.binocular.gp(:,1),time);
-vy      = HesselsEtAl2020_detvel(tobiiData.eye.binocular.gp(:,2),time);
+switch params.signal
+    case 'videoGaze'
+        x = tobiiData.eye.binocular.gp(:,1);
+        y = tobiiData.eye.binocular.gp(:,2);
+    case 'leftVec'
+        x = tobiiData.eye.left.azi;
+        y = tobiiData.eye.left.ele;
+    case 'rightVec'
+        x = tobiiData.eye.right.azi;
+        y = tobiiData.eye.right.ele;
+    otherwise
+        error('signal type ''%s'' unknown',params.signal)
+end
+vx      = HesselsEtAl2020_detvel(x,time);
+vy      = HesselsEtAl2020_detvel(y,time);
 v       = hypot(vx,vy);
 
 % prep params
@@ -76,7 +89,7 @@ type    = repmat([2 4].',length(smarks)/2,1);
 % event start, remove an extra sample from end for check
 for e=1:length(imarks)-1
     idxs = imarks(e)+1:imarks(e+1)-2;
-    if sum(isnan(tobiiData.eye.binocular.gp(idxs,1)))>length(idxs)*.5
+    if sum(isnan(x(idxs)))>length(idxs)*.5
         type(e) = 1;
     end
 end
