@@ -200,150 +200,102 @@ hm.UserData.plot.ax = gobjects(1,nPanel);
 hm.UserData.plot.defaultValueScale = zeros(2,nPanel);
 commonPropAxes = {'XGrid','on','GridLineStyle','-','NextPlot','add','Parent',hm,'XTickLabel',{},'Units','pixels','XLim',[0 hm.UserData.settings.plot.timeWindow],'Layer','top'};
 commonPropPlot = {'HitTest','off','LineWidth',hm.UserData.settings.plot.lineWidth};
+clrs.lr  = {[1 0 0],[0 0 1]};
+clrs.xyz = {[233 105 12]/255, [193 89 255]/255, [164 191 6]/255};
 for a=1:nPanel
-    switch panels{a}
-        case 'azi' % azimuth
-            hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.aziLim.*[-1 1]];
-            tag = 'azi';
-            if isfield(hm.UserData.settings.plot.panelNames,'azi')
-                lbl = hm.UserData.settings.plot.panelNames.azi;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
-            hm.UserData.plot.ax(a).YDir = 'reverse';    % left is up in plot, right is down in plot
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.azi,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
-            plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.azi,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
-        case 'ele'  % elevation
-            hm.UserData.plot.defaultValueScale(:,a) = [hm.UserData.settings.plot.eleLim.*[-1 1]];
-            tag = 'ele';
-            if isfield(hm.UserData.settings.plot.panelNames,'ele')
-                lbl = hm.UserData.settings.plot.panelNames.ele;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg)',lbl);
-            hm.UserData.plot.ax(a).YDir = 'reverse';    % so that left in plot is up, and right in plot is down
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.ele,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
-            plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.ele,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
-        case 'videoGaze'    % gaze point video
-            hm.UserData.plot.defaultValueScale(:,a) = [0 max([hm.UserData.data.video.scene.width hm.UserData.data.video.scene.height])];
-            tag = 'videoGaze';
-            if isfield(hm.UserData.settings.plot.panelNames,'videoGaze')
-                lbl = hm.UserData.settings.plot.panelNames.videoGaze;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (pix)',lbl);
-            hm.UserData.plot.ax(a).YDir = 'reverse';    % to be consistent with azi and ele
-            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|X',commonPropPlot{:});
-            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|Y',commonPropPlot{:});
-        case 'gazePoint3D'  % 3D gaze point (intersection of gaze vectors)
-            hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.binocular.gp3(:)),-hm.UserData.settings.plot.gazePoint3DLim) min(nanmax(hm.UserData.data.eye.binocular.gp3(:)),hm.UserData.settings.plot.gazePoint3DLim)];
-            tag = 'gazePoint3D';
-            if isfield(hm.UserData.settings.plot.panelNames,'gazePoint3D')
-                lbl = hm.UserData.settings.plot.panelNames.gazePoint3D;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
-            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
-            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
-            plot(hm.UserData.data.eye.binocular.ts,hm.UserData.data.eye.binocular.gp3(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
-        case 'vel'  % velocity
-            hm.UserData.settings.plot.SGWindowVelocity = max(2,round(hm.UserData.settings.plot.SGWindowVelocity/1000*hm.UserData.data.eye.fs))*1000/hm.UserData.data.eye.fs;    % min SG window is 2*sample duration
-            velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
-            velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
-            hm.UserData.plot.defaultValueScale(:,a) = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
-            tag = 'vel';
-            if isfield(hm.UserData.settings.plot.panelNames,'vel')
-                lbl = hm.UserData.settings.plot.panelNames.vel;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
-            plot(hm.UserData.data.eye. left.ts,velL,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
-            plot(hm.UserData.data.eye.right.ts,velR,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
-        case 'pup'  % pupil
-            hm.UserData.plot.defaultValueScale(:,a) = [0 nanmax([hm.UserData.data.eye.left.pd(:); hm.UserData.data.eye.right.pd(:)])];
-            tag = 'pup';
-            if isfield(hm.UserData.settings.plot.panelNames,'pup')
-                lbl = hm.UserData.settings.plot.panelNames.pup;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
-            plot(hm.UserData.data.eye. left.ts,hm.UserData.data.eye. left.pd,'Color',[1 0 0],'Parent',hm.UserData.plot.ax(a),'Tag','data|left',commonPropPlot{:});
-            plot(hm.UserData.data.eye.right.ts,hm.UserData.data.eye.right.pd,'Color',[0 0 1],'Parent',hm.UserData.plot.ax(a),'Tag','data|right',commonPropPlot{:});
-        case {'pupCentLeft','pupCentRight'}  % pupil center
-            if strcmp(panels{a},'pupCentLeft')
-                tag = 'pupCentLeft';
-                field = 'left';
-            else
-                tag = 'pupCentRight';
-                field = 'right';
-            end
-            if isfield(hm.UserData.settings.plot.panelNames,panels{a})
-                lbl = hm.UserData.settings.plot.panelNames.(panels{a});
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (mm)',lbl);
-            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
-            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
-            plot(hm.UserData.data.eye.(field).ts,hm.UserData.data.eye.(field).pc(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
-        case 'gyro' % gyroscope
-            hm.UserData.plot.defaultValueScale(:,a) = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
-            tag = 'gyro';
-            if isfield(hm.UserData.settings.plot.panelNames,'gyro')
-                lbl = hm.UserData.settings.plot.panelNames.gyro;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (deg/s)',lbl);
-            plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
-            plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
-            plot(hm.UserData.data.gyroscope.ts,hm.UserData.data.gyroscope.gy(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
-        case 'acc'  % accelerometer
-            ac = hm.UserData.data.accelerometer.ac;
-            if hm.UserData.settings.plot.removeAccDC
-                ac = ac-nanmean(ac,1);
-            end
-            hm.UserData.plot.defaultValueScale(:,a) = [nanmin(ac(:)) nanmax(ac(:))];
-            tag = 'acc';
-            if isfield(hm.UserData.settings.plot.panelNames,'acc')
-                lbl = hm.UserData.settings.plot.panelNames.acc;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl);
-            hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (m/s^2)',lbl);
-            plot(hm.UserData.data.accelerometer.ts,ac(:,1),'Color',[233 105  12]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|x',commonPropPlot{:});
-            plot(hm.UserData.data.accelerometer.ts,ac(:,2),'Color',[193  89 255]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|y',commonPropPlot{:});
-            plot(hm.UserData.data.accelerometer.ts,ac(:,3),'Color',[164 191   6]/255,'Parent',hm.UserData.plot.ax(a),'Tag','data|z',commonPropPlot{:});
-        case 'scarf'    % scarf plot special axis
-            hm.UserData.plot.defaultValueScale(:,a) = [.5 length(hm.UserData.coding.codeCats)+.5];
-            tag = 'scarf';
-            if isfield(hm.UserData.settings.plot.panelNames,'scarf')
-                lbl = hm.UserData.settings.plot.panelNames.scarf;
-            else
-                lbl = tag;
-            end
-            hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl,'YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
-            % for arrow indicating current stream
-            hm.UserData.plot.ax(a).YAxis.FontSize = 12;
-            hm.UserData.plot.ax(a).YAxis.TickLength(1) = 0;
-        otherwise
-            error('data panel type ''%s'' not understood',hm.UserData.settings.plot.initPanelOrder{a});
+    tag = panels{a};
+    if isfield(hm.UserData.settings.plot.panelNames,panels{a})
+        lbl = hm.UserData.settings.plot.panelNames.(panels{a});
+    else
+        lbl = tag;
+    end
+    if strcmp(panels{a},'scarf')
+        % scarf plot special axis
+        hm.UserData.plot.defaultValueScale(:,a) = [.5 length(hm.UserData.coding.codeCats)+.5];
+        hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',hm.UserData.plot.defaultValueScale(:,a),'Tag',tag,'UserData',lbl,'YTick',0,'YTickLabel','\color{red}\rightarrow','YDir','reverse');
+        % for arrow indicating current stream
+        hm.UserData.plot.ax(a).YAxis.FontSize = 12;
+        hm.UserData.plot.ax(a).YAxis.TickLength(1) = 0;
+    else
+        qReverseY = false;
+        switch panels{a}
+            case 'azi'
+                % azimuth
+                yLim = [hm.UserData.settings.plot.aziLim.*[-1 1]];
+                unit = 'deg';
+                qReverseY = true;   % left is up in plot, right is down in plot
+                pDat = {{hm.UserData.data.eye.left.ts , hm.UserData.data.eye.right.ts},
+                        {hm.UserData.data.eye.left.azi, hm.UserData.data.eye.right.azi}};
+                pType = 'lr';
+            case 'ele'
+                % elevation
+                yLim = [hm.UserData.settings.plot.eleLim.*[-1 1]];
+                unit = 'deg';
+                qReverseY = true;   % so that left in plot is up, and right in plot is down
+                pDat = {{hm.UserData.data.eye.left.ts , hm.UserData.data.eye.right.ts},
+                        {hm.UserData.data.eye.left.ele, hm.UserData.data.eye.right.ele}};
+                pType = 'lr';
+            case 'videoGaze'
+                % gaze point video
+                yLim = [0 max([hm.UserData.data.video.scene.width hm.UserData.data.video.scene.height])];
+                unit = 'pix';
+                qReverseY = true;   % to be consistent with azi and ele
+                pDat = {{hm.UserData.data.eye.binocular.ts}, num2cell(hm.UserData.data.eye.binocular.gp,1)};
+                pType = 'xyz';
+            case 'gazePoint3D'
+                % 3D gaze point (intersection of gaze vectors)
+                yLim = [max(nanmin(hm.UserData.data.eye.binocular.gp3(:)),-hm.UserData.settings.plot.gazePoint3DLim) min(nanmax(hm.UserData.data.eye.binocular.gp3(:)),hm.UserData.settings.plot.gazePoint3DLim)];
+                unit = 'mm';
+                pDat = {{hm.UserData.data.eye.binocular.ts}, num2cell(hm.UserData.data.eye.binocular.gp3,1)};
+                pType = 'xyz';
+            case 'vel'  % velocity
+                hm.UserData.settings.plot.SGWindowVelocity = max(2,round(hm.UserData.settings.plot.SGWindowVelocity/1000*hm.UserData.data.eye.fs))*1000/hm.UserData.data.eye.fs;    % min SG window is 2*sample duration
+                velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
+                velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
+                yLim = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
+                unit = 'deg/s';
+                pDat = {{hm.UserData.data.eye.left.ts, hm.UserData.data.eye.right.ts},
+                        {velL                        , velR}};
+                pType = 'lr';
+            case 'pup'  % pupil
+                yLim = [0 nanmax([hm.UserData.data.eye.left.pd(:); hm.UserData.data.eye.right.pd(:)])];
+                unit = 'mm';
+                pDat = {{hm.UserData.data.eye.left.ts, hm.UserData.data.eye.right.ts},
+                        {hm.UserData.data.eye.left.pd, hm.UserData.data.eye.right.pd}};
+                pType = 'lr';
+            case {'pupCentLeft','pupCentRight'}  % pupil center
+                field = lower(strrep(panels{a},'pupCent',''));
+                yLim = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
+                unit = 'mm';
+                pDat = {{hm.UserData.data.eye.(field).ts}, num2cell(hm.UserData.data.eye.(field).pc,1)};
+                pType = 'xyz';
+            case 'gyro' % gyroscope
+                yLim = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
+                unit = 'deg/s';
+                pDat = {{hm.UserData.data.gyroscope.ts}, num2cell(hm.UserData.data.gyroscope.gy,1)};
+                pType = 'xyz';
+            case 'acc'  % accelerometer
+                ac = hm.UserData.data.accelerometer.ac;
+                if hm.UserData.settings.plot.removeAccDC
+                    ac = ac-nanmean(ac,1);
+                end
+                yLim = [nanmin(ac(:)) nanmax(ac(:))];
+                unit = 'm/s^2';
+                pDat = {{hm.UserData.data.accelerometer.ts}, num2cell(ac,1)};
+                pType = 'xyz';
+            otherwise
+                error('data panel type ''%s'' not understood',hm.UserData.settings.plot.initPanelOrder{a});
+        end
+        
+        hm.UserData.plot.defaultValueScale(:,a) = yLim;
+        hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',yLim,'Tag',tag,'UserData',lbl);
+        hm.UserData.plot.ax(a).YLabel.String = sprintf('%s (%s)',lbl,unit);
+        if qReverseY
+            hm.UserData.plot.ax(a).YDir = 'reverse';
+        end
+        for p=1:length(pDat{2})
+            plot(pDat{1}{min(p,end)},pDat{2}{p},'Color',clrs.(pType){p},'Parent',hm.UserData.plot.ax(a),'Tag',['data|' pType(p)],commonPropPlot{:});
+        end
     end
 end
 % setup x axis of bottom plot
@@ -420,24 +372,17 @@ lcommon = {'Parent',hm.UserData.ui.signalLegend,'LineWidth',2};
 % text+line+line+text+line+line+line = 7 elements
 height     = diff(hm.UserData.ui.signalLegend.YLim);
 heightEach = height/6.6;
-width      = diff(hm.UserData.ui.signalLegend.XLim);
 % header
 text(.05,heightEach*.5,'legend','FontWeight','bold',tcommon{:});
-% left eye
-plot([.05 0.20],heightEach*1.5.*[1 1],'Color',[1 0 0],lcommon{:})
-text(.25,heightEach*1.5,'left',tcommon{:});
-% right eye
-plot([.05 0.20],heightEach*2.5.*[1 1],'Color',[0 0 1],lcommon{:})
-text(.25,heightEach*2.5,'right','VerticalAlignment','middle','Parent',hm.UserData.ui.signalLegend);
-% X
-plot([.05 0.20],heightEach*4.*[1 1],'Color',[233 105  12]/255,lcommon{:})
-text(.25,heightEach*4,'X',tcommon{:});
-% Y
-plot([.05 0.20],heightEach*5.*[1 1],'Color',[193  89 255]/255,lcommon{:})
-text(.25,heightEach*5,'Y',tcommon{:});
-% Z
-plot([.05 0.20],heightEach*6.*[1 1],'Color',[164 191   6]/255,lcommon{:})
-text(.25,heightEach*6,'Z',tcommon{:});
+lbls = {'left','right'};
+for p=1:2
+    plot([.05 0.20],heightEach*(.5+p).*[1 1],'Color',clrs.lr{p},lcommon{:})
+    text(.25,heightEach*(.5+p),lbls{p},tcommon{:});
+end
+for p=1:3
+    plot([.05 0.20],heightEach*(3+p).*[1 1],'Color',clrs.xyz{p},lcommon{:})
+    text(.25,heightEach*(3+p),char('W'+p),tcommon{:});
+end
 
 
 % settings button
@@ -2428,9 +2373,9 @@ if newVal~=hm.UserData.settings.plot.SGWindowVelocity
     
     % update plot
     ax = findobj(hm.UserData.plot.ax,'Tag','vel');
-    left  = findobj(ax.Children,'Tag','data|left');
+    left  = findobj(ax.Children,'Tag','data|l');
     left.YData = velL;
-    right = findobj(ax.Children,'Tag','data|right');
+    right = findobj(ax.Children,'Tag','data|r');
     right.YData = velR;
 end
 end
