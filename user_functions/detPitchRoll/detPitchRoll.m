@@ -1,4 +1,4 @@
-function [pitch, roll] = detPitchRoll(data, params)
+function [output] = detPitchRoll(data, params)
 
 % This script estimates roll and pitch angle for the accelerometer and 
 % gryoscope in the Tobii Glasses 2 based on 
@@ -102,7 +102,7 @@ end
 roll  = roll  * 180.0 / pi;
 pitch = pitch * 180.0 / pi;
 
-% add timestamps
-roll  = {newT, roll};
-pitch = {newT, pitch};
+% prep output, one matrix with rotation around Tobii's X (pitch), Y (yaw,
+% not available) and Z (roll)
+output = {newT.', [pitch.' nan(size(pitch)).' roll.']};
 

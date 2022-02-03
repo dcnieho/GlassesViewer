@@ -13,6 +13,5 @@ for p=1:length(userStreams)
     for q=1:length(userStreams(p).streams)
         data.user.(userStreams(p).streams{q}).ts   = outputs{q}{1};
         data.user.(userStreams(p).streams{q}).data = outputs{q}{2};
-        data.user.(userStreams(p).streams{q}).lbl  = userStreams(p).friendlyNames{q};
     end
 end

@@ -206,7 +206,7 @@ if isfield(hm.UserData.data,'user')
 end
 if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf panel is not in list of panels that can be shown, nor in user setup
     panels(strcmp(panels,'scarf')) = [];
-    hm.UserData.settings.plot.initPanelOrder(strcmp(hm.UserData.settings.plot.initPanelOrder,'scarf')) = [];
+    hm.UserData.settings.plot.panelOrder(strcmp(hm.UserData.settings.plot.panelOrder,'scarf')) = [];
 end
 setupPlots(hm,panels);
 
@@ -221,14 +221,10 @@ clrs.lr  = {[1 0 0],[0 0 1]};
 clrs.xyz = {[233 105 12]/255, [193 89 255]/255, [164 191 6]/255};
 for a=1:nPanel
     tag = panels{a};
-    if isUserStream(a)
-        lbl = hm.UserData.data.user.(tag).lbl;
+    if isfield(hm.UserData.settings.plot.streamNames,panels{a})
+        lbl = hm.UserData.settings.plot.streamNames.(panels{a});
     else
-        if isfield(hm.UserData.settings.plot.panelNames,panels{a})
-            lbl = hm.UserData.settings.plot.panelNames.(panels{a});
-        else
-            lbl = tag;
-        end
+        lbl = tag;
     end
     if strcmp(panels{a},'scarf')
         % scarf plot special axis
@@ -240,80 +236,48 @@ for a=1:nPanel
     else
         qReverseY = false;
         switch panels{a}
-            case 'azi'
-                % azimuth
-                yLim = [hm.UserData.settings.plot.aziLim.*[-1 1]];
-                unit = 'deg';
+            case 'azi'  % azimuth
                 qReverseY = true;   % left is up in plot, right is down in plot
                 pDat = {{hm.UserData.data.eye.left.ts , hm.UserData.data.eye.right.ts},
                         {hm.UserData.data.eye.left.azi, hm.UserData.data.eye.right.azi}};
-                pType = 'lr';
-            case 'ele'
-                % elevation
-                yLim = [hm.UserData.settings.plot.eleLim.*[-1 1]];
-                unit = 'deg';
+            case 'ele'  % elevation
                 qReverseY = true;   % so that left in plot is up, and right in plot is down
                 pDat = {{hm.UserData.data.eye.left.ts , hm.UserData.data.eye.right.ts},
                         {hm.UserData.data.eye.left.ele, hm.UserData.data.eye.right.ele}};
-                pType = 'lr';
-            case 'videoGaze'
-                % gaze point video
-                yLim = [0 max([hm.UserData.data.video.scene.width hm.UserData.data.video.scene.height])];
-                unit = 'pix';
+            case 'videoGaze'  % gaze point video
                 qReverseY = true;   % to be consistent with azi and ele
                 pDat = {{hm.UserData.data.eye.binocular.ts}, num2cell(hm.UserData.data.eye.binocular.gp,1)};
-                pType = 'xyz';
-            case 'gazePoint3D'
-                % 3D gaze point (intersection of gaze vectors)
-                yLim = [max(nanmin(hm.UserData.data.eye.binocular.gp3(:)),-hm.UserData.settings.plot.gazePoint3DLim) min(nanmax(hm.UserData.data.eye.binocular.gp3(:)),hm.UserData.settings.plot.gazePoint3DLim)];
-                unit = 'mm';
+            case 'gazePoint3D'  % 3D gaze point (intersection of gaze vectors)
                 pDat = {{hm.UserData.data.eye.binocular.ts}, num2cell(hm.UserData.data.eye.binocular.gp3,1)};
-                pType = 'xyz';
             case 'vel'  % velocity
                 hm.UserData.settings.plot.SGWindowVelocity = max(2,round(hm.UserData.settings.plot.SGWindowVelocity/1000*hm.UserData.data.eye.fs))*1000/hm.UserData.data.eye.fs;    % min SG window is 2*sample duration
                 velL = getVelocity(hm,hm.UserData.data.eye. left,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
                 velR = getVelocity(hm,hm.UserData.data.eye.right,hm.UserData.settings.plot.SGWindowVelocity,hm.UserData.data.eye.fs);
-                yLim = [0 min(nanmax([velL(:); velR(:)]),hm.UserData.settings.plot.velLim)];
-                unit = 'deg/s';
                 pDat = {{hm.UserData.data.eye.left.ts, hm.UserData.data.eye.right.ts},
                         {velL                        , velR}};
-                pType = 'lr';
             case 'pup'  % pupil
-                yLim = [0 nanmax([hm.UserData.data.eye.left.pd(:); hm.UserData.data.eye.right.pd(:)])];
-                unit = 'mm';
                 pDat = {{hm.UserData.data.eye.left.ts, hm.UserData.data.eye.right.ts},
                         {hm.UserData.data.eye.left.pd, hm.UserData.data.eye.right.pd}};
-                pType = 'lr';
             case {'pupCentLeft','pupCentRight'}  % pupil center
                 field = lower(strrep(panels{a},'pupCent',''));
-                yLim = [max(nanmin(hm.UserData.data.eye.(field).pc(:)),-hm.UserData.settings.plot.pupCentLim) min(nanmax(hm.UserData.data.eye.(field).pc(:)),hm.UserData.settings.plot.pupCentLim)];
-                unit = 'mm';
                 pDat = {{hm.UserData.data.eye.(field).ts}, num2cell(hm.UserData.data.eye.(field).pc,1)};
-                pType = 'xyz';
-            case 'gyro' % gyroscope
-                yLim = [max(nanmin(hm.UserData.data.gyroscope.gy(:)),-hm.UserData.settings.plot.gyroLim) min(nanmax(hm.UserData.data.gyroscope.gy(:)),hm.UserData.settings.plot.gyroLim)];
-                unit = 'deg/s';
+            case 'gyro'  % gyroscope
                 pDat = {{hm.UserData.data.gyroscope.ts}, num2cell(hm.UserData.data.gyroscope.gy,1)};
-                pType = 'xyz';
             case 'acc'  % accelerometer
                 ac = hm.UserData.data.accelerometer.ac;
                 if hm.UserData.settings.plot.removeAccDC
                     ac = ac-nanmean(ac,1);
                 end
-                yLim = [nanmin(ac(:)) nanmax(ac(:))];
-                unit = 'm/s^2';
                 pDat = {{hm.UserData.data.accelerometer.ts}, num2cell(ac,1)};
-                pType = 'xyz';
             otherwise
                 if isUserStream(a)
-                    pDat = {{hm.UserData.data.user.(tag).ts},{hm.UserData.data.user.(tag).data}};
-                    yLim = [nanmin(pDat{2}{1}) nanmax(pDat{2}{1})];
-                    unit = 'mm';
-                    pType = 'xyz';
+                    pDat = {{hm.UserData.data.user.(tag).ts}, num2cell(hm.UserData.data.user.(tag).data,1)};
                 else
                     error('data panel type ''%s'' not understood',tag);
                 end
         end
+        
+        [yLim,unit,pType] = getPlotLimUnitType(panels{a}, pDat, hm.UserData.settings.plot, hm.UserData.data.video.scene);
         
         hm.UserData.plot.defaultValueScale(:,a) = yLim;
         hm.UserData.plot.ax(a) = axes(commonPropAxes{:},'Position',hm.UserData.plot.axPos(a,:),'YLim',yLim,'Tag',tag,'UserData',lbl);
@@ -2687,13 +2651,13 @@ setAxesZoomConstraint(hm.UserData.plot.zoom.obj,hm.UserData.plot.ax(qAx),'x');
 hm.UserData.plot.zoom.timer = timer('ExecutionMode', 'singleShot', 'TimerFcn', @(~,~) startZoom(hm), 'StartDelay', 10/1000);
 
 % jail axes and order plots based on settings
-unknown = hm.UserData.settings.plot.initPanelOrder(~ismember(hm.UserData.settings.plot.initPanelOrder,panels));
+unknown = hm.UserData.settings.plot.panelOrder(~ismember(hm.UserData.settings.plot.panelOrder,panels));
 if ~isempty(unknown)
     str = sprintf('\n  ''%s''',unknown{:});
     error('The following data panels listed in your settings file are not understood:%s',str);
 end
-[~,pOrder] = ismember(hm.UserData.settings.plot.initPanelOrder,panels);
-toJail = find(~ismember(panels,hm.UserData.settings.plot.initPanelOrder));
+[~,pOrder] = ismember(hm.UserData.settings.plot.panelOrder,panels);
+toJail = find(~ismember(panels,hm.UserData.settings.plot.panelOrder));
 % reorder panels, moving ones to be removed to end
 pOrder = [pOrder; toJail.'];
 moveThePlots(hm,pOrder);
