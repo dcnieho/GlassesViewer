@@ -121,7 +121,11 @@ hm.UserData.settings = settings;
 
 %% load data
 % read glasses data
-hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,qDEBUG);
+userStreams = [];
+if isfield(hm.UserData.settings,'userStreams')
+    userStreams = hm.UserData.settings.userStreams;
+end
+hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,userStreams,qDEBUG);
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 %% get coding setup
@@ -186,7 +190,20 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-panels = {'azi','scarf','ele','videoGaze','gazePoint3D','vel','pup','pupCentLeft','pupCentRight','gyro','acc'};
+panels      = {'azi','scarf','ele','videoGaze','gazePoint3D','vel','pup','pupCentLeft','pupCentRight','gyro','acc'};
+isUserStream= false(1,length(panels));
+if isfield(hm.UserData.data,'user')
+    % get user streams
+    userStreams = fieldnames(hm.UserData.data.user);
+    qExists = ismember(userStreams,panels);
+    if any(qExists)
+        offending = sprintf('  %s\n',userStreams{qExists});
+        offending(end) = [];
+        error('Some user-created streams have names conflicting with built-in streams. Rename the following user-created streams:\n%s',offending)
+    end
+    panels = [panels userStreams(:).'];
+    isUserStream = [isUserStream true(1,length(userStreams))];
+end
 if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf panel is not in list of panels that can be shown, nor in user setup
     panels(strcmp(panels,'scarf')) = [];
     hm.UserData.settings.plot.initPanelOrder(strcmp(hm.UserData.settings.plot.initPanelOrder,'scarf')) = [];
@@ -204,10 +221,14 @@ clrs.lr  = {[1 0 0],[0 0 1]};
 clrs.xyz = {[233 105 12]/255, [193 89 255]/255, [164 191 6]/255};
 for a=1:nPanel
     tag = panels{a};
-    if isfield(hm.UserData.settings.plot.panelNames,panels{a})
-        lbl = hm.UserData.settings.plot.panelNames.(panels{a});
+    if isUserStream(a)
+        lbl = hm.UserData.data.user.(tag).lbl;
     else
-        lbl = tag;
+        if isfield(hm.UserData.settings.plot.panelNames,panels{a})
+            lbl = hm.UserData.settings.plot.panelNames.(panels{a});
+        else
+            lbl = tag;
+        end
     end
     if strcmp(panels{a},'scarf')
         % scarf plot special axis
@@ -284,7 +305,14 @@ for a=1:nPanel
                 pDat = {{hm.UserData.data.accelerometer.ts}, num2cell(ac,1)};
                 pType = 'xyz';
             otherwise
-                error('data panel type ''%s'' not understood',hm.UserData.settings.plot.initPanelOrder{a});
+                if isUserStream(a)
+                    pDat = {{hm.UserData.data.user.(tag).ts},{hm.UserData.data.user.(tag).data}};
+                    yLim = [nanmin(pDat{2}{1}) nanmax(pDat{2}{1})];
+                    unit = 'mm';
+                    pType = 'xyz';
+                else
+                    error('data panel type ''%s'' not understood',tag);
+                end
         end
         
         hm.UserData.plot.defaultValueScale(:,a) = yLim;

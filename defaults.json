@@ -33,6 +33,18 @@
   "dataQuality": {
     "windowLength": 300
   },
+  "userStreams" : [
+    {
+      "recomputeOnLoad": false,
+      "function": "detPitchRoll",
+      "parameters": {
+        "fs": 100,
+	"sigma": 0.05
+        },
+      "streams": ["pitch", "roll"],
+      "friendlyNames": ["pitch", "roll"]
+    }
+  ],
   "coding": {
     "closePanelAfterCode": true,
     "streams": [

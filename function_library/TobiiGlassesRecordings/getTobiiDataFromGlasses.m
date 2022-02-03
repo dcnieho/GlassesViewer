@@ -1,4 +1,4 @@
-function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
+function data = getTobiiDataFromGlasses(recordingDir,userStreams,qDEBUG)
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 14;
+fileVersion = 15;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -433,7 +433,12 @@ if qGenCacheFile || qDEBUG
         data.video.scene.calibration = rmfield(tslv{idxs,3},'status');  % remove status field, 0==ok is unimportant info for user
     end
     
-    % 17 store to cache file
+    % 17 compute user streams, if any
+    if ~isempty(userStreams)
+        data = computeUserStreams(data, userStreams);
+    end
+    
+    % 18 store to cache file
     if isfield(participant.pa_info,'Name')
         data.subjName = participant.pa_info.Name;
     else
@@ -451,4 +456,9 @@ else
     data = load(cacheFile);
     % still output warning messages about holes in video, if any
     checkMissingFrames(data.video, 0.05, 0.1);
+    % recompute user streams, if requested
+    if ~isempty(userStreams)
+        recomputeOnLoad = [userStreams.recomputeOnLoad];
+        data = computeUserStreams(data, userStreams(recomputeOnLoad));
+    end
 end
