@@ -176,8 +176,8 @@
             "name": "signal",
             "label": "which signal to run the classifier on",
             "type": "select",
-            "value": "videoGaze",
-            "values": ["videoGaze", "leftVec", "rightVec"],
+            "value": "video gaze point",
+            "values": ["video gaze point", "left gaze vector", "right gaze vector"],
             "settable": true
           }
         ],

@@ -10,20 +10,22 @@ function [smarks,type] = HesselsEtAl2020(tobiiData,params)
 % was input here. It should also be in seconds, like the input
 time    = tobiiData.eye.binocular.ts*1000;  % this classifier wants time in ms
 
-%%%%% determine velocity
+%%%%% prep data
+% select data stream
 switch params.signal
-    case 'videoGaze'
+    case 'video gaze point'
         x = tobiiData.eye.binocular.gp(:,1);
         y = tobiiData.eye.binocular.gp(:,2);
-    case 'leftVec'
+    case 'left gaze vector'
         x = tobiiData.eye.left.azi;
         y = tobiiData.eye.left.ele;
-    case 'rightVec'
+    case 'right gaze vector'
         x = tobiiData.eye.right.azi;
         y = tobiiData.eye.right.ele;
     otherwise
         error('signal type ''%s'' unknown',params.signal)
 end
+% determine velocity
 vx      = HesselsEtAl2020_detvel(x,time);
 vy      = HesselsEtAl2020_detvel(y,time);
 v       = hypot(vx,vy);
