@@ -459,6 +459,9 @@ else
     % recompute user streams, if requested
     if ~isempty(userStreams)
         recomputeOnLoad = [userStreams.recomputeOnLoad];
-        data = computeUserStreams(data, userStreams(recomputeOnLoad));
+        if any(recomputeOnLoad)
+            data = computeUserStreams(data, userStreams(recomputeOnLoad));
+            save(cacheFile,'-struct','data');
+        end
     end
 end
