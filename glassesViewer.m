@@ -121,11 +121,7 @@ hm.UserData.settings = settings;
 
 %% load data
 % read glasses data
-userStreams = [];
-if isfield(hm.UserData.settings,'userStreams')
-    userStreams = hm.UserData.settings.userStreams;
-end
-hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,userStreams,qDEBUG);
+hm.UserData.data            = getTobiiDataFromGlasses(hm.UserData.fileDir,hm.UserData.settings.userStreams,qDEBUG);
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 %% get coding setup

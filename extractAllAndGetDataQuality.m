@@ -116,7 +116,7 @@ end
 % load glasses data, get data quality
 for p=length(folders):-1:1
     myDir           = fullfile(selectedDir,folders{p});
-    data            = getTobiiDataFromGlasses(myDir,qDEBUG);
+    data            = getTobiiDataFromGlasses(myDir,settings.userStreams,qDEBUG);
     data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
     % store for output
     output(p).dq        = data.quality;
