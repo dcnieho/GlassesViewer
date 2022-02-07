@@ -1,4 +1,4 @@
-function [output] = detPitchRoll(data, params)
+function [outputKalman,outputDCM] = detPitchRoll(data, params)
 
 % This script estimates roll and pitch angle for the accelerometer and 
 % gryoscope in the Tobii Glasses 2 based on 
@@ -104,5 +104,33 @@ pitch = pitch * 180.0 / pi;
 
 % prep output, one matrix with rotation around Tobii's X (pitch), Y (yaw,
 % not available) and Z (roll)
-output = {newT.', [pitch.' nan(size(pitch)).' roll.']};
+outputKalman = {newT.', [pitch.' nan(size(pitch)).' roll.']};
+
+
+
+
+
+% second method
+gyro2 = [Gx_rad Gy_rad Gz_rad];
+
+IMU_DCM2 = DCM_IMU();
+ypr_hist2 = zeros(length(newT), 3);
+for t = 1:length(newT)
+    IMU_DCM2.UpdateIMU(gyro2(t,:), An(t,:), dt);	% gyroscope units must be radians
+    ypr_hist2(t, :) = [IMU_DCM2.yaw, IMU_DCM2.pitch, IMU_DCM2.roll];
+end
+ypr_hist2(:,3) = ypr_hist2(:,3)-pi;
+ypr_hist2(:,3) = un_modulo(ypr_hist2(:,3), 2*pi); %remove 2pi jumps and make continuous
+ypr_hist2(:,1) = un_modulo(ypr_hist2(:,1), 2*pi); %remove 2pi jumps and make continuous
+ypr_hist2(:,1) = ypr_hist2(:,1) - ypr_hist2(1,1); %DCM
+
+
+yaw_dcm = ypr_hist2(:,1)*180/pi;
+pitch_dcm = ypr_hist2(:,2)*180/pi;
+roll_dcm = ypr_hist2(:,3)*180/pi;
+
+% prep output, one matrix with rotation around Tobii's X (pitch), Y (yaw,
+% not available) and Z (roll). Negate pitch and roll to match Kalman
+% method's output. Yaw wont be used, don't output it.
+outputDCM = {newT.', [-pitch_dcm nan(size(pitch_dcm)) -roll_dcm]};
 

@@ -28,10 +28,12 @@
     },
     "adjustLimsToData": ["gazePoint3D","pupCentLeft","pupCentRight","gyro"],
     "units": {
-      "orientation": "deg"
+      "orientationKalman": "deg",
+      "orientationDCM": "deg"
     },
     "type": {
-      "orientation": "xyz"
+      "orientationKalman": "xyz",
+      "orientationDCM": "xyz"
     },
     "lineWidth": 1,
     "scarfHeight": 10
@@ -51,7 +53,7 @@
         "fs": 100,
 	"sigma": 0.05
         },
-      "streams": ["orientation"]
+      "streams": ["orientationKalman","orientationDCM"]
     }
   ],
   "coding": {
