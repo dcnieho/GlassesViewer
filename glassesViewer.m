@@ -2690,7 +2690,7 @@ end
 
 function makeDataQualityPanel(hm)
 % make table to show data quality in GUI
-temp = hm.UserData.data.quality;
+temp = hm.UserData.data.quality.interval(1);
 temp = {
     'Left azi',temp.RMSS2S.azi(1),temp.dataLoss.azi(1);
     'Left ele',temp.RMSS2S.ele(1),temp.dataLoss.ele(1);
