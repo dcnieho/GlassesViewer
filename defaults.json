@@ -58,69 +58,10 @@
     "closePanelAfterCode": true,
     "streams": [
       {
-        "type": "syncIn",
-        "lbl": "button state",
-        "categories": [ "up", null, "down", 20 ]
-      },
-      {
         "type": "handStream",
-        "lbl": "example hand code stream",
+        "lbl": "analysis interval",
         "locked": false,
-        "categories": [ "none", 20, "fix", 4, "sac+", 1, "sp+", 3, "*vergence", 12 ]
-      },
-      {
-        "type": "fileStream",
-        "lbl": "example file stream",
-        "locked": false,
-        "file": "!!recordingDir!!/demoCodingFile.txt",
-	"skipIfDoesntExist":true,
-        "alwaysReload": true,
-	"needToCorrectT0": false,
-        "categories": [ "none", 20, "fix", 4, "sac", 1, "sp", 3 ]
-      },
-      {
-        "type": "classifier",
-        "lbl": "Hooge & Camps (2013): slow/fast",
-        "locked": false,
-        "function": "HC13",
-        "alwaysRecalculate": true,
-        "alwaysRecalculateUseDefaultSettings": false,
-        "parameters": [
-          {
-            "name": "thr",
-            "label": "start velocity threshold (deg/s)",
-            "type": "double",
-            "value": 5000.0,
-            "range": [ 0, 100000 ],
-            "granularity": 0,
-            "settable": true
-          },
-          {
-            "name": "counter",
-            "label": "maximum number of iterations",
-            "type": "int",
-            "value": 200
-          },
-          {
-            "name": "minfix",
-            "label": "minimum slow phase duration (ms)",
-            "type": "double",
-            "value": 60,
-            "range": [ 0, 10000 ],
-            "granularity": 1,
-            "settable": true
-          },
-          {
-            "name": "lambda",
-            "label": "lambda: slow/fast separation threshold",
-            "type": "double",
-            "value": 4,
-            "range": [ 0.1, 10 ],
-            "granularity": 0.1,
-            "settable": true
-          }
-        ],
-        "categories": [ "none", 20, "slow", 4, "fast", 5 ]
+        "categories": [ "excluded", null, "included", 20 ]
       },
       {
         "type": "classifier",
