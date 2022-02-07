@@ -123,6 +123,7 @@ for p=length(folders):-1:1
     data            = getTobiiDataFromGlasses(myDir,settings.userStreams,qDEBUG);
     
     % get data quality, use coding if available
+    foundAnalysisInterval = false;
     codingFile = fullfile(myDir,'coding.mat');
     if exist(codingFile,'file')==2
         coding = load(codingFile);
@@ -130,6 +131,7 @@ for p=length(folders):-1:1
         assert(sum(qWhich)==1,'No analysis interval coding stream found')
         analysisInterval = coding.mark{qWhich}(2:3);    % idx 1 is start of file
         data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength, analysisInterval);
+        foundAnalysisInterval = true;
     else
         warning('analysis interval unknown');
         data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
@@ -149,16 +151,19 @@ for p=length(folders):-1:1
     end
     output(p).pup.l = pupLeft;
     output(p).pup.r = pupRight;
+    
+    output(p).foundAnalysisInterval = foundAnalysisInterval;
 end
 
 fid = fopen(fullfile(selectedDir,'dataQuality.xls'),'wt');
-fprintf(fid,'project\tparticipant\trecording\tRMS left azi\tRMS left ele\tRMS right azi\tRMS right ele\tRMS binocular gaze point video X\tRMS binocular gaze point video X\tdata loss left\tdata loss right\tdata loss binocular gaze point video\tprop missing scene video\tprop missing eye video\tpup min diameter L\tpup min diameter R\tpup max diameter L\tpup max diameter R\n');
+fprintf(fid,'project\tparticipant\trecording\tRMS left azi\tRMS left ele\tRMS right azi\tRMS right ele\tRMS binocular gaze point video X\tRMS binocular gaze point video X\tdata loss left\tdata loss right\tdata loss binocular gaze point video\tprop missing scene video\tprop missing eye video\tpup min diameter L\tpup min diameter R\tpup max diameter L\tpup max diameter R\tfound analysis interval?\n');
 for p=1:length(output)
-    fprintf(fid,'%s\t%s\t%s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n',...
+    fprintf(fid,'%s\t%s\t%s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%d\n',...
         project{p},participant{p},recording{p},...
         output(p).dq.RMSS2S.azi(1),output(p).dq.RMSS2S.ele(1),output(p).dq.RMSS2S.azi(2),output(p).dq.RMSS2S.ele(2),output(p).dq.RMSS2S.bgp,...
         output(p).dq.dataLoss.azi,output(p).dq.dataLoss.bgp(1),...
         output(p).vq.scene,output(p).vq.eye,...
-        output(p).pup.l(1),output(p).pup.r(1),output(p).pup.l(2),output(p).pup.r(2));
+        output(p).pup.l(1),output(p).pup.r(1),output(p).pup.l(2),output(p).pup.r(2),...
+        output(p).foundAnalysisInterval);
 end
 fclose(fid);
