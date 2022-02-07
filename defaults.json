@@ -21,7 +21,7 @@
       "azi": 45,
       "ele": 30,
       "gazePoint3D": 5000,
-      "vel": 400,
+      "vel": [0 400],
       "pupCentLeft": 100,
       "pupCentRight": 100,
       "gyro": 150
