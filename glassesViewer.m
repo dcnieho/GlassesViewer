@@ -88,17 +88,19 @@ hm.Name='Tobii Pro Glasses 2 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
 hm.MenuBar = 'none';
+hm.DockControls = 'off';
+hm.ToolBar = 'none';
 hm.UserData.fileDir = recordingDir;
 
 % set figure to near full screen
-ws          = get(0,'ScreenSize');
 if isprop(hm,'WindowState')
     hm.WindowState = 'Maximized';
     drawnow, pause(0.5);    % on some systems, it appears drawnow doesn't finish executing before we hit the next line, so add a pause
-    pos     = hm.OuterPosition;
+    pos = hm.OuterPosition;
     set(hm,'WindowState','normal','OuterPosition',pos);
 else
-    hmmar       = [0 0 0 40];    % left right top bottom
+    hmmar = [0 0 0 40];    % left right top bottom
+    ws = get(0,'ScreenSize');
     hm.OuterPosition = [ws(1) + hmmar(1), ws(2) + hmmar(4), ws(3)-hmmar(1)-hmmar(2), ws(4)-hmmar(3)-hmmar(4)];
     drawnow
 end
