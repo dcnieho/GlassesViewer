@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 15;
+fileVersion = 16;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -449,19 +449,38 @@ if qGenCacheFile || qDEBUG
     else
         data.recName = recording.rec_info.name;
     end
-    data.fileVersion = fileVersion;
+    data.fileVersion        = fileVersion;
+    data.userStreamSettings = userStreams;
     save(cacheFile,'-struct','data');
 else
     fprintf('loading: %s\n',cacheFile);
     data = load(cacheFile);
     % still output warning messages about holes in video, if any
     checkMissingFrames(data.video, 0.05, 0.1);
-    % recompute user streams, if requested
+    % recompute user streams, if needed because settings changed, or
+    % because requested
+    qResaveCache = false;
+    if ~isequal(userStreams,data.userStreamSettings)
+        % settings changed, throw away old and recompute
+        if isfield(data,'user')
+            data = rmfield(data,'user');
+        end
+        data = computeUserStreams(data, userStreams);
+        qResaveCache = true;
+    end
     if ~isempty(userStreams)
         recomputeOnLoad = [userStreams.recomputeOnLoad];
         if any(recomputeOnLoad)
+            % one or multiple userStreams are set to recompute on load
             data = computeUserStreams(data, userStreams(recomputeOnLoad));
-            save(cacheFile,'-struct','data');
+            qResaveCache = true;
         end
     end
+    if qResaveCache
+        data.userStreamSettings = userStreams;
+        save(cacheFile,'-struct','data');
+    end
 end
+
+% these fields are internal to this function, remove from output
+data = rmfield(data,{'fileVersion','userStreamSettings'});
