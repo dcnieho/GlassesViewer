@@ -1135,6 +1135,11 @@ elseif ~isnan(hm.UserData.ui.coding.panel.evtTagIdx(stream))
             hBut.Value=0;   % cancel press
             return
         end
+        % check if not same as next (if any)
+        if idx<length(hm.UserData.coding.type{stream}) && bitand(hm.UserData.coding.type{stream}(idx+1),evtCode)
+            hBut.Value=0;   % cancel press
+            return
+        end
         % change event
         hm.UserData.coding.type{stream}(idx) = evtCode;
         % log
