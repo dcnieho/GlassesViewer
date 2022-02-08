@@ -92,6 +92,12 @@ hm.DockControls = 'off';
 hm.ToolBar = 'none';
 hm.UserData.fileDir = recordingDir;
 
+% menu bar, to be filled later, but create early so that free space in
+% figure is correctly detected
+hm.UserData.menu.export     .hndl = uimenu(hm,'Text','&Export');
+hm.UserData.menu.coding     .hndl = uimenu(hm,'Text','&Coding');
+hm.UserData.menu.settings   .hndl = uimenu(hm,'Text','&Settings');
+
 % set figure to near full screen
 if isprop(hm,'WindowState')
     hm.WindowState = 'Maximized';
@@ -108,11 +114,11 @@ hm.Visible = 'off';
 drawnow
 
 % setup callbacks for interaction
-hm.CloseRequestFcn = @KillCallback;
-hm.WindowKeyPressFcn = @KeyPress;
-hm.WindowButtonMotionFcn = @MouseMove;
-hm.WindowButtonDownFcn = @MouseClick;
-hm.WindowButtonUpFcn = @MouseRelease;
+hm.CloseRequestFcn      = @KillCallback;
+hm.WindowKeyPressFcn    = @KeyPress;
+hm.WindowButtonMotionFcn= @MouseMove;
+hm.WindowButtonDownFcn  = @MouseClick;
+hm.WindowButtonUpFcn    = @MouseRelease;
 
 % need to figure out if any DPI scaling active, some components work in
 % original screen space
@@ -309,6 +315,18 @@ if hm.UserData.coding.hasCoding
     % prepare coder popup panel
     createCoderPanel(hm);
     
+    % check if any of the streams are file or classifier coding streams
+    hm.UserData.coding.fileOrClass = ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'});
+    
+    % bool for user to indicate if data is crap
+    if ~isfield(hm.UserData.coding,'dataIsCrap')
+        hm.UserData.coding.dataIsCrap = false;
+    end
+    
+    % save starting point
+    hm.UserData.ui.savedCoding = [];
+    saveCodingData(hm);
+    
     % set up coding shades
     for p=1:length(hm.UserData.plot.ax)
         if ~strcmp(hm.UserData.plot.ax(p).Tag,'scarf')
@@ -328,7 +346,12 @@ if hm.UserData.coding.hasCoding
     hm.UserData.ui.coding.currentStream = nan;
     changeCoderStream(hm,1);
     updateScarf(hm);
+else
+    delete(hm.UserData.menu.coding);
 end
+
+% set up menu
+setupMenu(hm);
 
 % plot UI for dragging time and scrolling the whole window
 hm.UserData.ui.hoveringTime                 = false;
@@ -372,45 +395,6 @@ end
 for p=1:3
     plot([.05 0.20],heightEach*(3+p).*[1 1],'Color',clrs.xyz{p},lcommon{:})
     text(.25,heightEach*(3+p),char('W'+p),tcommon{:});
-end
-
-
-% settings button
-butPos = [axPos(1)  sum(  axPos([2 4]))+10 100 30];
-hm.UserData.ui.toggleSettingsButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Settings','Tag','settingsToggleButton','Callback',@(hndl,~,~) toggleSettingsPanel(hm,hndl));
-
-if hm.UserData.coding.hasCoding
-    hm.UserData.coding.fileOrClass = ismember(lower(hm.UserData.coding.stream.type),{'classifier','filestream'});
-    % reload coding button (in effect undoes manual changes)
-    if any(hm.UserData.coding.fileOrClass)
-        butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-        hm.UserData.ui.reloadDataButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','<html>Remove manual<br>coding changes','Tag','reloadDataButton','Callback',@(hndl,~,~) toggleReloadPopup(hm,hndl));
-        createReloadPopup(hm);
-    else
-        hm.UserData.ui.coding.reloadPopup = [];
-    end
-    
-    % classifier settings button
-    iClass = find(strcmpi(hm.UserData.coding.stream.type,'classifier'));
-    qHasSettable = cellfun(@(p) any(cellfun(@(x) isfield(x,'settable') && x.settable,p)),hm.UserData.coding.stream.classifier.currentSettings(iClass));
-    iClass(~qHasSettable) = [];
-    if ~isempty(iClass)
-        butPos = [butPos(1) sum( butPos([2 4]))+10 100 30];
-        hm.UserData.ui.classifierSettingButton = uicomponent('Style','togglebutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','Classifier settings','Tag','classifierSettingButton','Callback',@(hndl,~,~) toggleClassifierSettingPanel(hm,hndl));
-        createClassifierPopups(hm,iClass);
-    else
-        hm.UserData.ui.coding.classifierPopup.select = [];
-        hm.UserData.ui.coding.classifierPopup.setting = [];
-    end
-end
-
-% crap data tick
-if hm.UserData.coding.hasCoding
-    if ~isfield(hm.UserData.coding,'dataIsCrap')
-        hm.UserData.coding.dataIsCrap = false;
-    end
-    checkPos = [butPos(1) sum( butPos([2 4]))+10 100 16];
-    hm.UserData.ui.crapDataCheck = uicomponent('Style','checkbox', 'Parent', hm,'Units','pixels','Position',checkPos, 'String',' crap data','Tag','crapDataCheck','Value',hm.UserData.coding.dataIsCrap,'Callback',@(hndl,~,~) setCrapData(hm,hndl));
 end
 
 %% load videos
@@ -617,22 +601,6 @@ for p=1:size(buttons,1)
     );
 end
 
-% make settings panel
-createSettings(hm);
-
-% save coding data button
-if hm.UserData.coding.hasCoding
-    % save coding to matlab
-    butPos = [sum(vidPos([1 3]))-100-10 hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2) 100 30];
-    hm.UserData.ui.saveCodingDataButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding','Tag','saveCodingDataButton','Callback',@(~,~,~) saveCodingData(hm));
-    hm.UserData.ui.savedCoding = [];
-    saveCodingData(hm); % save starting point
-    
-    % save coding to xls
-    butPos = [butPos(1) sum(butPos([2 4]))+10 100 30];
-    hm.UserData.ui.saveCodingDataXLSButton = uicomponent('Style','pushbutton', 'Parent', hm,'Units','pixels','Position',butPos, 'String','save coding to xls','Tag','saveCodingDataXLSButton','Callback',@(~,~,~) saveCodingDataXLS(hm));
-end
-
 
 %% all done, make sure GUI is shown
 hm.Visible = 'on';
@@ -652,6 +620,101 @@ end
 
 
 %% helpers etc
+function setupMenu(hm)
+
+% export
+
+% data streams
+mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','&Data streams');
+mitem2 = uimenu(mitem,'Text','Export &full recording to tsv','Enable','off');
+mitem2 = uimenu(mitem,'Text','Export &segments to tsv');
+setupCodingStreamMenu(hm,mitem2);
+
+% data quality
+mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Data &quality');
+mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','Enable','off');
+mitem2 = uimenu(mitem,'Text','Store to tsv for &segments');
+setupCodingStreamMenu(hm,mitem2);
+
+% scene video
+mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Export scene &video with gaze','Enable','off');
+
+
+% coding
+if hm.UserData.coding.hasCoding
+    % save coding to mat file
+    mitem = uimenu(hm.UserData.menu.coding.hndl,'Text','Save to coding.&mat');
+    mitem.MenuSelectedFcn = @(~,~) saveCodingData(hm);
+    hm.UserData.menu.coding.matSave = mitem;
+    
+    % save coding to tsv
+    mitem = uimenu(hm.UserData.menu.coding.hndl,'Text','Save coding stream to &tsv');
+    for s=1:length(hm.UserData.coding.codeCats)
+        uimenu(mitem,...
+            'Text', sprintf('&%d: %s', s, hm.UserData.coding.stream.lbls{s}),...
+            'CallBack', @(~,~) saveCodingDataTSV(hm,s));
+    end
+    
+    % crap data tick
+    uimenu(hm.UserData.menu.coding.hndl,'Text','Mark this recording as &crap data','Separator','on',...
+        'MenuSelectedFcn',@(hndl,~) toggleCrapData(hm,hndl));
+    
+    % reload coding button (in effect undoes manual changes)
+    if any(hm.UserData.coding.fileOrClass)
+        mitem = uimenu(hm.UserData.menu.coding.hndl,...
+            'Text','&Remove manual coding changes', 'Separator','on');
+        iStream = find(hm.UserData.coding.fileOrClass);
+        for s=1:length(iStream)
+            txt = 'Reload file';
+            if strcmpi(hm.UserData.coding.stream.type{iStream(s)},'classifier')
+                txt = 'Recompute classification';
+            end
+            
+            hm.UserData.ui.coding.reload(s).stream = iStream(s);
+            hm.UserData.ui.coding.reload(s).obj    = uimenu(mitem,...
+                'Text', sprintf('%s for &%d: %s', txt, iStream(s), hm.UserData.coding.stream.lbls{s}),...
+                'CallBack', @(~,~) executeCodingReload(hm,s));
+        end
+    end
+    
+    % classifier settings
+    iClass = find(strcmpi(hm.UserData.coding.stream.type,'classifier'));
+    qHasSettable = cellfun(@(p) any(cellfun(@(x) isfield(x,'settable') && x.settable,p)),hm.UserData.coding.stream.classifier.currentSettings(iClass));
+    iClass(~qHasSettable) = [];
+    if ~isempty(iClass)
+        mitem = uimenu(hm.UserData.menu.coding.hndl, 'Text', 'Classifier &settings');
+        for s=1:length(iClass)
+            uimenu(mitem,...
+                   'Text', sprintf('&%d: %s', iClass(s), hm.UserData.coding.stream.lbls{iClass(s)}),...
+                   'CallBack', @(~,~) openClassifierSettingsPanel(hm,s)); % NB: not iClass(s)!
+        end
+        createClassifierPopups(hm,iClass);
+    else
+        hm.UserData.ui.coding.classifierSettingPopup = [];
+    end
+    
+    % make sure menus are in correct state
+    updateCodingMenuStates(hm);
+end
+
+
+% settings
+uimenu(hm.UserData.menu.settings.hndl,'Text','&Change plot order and shown axes','CallBack',@(~,~)showPlotArrangerPopup(hm));
+createPlotArrangerPopup(hm);
+% NB: other menu items are added in doPostInit()
+end
+
+function setupCodingStreamMenu(hm,parent,callback)
+for s=1:length(hm.UserData.coding.codeCats)
+    stream = uimenu(parent,'Text',sprintf('&%d: %s',s,hm.UserData.coding.stream.lbls{s}));
+    for c=1:size(hm.UserData.coding.codeCats{s},1)
+        name = hm.UserData.coding.codeCats{s}{c,1};
+        name(name=='*'|name=='+') = [];
+        cat = uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),'Enable','off');
+    end
+end
+end
+
 function saveCodingData(hm)
 coding          = rmfield(hm.UserData.coding,'hasCoding');
 fname           = 'coding.mat';
@@ -659,37 +722,34 @@ save(fullfile(hm.UserData.fileDir,fname),'-struct', 'coding');
 % store copy of what we just saved, so we can check if new save is needed
 % by user
 hm.UserData.ui.savedCoding = coding;
-updateMainButtonStates(hm);
+updateCodingMenuStates(hm);
 end
 
-function saveCodingDataXLS(hm)
-coding          = rmfield(hm.UserData.coding,'hasCoding');
-nStream         = length(coding.mark);
-for s=1:nStream
-    fname = makeValidFilename(sprintf('coding_%s.xls',coding.stream.lbls{s}));
-    fid = fopen(fullfile(hm.UserData.fileDir,fname),'wt');
-    fprintf(fid,'index\tcategory\tstart_time\tend_time\tcam_pos_x\tcam_pos_y\tleft_azi\tleft_ele\tright_azi\tright_ele\n');
-    % make labels
-    catNames= coding.codeCats{s}(:,1);
-    for c=1:size(catNames,1)
-        catNames{c}(catNames{c}=='*'|catNames{c}=='+') = [];
-    end
-    % run through codings, store to file
-    for c=1:length(coding.type{s})
-        bits  = find(getCodeBits(coding.type{s}(c)));
-        times = coding.mark{s}(c:c+1);
-        qDat  = hm.UserData.data.eye.binocular.ts>=times(1) & hm.UserData.data.eye.binocular.ts<=times(2);
-        camPos= mean(hm.UserData.data.eye.binocular.gp(qDat,:),1,'omitnan');
-        qDat  = hm.UserData.data.eye.     left.ts>=times(1) & hm.UserData.data.eye.     left.ts<=times(2);
-        oriL  = mean([hm.UserData.data.eye.     left.azi(qDat) hm.UserData.data.eye. left.ele(qDat)],1,'omitnan');
-        qDat  = hm.UserData.data.eye.    right.ts>=times(1) & hm.UserData.data.eye.    right.ts<=times(2);
-        oriR  = mean([hm.UserData.data.eye.    right.azi(qDat) hm.UserData.data.eye.right.ele(qDat)],1,'omitnan');
-        for b=1:length(bits)
-            fprintf(fid,'%d\t%s\t%.4f\t%.4f\t%.2f\t%.2f\t%.4f\t%.4f\t%.4f\t%.4f\n',c,catNames{bits(b)},times,camPos,oriL,oriR);
-        end
-    end
-    fclose(fid);
+function saveCodingDataTSV(hm,sIdx)
+coding  = rmfield(hm.UserData.coding,'hasCoding');
+fname   = makeValidFilename(sprintf('coding_%d_%s.tsv',sIdx,coding.stream.lbls{sIdx}));
+fid     = fopen(fullfile(hm.UserData.fileDir,fname),'wt');
+fprintf(fid,'index\tcategory\tstart_time\tend_time\tcam_pos_x\tcam_pos_y\tleft_azi\tleft_ele\tright_azi\tright_ele\n');
+% make labels
+catNames= coding.codeCats{sIdx}(:,1);
+for c=1:size(catNames,1)
+    catNames{c}(catNames{c}=='*'|catNames{c}=='+') = [];
 end
+% run through codings, store to file
+for c=1:length(coding.type{sIdx})
+    bits  = find(getCodeBits(coding.type{sIdx}(c)));
+    times = coding.mark{sIdx}(c:c+1);
+    qDat  = hm.UserData.data.eye.binocular.ts>=times(1) & hm.UserData.data.eye.binocular.ts<=times(2);
+    camPos= mean(hm.UserData.data.eye.binocular.gp(qDat,:),1,'omitnan');
+    qDat  = hm.UserData.data.eye.     left.ts>=times(1) & hm.UserData.data.eye.     left.ts<=times(2);
+    oriL  = mean([hm.UserData.data.eye.     left.azi(qDat) hm.UserData.data.eye. left.ele(qDat)],1,'omitnan');
+    qDat  = hm.UserData.data.eye.    right.ts>=times(1) & hm.UserData.data.eye.    right.ts<=times(2);
+    oriR  = mean([hm.UserData.data.eye.    right.azi(qDat) hm.UserData.data.eye.right.ele(qDat)],1,'omitnan');
+    for b=1:length(bits)
+        fprintf(fid,'%d\t%s\t%.4f\t%.4f\t%.2f\t%.2f\t%.4f\t%.4f\t%.4f\t%.4f\n',c,catNames{bits(b)},times,camPos,oriL,oriR);
+    end
+end
+fclose(fid);
 end
 
 function filename = makeValidFilename(filename)
@@ -702,33 +762,25 @@ function bits = getCodeBits(code)
 bits = fliplr(rem(floor(code*pow2(1-16:0)),2)); % up to 16 codes
 end
 
-function updateMainButtonStates(hm)
+function updateCodingMenuStates(hm)
 % save button
 if isfield(hm.UserData.ui,'savedCoding')
     if hasUnsavedCoding(hm)
-        hm.UserData.ui.saveCodingDataButton.Enable = 'on';
-        hm.UserData.ui.saveCodingDataButton.String = 'save coding';
-        clr = [1 0 0];
+        hm.UserData.menu.coding.matSave.Enable = 'on';
     else
-        hm.UserData.ui.saveCodingDataButton.Enable = 'off';
-        hm.UserData.ui.saveCodingDataButton.String = 'coding saved';
-        clr = [0 1 0];
+        hm.UserData.menu.coding.matSave.Enable = 'off';
     end
-    opacity = .12;
-    baseColor = hm.UserData.ui.toggleSettingsButton.BackgroundColor;
-    highlight = baseColor.*(1-opacity)+clr.*opacity;
-    hm.UserData.ui.saveCodingDataButton.BackgroundColor = highlight;
 end
-% reload button, if any
-if isfield(hm.UserData.ui,'reloadDataButton')
-    % check for file and classifier streams if manual changes have been
-    % made
-    idx = hm.UserData.coding.fileOrClass;
-    isManuallyChanged = ~isequal(hm.UserData.coding.mark(idx),hm.UserData.coding.original.mark(idx)) || ~isequal(hm.UserData.coding.type(idx),hm.UserData.coding.original.type(idx));
-    if isManuallyChanged
-        hm.UserData.ui.reloadDataButton.Enable = 'on';
-    else
-        hm.UserData.ui.reloadDataButton.Enable = 'off';
+% reload actions, if any
+if isfield(hm.UserData.ui.coding,'reload')
+    for s=1:length(hm.UserData.ui.coding.reload)
+        stream = hm.UserData.ui.coding.reload(s).stream;
+        isManuallyChanged = ~isequal(hm.UserData.coding.mark{stream},hm.UserData.coding.original.mark{stream}) || ~isequal(hm.UserData.coding.type{stream},hm.UserData.coding.original.type{stream});
+        if isManuallyChanged
+            hm.UserData.ui.coding.reload(s).obj.Enable = 'on';
+        else
+            hm.UserData.ui.coding.reload(s).obj.Enable = 'off';
+        end
     end
 end
 end
@@ -797,12 +849,12 @@ else
     tempV   = tempV([1 1:end],:) * fs;
 end
 % indicate too small window by coloring spinner red
-if isfield(hm.UserData.ui,'setting')
-    obj = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','LWSpinner');
+if isfield(hm.UserData.menu,'settings') && isfield(hm.UserData.menu.settings,'LWSpinner')
+    obj = hm.UserData.menu.settings.LWSpinner;
     obj = obj.Editor().getTextField().getBackground;
     clr = [obj.getRed obj.getGreen obj.getBlue]./255;
     
-    obj = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','SGSpinner');
+    obj = hm.UserData.menu.settings.SGSpinner;
     if pn >= ntaps
         clr(2:3) = .5;
     end
@@ -1434,24 +1486,19 @@ end
 
 % this function is always called when some coding is changed, so this is
 % the right place to check if coding needs to be saved
-updateMainButtonStates(hm);
+updateCodingMenuStates(hm);
 end
 
-function createSettings(hm)
-% panel at max spans between right of VCR and right of reset plot limits
-% button
-left    = hm.UserData.ui.resetPlotLimitsButton.Position(1)+hm.UserData.ui.resetPlotLimitsButton.Position(3);
-right   = hm.UserData.vid.ax(1).Position(1)+hm.UserData.vid.ax(1).Position(3);
-top     = hm.UserData.ui.VCR.but(1).Position(2);
-bottom  = hm.UserData.plot.axRect(find(~isnan(hm.UserData.plot.axRect(:,1)), 1,'last'),2);
-% settings area, initial guess of size -- we'll scale it tightly later when
-% all elements are known
-width   = min(400,right-left-20);
-height  = min(250,top-bottom-20);
-% center it
-leftBot = [(right-left)/2+left-width/2 (top-bottom)/2+bottom-height/2];
-panelPos = [leftBot width height];
-hm.UserData.ui.setting.panel = uipanel('Units','pixels','Position',panelPos, 'title','Settings');
+function createPlotArrangerPopup(hm)
+scrSz = get(0,'ScreenSize');
+
+hm.UserData.ui.plotArranger.obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 500 500],'Name','Plot order and shown axes','Visible','off');
+hm.UserData.ui.plotArranger.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
+hm.UserData.ui.plotArranger.jFig   = get(handle(hm.UserData.ui.plotArranger.obj), 'JavaFrame');
+
+% create all elements
+parent = hm.UserData.ui.plotArranger.obj;
+c=0;
 
 % sizes, margins
 butSz           = [20 20];
@@ -1460,40 +1507,9 @@ scrollWidth     = 20;   % or so, guess so make sure we leave enough margin for t
 sepMargin       = [10 10];
 labelSpinSep    = [5 2];
 butSep          = [5 4];
-spinnerWidths   = [60 85];
-spinnerHeight   = 20;
 labelHeight     = 20;
 
-% make a bunch of components. store them in comps
-parent = hm.UserData.ui.setting.panel;
-c=0;
-% 1. SG filter
-c=c+1;
-ts          = 1000/hm.UserData.data.eye.fs;
-jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
-jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) spinnerHeight],'Tag','SGSpinner');
-comps(c).StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0');
-comps(c).JavaComponent.setEditor(jEditor);
-
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Savitzky-Golay window (ms)');
-jLabel.setLabelFor(comps(c-1).JavaComponent);
-jLabel.setToolTipText('window length of Savitzky-Golay differentiation filter in milliseconds');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) labelHeight],'Tag','SGSpinnerLabel');
-
-% 2 separator
-c=c+1;
-jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.HORIZONTAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 20 1],'Tag','SepLeftHori1');
-
-% 3 plot rearranger
-% 3.1 labels
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Plot order and shown axes');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelMain');
-
+% 1 labels
 c=c+1;
 jLabel      = com.mathworks.mwswing.MJLabel('Shown');
 comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelLeft');
@@ -1502,18 +1518,19 @@ c=c+1;
 jLabel      = com.mathworks.mwswing.MJLabel('Hidden');
 comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 50 labelHeight],'Tag','plotArrangerLabelRight');
 
-% 3.2 listbox
+% 2 listbox
 c=c+1;
 listItems   = {hm.UserData.plot.ax.UserData};
 comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerShown','Max',2,'Min',0,'Value',[]);
+hm.UserData.ui.plotArranger.shownList = comps(c);
 
-% 3.3 listbox
+% 3 listbox
 c=c+1;
 listItems   = {};
 comps(c)    = uicomponent('Style','listbox', 'Parent', parent,'Units','pixels','Position',[10 10 arrangerSz], 'String',listItems,'Tag','plotArrangerHidden','Max',2,'Min',0,'Value',[]);
+hm.UserData.ui.plotArranger.hiddenList = comps(c);
 
-
-% 3.4 buttons
+% 4 buttons
 gfx         = load('icons');
 c=c+1;
 icon        = getIcon(gfx,'<jump_to');
@@ -1525,7 +1542,6 @@ icon        = getIcon(gfx,'<-jump_to');
 comps(c)    = uicontrol('Style','pushbutton','Tag','moveDown','Position',[10 10 butSz],...
     'Parent',parent,'TooltipString','move selected down','CData',icon,'Callback',@(~,~,~) movePlot(hm,1));
 
-
 c=c+1;
 icon        = getIcon(gfx,'ffwd_default');
 comps(c)    = uicontrol('Style','pushbutton','Tag','placeInJail','Position',[10 10 butSz],...
@@ -1536,158 +1552,44 @@ icon        = getIcon(gfx,'rewind_default');
 comps(c)    = uicontrol('Style','pushbutton','Tag','restoreFromJail','Position',[10 10 butSz],...
     'Parent',parent,'TooltipString','restore selected','CData',icon,'Callback',@(~,~,~) jailAxis(hm,'restore'));
 
-% 4 separator
-c=c+1;
-jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.HORIZONTAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 20 1],'Tag','SepLeftHori2');
 
-% 5 plotLineWidth
-c=c+1;
-jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
-jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) spinnerHeight],'Tag','LWSpinner');
-comps(c).StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '##0.0');
-comps(c).JavaComponent.setEditor(jEditor);
+% drawnow so we get sizes, then organize and rescale parent to fit
+drawnow
 
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Plot line width (pix)');
-jLabel.setLabelFor(comps(c-1).JavaComponent);
-jLabel.setToolTipText('Line width for the plotted data (pixels)');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(1) labelHeight],'Tag','LWSpinnerLabel');
-
-% 6 separator
-c=c+1;
-jSep        = javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL);
-comps(c)    = uicomponent(jSep,'Parent',parent,'Units','pixels','Position',[10 10 1 20],'Tag','SepVert');
-
-% 7 current time
-c=c+1;
-% do this complicated way to take timezone effects into account..
-% grr... Setting the timezone of the formatter fixes the display, but
-% seems to make the spinner unsettable
-cal=java.util.GregorianCalendar.getInstance();
-cal.clear();
-cal.set(1970, cal.JANUARY, 1, 0, 0);
-hm.UserData.time.timeSpinnerOffset = cal.getTime().getTime();   % need to take this offset for the time object into account
-startDate   = java.util.Date(0+hm.UserData.time.timeSpinnerOffset);
-endDate     = java.util.Date(round(hm.UserData.time.endTime*1000)+hm.UserData.time.timeSpinnerOffset);
-% now use these adjusted start and end dates for the spinner
-jModel      = javax.swing.SpinnerDateModel(startDate,startDate,endDate,java.util.Calendar.SECOND);
-% NB: spinning the second field is only an initial state! For each spin
-% action, the current caret position is taken and the field it is in is
-% spinned
-jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','CTSpinner');
-jEditor     = javaObject('javax.swing.JSpinner$DateEditor', comps(c).JavaComponent, 'HH:mm:ss.SSS ');
-jEditor.getTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
-formatter   = jEditor.getTextField().getFormatter();
-formatter.setAllowsInvalid(false);
-formatter.setOverwriteMode(true);
-comps(c).JavaComponent.setEditor(jEditor);
-comps(c).StateChangedCallback = @(hndl,evt) setCurrentTimeSpinnerCallback(hm,hndl.Value);
-
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Current time');
-jLabel.setLabelFor(comps(c-1).JavaComponent);
-jLabel.setToolTipText('<html>Display and change current time.<br>Spinner button change the field that the caret is in.<br>Typing overwrites values and is committed with [enter]</html>');
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','CTSpinnerLabel');
-
-% 8 current window
-c=c+1;
-jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindow,0,hm.UserData.time.endTime,1);
-jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','TWSpinner');
-comps(c).StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.00');
-comps(c).JavaComponent.setEditor(jEditor);
-
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Time window (s)');
-jLabel.setLabelFor(comps(c-1).JavaComponent);
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','TWSpinnerLabel');
-
-% 9 playback speed
-c=c+1;
-jModel      = javax.swing.SpinnerNumberModel(1,0,16,0.001);
-jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comps(c)    = uicomponent(jSpinner,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) spinnerHeight],'Tag','PSSpinner');
-comps(c).StateChangedCallback = @(hndl,evt) setPlaybackSpeed(hm,hndl);
-jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comps(c).JavaComponent, '###0.000 x ');
-comps(c).JavaComponent.setEditor(jEditor);
-
-c=c+1;
-jLabel      = com.mathworks.mwswing.MJLabel('Playback speed');
-jLabel.setLabelFor(comps(c-1).JavaComponent);
-comps(c)    = uicomponent(jLabel,'Parent',parent,'Units','pixels','Position',[10 10 spinnerWidths(2) labelHeight],'Tag','PSSpinnerLabel');
-
-% all elements created, figure out sizes and positions, start from bottom
-% left column
-obj = findobj(comps,'Tag','LWSpinnerLabel');
-lWidth{1}(1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-obj = findobj(comps,'Tag','LWSpinner');
-lWidth{1}(2) = obj.Position(3);
-
+% get size of spinners and check boxes
 obj = findobj(comps,'Tag','moveUp');
-lWidth{2}(1) = obj.Position(3);
+lWidth{1}(1) = obj.Position(3);
 height(1)    = obj.Position(4)*2+butSep(2);
 obj = findobj(comps,'Tag','plotArrangerShown');
-lWidth{2}(2) = ceil(obj.Extent(3))+4;
+lWidth{1}(2) = ceil(obj.Extent(3))+4;
 height(2)   = ceil(obj.Extent(4));
 nElem(1)    = length(obj.String);
 obj = findobj(comps,'Tag','placeInJail');
-lWidth{2}(3) = obj.Position(3);
+lWidth{1}(3) = obj.Position(3);
 height(3)    = obj.Position(4)*2+butSep(2);
 obj = findobj(comps,'Tag','plotArrangerHidden');
 if isempty(obj.String)
-    lWidth{2}(4) = lWidth{2}(2);
+    lWidth{1}(4) = lWidth{1}(2);
     height(4)   = 0;
     nElem(2)    = 0;
 else
-    lWidth{2}(4) = ceil(obj.Extent(3))+4;
+    lWidth{1}(4) = ceil(obj.Extent(3))+4;
     height(4)   = ceil(obj.Extent(4));
     nElem(2)    = length(obj.String);
 end
-lWidth{2}([2 4]) = max([[lWidth{2}(2) lWidth{2}(4)]+scrollWidth arrangerSz(1)]);
+lWidth{1}([2 4]) = max([[lWidth{1}(2) lWidth{1}(4)]+scrollWidth arrangerSz(1)]);
 heightPerElem   = max(floor(height([2 4])./nElem));
 height([2 4])   = max([max(heightPerElem)*sum(nElem) height([1 3])]);
 
 obj = findobj(comps,'Tag','plotArrangerLabelLeft');
-lWidth{3}(1)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
+lWidth{2}(1)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
 obj = findobj(comps,'Tag','plotArrangerLabelRight');
-lWidth{3}(2)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-
-obj = findobj(comps,'Tag','plotArrangerLabelMain');
-lWidth{4}(1)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-
-obj = findobj(comps,'Tag','SGSpinnerLabel');
-lWidth{5}(1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-obj = findobj(comps,'Tag','SGSpinner');
-lWidth{5}(2) = obj.Position(3);
-% get full widths of each row of left column
-fullWidth(1) = sum(lWidth{1})+labelSpinSep(1);
-fullWidth(2) = sum(lWidth{2})+3*butSep(1);
-fullWidth(3) = 0;   % definitely shorter than other elements, but hard to determine due to alignment with boxes of width(2), so lets ignore in this calculation
-fullWidth(4) = lWidth{4}(1);
-fullWidth(5) = sum(lWidth{5})+labelSpinSep(1);
-theWidth     = max(fullWidth);
+lWidth{2}(2)    = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
 
 % position everything
-thePos = [sepMargin lWidth{1}(1) labelHeight];
-obj = findobj(comps,'Tag','LWSpinnerLabel');
-obj.Position = thePos;
-obj = findobj(comps,'Tag','LWSpinner'); % right align this one
-thePos([1 3]) = [theWidth+sepMargin(1)-lWidth{1}(2) lWidth{1}(2)];
-obj.Position = thePos;
-%---
-thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
-thePos([1 3 4]) = [sepMargin(1) theWidth 1];
-obj = findobj(comps,'Tag','SepLeftHori2');
-obj.Position = thePos;
-%---
 butOff = (height(2)-height(1))/2;
-thePos(2) = thePos(2)+thePos(4)+sepMargin(2)+butOff;
-thePos(3:4) = butSz;
+thePos = [sepMargin butSz];
+thePos(2) = thePos(2)+butOff;
 obj = findobj(comps,'Tag','moveDown');
 obj.Position = thePos;
 thePos(2) = thePos(2)+thePos(4)+butSep(2);
@@ -1696,7 +1598,7 @@ obj.Position = thePos;
 
 thePos(2) = thePos(2)-thePos(4)-butSep(2)-butOff;
 thePos(1) = thePos(1)+thePos(3)+butSep(1);
-thePos(3:4) = [lWidth{2}(2) height(2)];
+thePos(3:4) = [lWidth{1}(2) height(2)];
 obj = findobj(comps,'Tag','plotArrangerShown');
 obj.Position = thePos;
 shownPos = thePos;
@@ -1712,134 +1614,39 @@ obj.Position = thePos;
 
 thePos(2) = thePos(2)-thePos(4)-butSep(2)-butOff;
 thePos(1) = thePos(1)+thePos(3)+butSep(1);
-thePos(3:4) = [lWidth{2}(2) height(2)];
+thePos(3:4) = [lWidth{1}(2) height(2)];
 obj = findobj(comps,'Tag','plotArrangerHidden');
 obj.Position = thePos;
 hiddenPos = thePos;
-%---
+
 thePos(2) = thePos(2)+thePos(4)+labelSpinSep(2);
-thePos([1 3 4]) = [shownPos(1) lWidth{3}(1) labelHeight];
+thePos([1 3 4]) = [shownPos(1) lWidth{2}(1) labelHeight];
 obj = findobj(comps,'Tag','plotArrangerLabelLeft');
 obj.Position = thePos;
 
-thePos([1 3]) = [hiddenPos(1) lWidth{3}(2)];
+thePos([1 3]) = [hiddenPos(1) lWidth{2}(2)];
 obj = findobj(comps,'Tag','plotArrangerLabelRight');
 obj.Position = thePos;
 
-thePos(2) = thePos(2)+thePos(4)+labelSpinSep(2);
-thePos([1 3]) = [sepMargin(1) lWidth{4}(1)];
-obj = findobj(comps,'Tag','plotArrangerLabelMain');
-obj.Position = thePos;
-%---
-thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
-thePos([1 3 4]) = [sepMargin(1) theWidth 1];
-obj = findobj(comps,'Tag','SepLeftHori1');
-obj.Position = thePos;
-%---
-thePos(2) = thePos(2)+thePos(4)+sepMargin(2);
-thePos(3:4) = [lWidth{5}(1) labelHeight];
-obj = findobj(comps,'Tag','SGSpinnerLabel');
-obj.Position = thePos;
-obj = findobj(comps,'Tag','SGSpinner'); % right align this one
-thePos([1 3]) = [theWidth+sepMargin(1)-lWidth{1}(2) lWidth{1}(2)];
-obj.Position = thePos;
-%---
-%---
-% now determine containing panel height. ASSUMPTION: left column is the
-% tallest column and thus its height determines panel height
-fullHeight = thePos(2)+thePos(4)+sepMargin(2);
-%---
-% vertical separator
-thePos = [theWidth+2*sepMargin(1) sepMargin(2) 1 fullHeight-sepMargin(2)];
-obj = findobj(comps,'Tag','SepVert');
-obj.Position = thePos;
-%---
-%---
-% right column
-% work top to bottom
-% get sizes
-clear lWidth
-obj = findobj(comps,'Tag','CTSpinnerLabel');
-lWidth(1,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-obj = findobj(comps,'Tag','CTSpinner');
-lWidth(1,2) = obj.Position(3);
-obj = findobj(comps,'Tag','TWSpinnerLabel');
-lWidth(2,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-obj = findobj(comps,'Tag','TWSpinner');
-lWidth(2,2) = obj.Position(3);
-obj = findobj(comps,'Tag','PSSpinnerLabel');
-lWidth(3,1) = ceil(obj.PreferredSize().getWidth()/hm.UserData.ui.DPIScale)+2;
-obj = findobj(comps,'Tag','PSSpinner');
-lWidth(3,2) = obj.Position(3);
-% position
-thePos(1) = thePos(1)+thePos(3)+sepMargin(1);
-thePos(2) = fullHeight-sepMargin(2)-labelHeight;
-thePos(3:4) = [lWidth(1,1) labelHeight];
-obj = findobj(comps,'Tag','CTSpinnerLabel');
-obj.Position = thePos;
-thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
-thePos(3:4) = [lWidth(1,2) spinnerHeight];
-obj = findobj(comps,'Tag','CTSpinner');
-obj.Position = thePos;
-
-thePos(2) = thePos(2)-sepMargin(2)-labelHeight;
-thePos(3:4) = [lWidth(2,1) labelHeight];
-obj = findobj(comps,'Tag','TWSpinnerLabel');
-obj.Position = thePos;
-thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
-thePos(3:4) = [lWidth(2,2) spinnerHeight];
-obj = findobj(comps,'Tag','TWSpinner');
-obj.Position = thePos;
-
-thePos(2) = thePos(2)-sepMargin(2)-labelHeight;
-thePos(3:4) = [lWidth(3,1) labelHeight];
-obj = findobj(comps,'Tag','PSSpinnerLabel');
-obj.Position = thePos;
-thePos(2) = thePos(2)-labelSpinSep(2)-spinnerHeight;
-thePos(3:4) = [lWidth(3,2) spinnerHeight];
-obj = findobj(comps,'Tag','PSSpinner');
-obj.Position = thePos;
-%---
-%---
-% now determine containing panel's width
-fullWidth = thePos(1)+max(lWidth(:))+sepMargin(1);
-%---
-% position panel
-wh = [fullWidth fullHeight] + (hm.UserData.ui.setting.panel.Position(3:4)-hm.UserData.ui.setting.panel.InnerPosition(3:4));
-leftBot = [(right-left)/2+left-wh(1)/2 (top-bottom)/2+bottom-wh(2)/2];
-hm.UserData.ui.setting.panel.Position = [leftBot wh];
-
-hm.UserData.ui.setting.panel.UserData.comps = comps;
-hm.UserData.ui.setting.panel.Visible = 'off';
+% determine popup size
+width  = sum(hiddenPos([1 3]))+sepMargin(1);
+height = sum(   thePos([2 4]))+sepMargin(2);
+% position popup and make correct size
+pos = [(scrSz(3)-width)/2 (scrSz(4)-height)/2 width height];
+parent.Position = pos;
 end
 
-function toggleSettingsPanel(hm,hndl)
-if hndl.Value
-    hm.UserData.ui.dataQuality.panel.Visible= 'off';
-    hm.UserData.ui.setting.panel.Visible    = 'on';
-else
-    hm.UserData.ui.setting.panel.Visible    = 'off';
-    hm.UserData.ui.dataQuality.panel.Visible= 'on';
-end
+function showPlotArrangerPopup(hm)
+if isempty(hm.UserData.ui.plotArranger.obj)
+    % no popup to show. shouldn't happen, but better safe than sorry
+    return
 end
 
-function toggleClassifierSettingPanel(hm,hndl)
-if ~hndl.Value
-    % focusChange handler already closes popups, so don't need to do it
-    % here. Just stop executing this function
-    return;
-end
+% show
+hm.UserData.ui.plotArranger.obj.Visible = 'on';
+drawnow
 
-% show, selection panel if more than one classifier stream, or classifier
-% stream settings directly if there is only one
-if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
-    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'on';
-    drawnow
-    unMinimizePopup(hm.UserData.ui.coding.classifierPopup.select);
-else
-    assert(isscalar(hm.UserData.ui.coding.classifierPopup.setting))
-    openClassifierSettingsPanel(hm,1);
-end
+unMinimizePopup(hm.UserData.ui.plotArranger);
 end
 
 function unMinimizePopup(elem,idx)
@@ -1859,45 +1666,41 @@ end
 
 function openClassifierSettingsPanel(hm,idx)
 % prep state - when opening, always show parameters for current coding
-stream = hm.UserData.ui.coding.classifierPopup.setting(idx).stream;
+stream = hm.UserData.ui.coding.classifierSettingPopup(idx).stream;
 params = hm.UserData.coding.stream.classifier.currentSettings{stream};
-hm.UserData.ui.coding.classifierPopup.setting(idx).newParams = params;
+hm.UserData.ui.coding.classifierSettingPopup(idx).newParams = params;
 resetClassifierParameters(hm,idx,params);
-hm.UserData.ui.coding.classifierPopup.setting(idx).execButton.String = 'Recalculate';
-hm.UserData.ui.coding.classifierPopup.setting(idx).execButton.Enable = 'off';
-if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(idx).newParams,hm.UserData.coding.stream.classifier.defaults{stream})
+hm.UserData.ui.coding.classifierSettingPopup(idx).execButton.String = 'Recalculate';
+hm.UserData.ui.coding.classifierSettingPopup(idx).execButton.Enable = 'off';
+if ~isequal(hm.UserData.ui.coding.classifierSettingPopup(idx).newParams,hm.UserData.coding.stream.classifier.defaults{stream})
     % activate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(idx).resetButton.Enable = 'on';
+    hm.UserData.ui.coding.classifierSettingPopup(idx).resetButton.Enable = 'on';
 else
     % deactivate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(idx).resetButton.Enable = 'off';
+    hm.UserData.ui.coding.classifierSettingPopup(idx).resetButton.Enable = 'off';
 end
 % make visible
-hm.UserData.ui.coding.classifierPopup.setting(idx).obj.Visible = 'on';
-% hide classifier selector popup, if any
-if ~isempty(hm.UserData.ui.coding.classifierPopup.select)
-    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
-end
+hm.UserData.ui.coding.classifierSettingPopup(idx).obj.Visible = 'on';
 drawnow
 
-unMinimizePopup(hm.UserData.ui.coding.classifierPopup.setting,idx);
+unMinimizePopup(hm.UserData.ui.coding.classifierSettingPopup,idx);
 end
 
 function resetClassifierParameters(hm,idx,params)
-for p=1:length(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor)
-    info = sscanf(hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dControl');
-    switch hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID
+for p=1:length(hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor)
+    info = sscanf(hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).Tag,'Stream%dSetting%dParam%dControl');
+    switch hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).UIClassID
         case 'CheckBoxUI'
             % checkbox
-            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).JavaPeer.setSelected(params{info(3)}.value);
+            hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).JavaPeer.setSelected(params{info(3)}.value);
         case 'ComboBoxUI'
             % dropdown
-            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).JavaPeer.setSelectedItem(params{info(3)}.value);
+            hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).JavaPeer.setSelectedItem(params{info(3)}.value);
         case 'SpinnerUI'
             % spinner
-            hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).Value = params{info(3)}.value;
+            hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).Value = params{info(3)}.value;
         otherwise
-            error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID)
+            error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).UIClassID)
     end
 end
 end
@@ -1905,65 +1708,21 @@ end
 function createClassifierPopups(hm,iStream)
 nStream = length(iStream);
 
-% if more than one classifier stream, create popup to select which
-% classifier stream to set settings for
-if nStream>1
-    hm.UserData.ui.coding.classifierPopup.select.obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Select classifier stream','Visible','off');
-    hm.UserData.ui.coding.classifierPopup.select.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
-    hm.UserData.ui.coding.classifierPopup.select.jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.select.obj), 'JavaFrame');
-    
-    % temp buttons to figure out sizes
-    strs = gobjects(nStream,1);
-    for s=1:nStream
-        strs(s) = uicontrol('Style','pushbutton','String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
-    end
-    drawnow
-    sz      = cat(1,strs.Extent);   % this gets tight extent of strings
-    pos     = cat(1,strs.Position);
-    szPad   = pos(:,4)-sz(:,4);     % this is size of button. horizontal is useless as it doesn't scale with text, vertical tells us about padding
-    delete(strs);
-    
-    % create proper popup: determine size, create buttons
-    margin = [15 5];    % [around buttons, between buttons]
-    widths = sz(:,3)+szPad;
-    heights= sz(:,4)+szPad;
-    assert(isscalar(unique(heights)))
-    heights= heights(1);
-    popUpHeight = margin(1)*2+heights*nStream+margin(2)*(nStream-1);
-    popUpWidth  = margin(1)*2+max(widths);
-    
-    % determine position and create in right size
-    scrSz = get(0,'ScreenSize');
-    pos = [(scrSz(3)-popUpWidth)/2 (scrSz(4)-popUpHeight)/2 popUpWidth popUpHeight];
-    hm.UserData.ui.coding.classifierPopup.select.obj.Position = pos;
-    
-    % create buttons
-    for s=1:nStream
-        p = nStream-s;
-        hm.UserData.ui.coding.classifierPopup.select.buttons(s) = uicontrol(...
-            'Style','pushbutton','Tag',sprintf('openStream%dSettings',iStream(s)),'Position',[margin(1) margin(1)+p*(heights+margin(2)) widths(s) heights],...
-            'Callback',@(hBut,~) openClassifierSettingsPanel(hm,s),'String',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),...
-            'Parent',hm.UserData.ui.coding.classifierPopup.select.obj);
-    end
-else
-    hm.UserData.ui.coding.classifierPopup.select = [];
-end
-
 % per stream, create a settings dialogue
 scrSz = get(0,'ScreenSize');
 for s=1:nStream
-    hm.UserData.ui.coding.classifierPopup.setting(s).obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Visible','off');
-    hm.UserData.ui.coding.classifierPopup.setting(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
-    hm.UserData.ui.coding.classifierPopup.setting(s).jFig   = get(handle(hm.UserData.ui.coding.classifierPopup.setting(s).obj), 'JavaFrame');
-    hm.UserData.ui.coding.classifierPopup.setting(s).stream = iStream(s);
+    hm.UserData.ui.coding.classifierSettingPopup(s).obj    = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}),'Visible','off');
+    hm.UserData.ui.coding.classifierSettingPopup(s).obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
+    hm.UserData.ui.coding.classifierSettingPopup(s).jFig   = get(handle(hm.UserData.ui.coding.classifierSettingPopup(s).obj), 'JavaFrame');
+    hm.UserData.ui.coding.classifierSettingPopup(s).stream = iStream(s);
     
     % collect settable parameters
     params = hm.UserData.coding.stream.classifier.currentSettings{iStream(s)};
     iParam = find(cellfun(@(x) isfield(x,'settable') && x.settable,params));
     nParam = length(iParam);
     
-    % create spinngers and labels
-    parent = hm.UserData.ui.coding.classifierPopup.setting(s).obj;
+    % create spinners and labels
+    parent = hm.UserData.ui.coding.classifierSettingPopup(s).obj;
     for p=1:nParam
         % spinner/checkbox
         param = params{iParam(p)};
@@ -2037,34 +1796,34 @@ for s=1:nStream
         end
          
         % store
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p) = comp;
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p) = lbl;
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p)= lblRange;
+        hm.UserData.ui.coding.classifierSettingPopup(s).uiEditor(p) = comp;
+        hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels(p) = lbl;
+        hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR(p)= lblRange;
     end
-    hm.UserData.ui.coding.classifierPopup.setting(s).newParams   = params;
+    hm.UserData.ui.coding.classifierSettingPopup(s).newParams   = params;
     
     % drawnow so we get sizes, then organize and rescale parent to fit
     drawnow
     % get size of spinners and check boxes
     qCheckBox = cellfun(@(x) strcmpi(x.type,'bool'),params(iParam));
-    eleSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor,'uni',false);
+    eleSzs  = arrayfun(@(x) x.PreferredSize,hm.UserData.ui.coding.classifierSettingPopup(s).uiEditor,'uni',false);
     eleSzs  = cellfun(@(x) [x.width x.height],eleSzs,'uni',false); eleSzs = cat(1,eleSzs{:})/hm.UserData.ui.DPIScale;
     elePad  = comp.Position(4)-eleSzs(1,2);         % get how much padding there is vertically. Horizontal we can't recover, but thats fine
     eleFull = ceil(eleSzs+elePad);
     eleFull(~qCheckBox,1) = max(eleFull(~qCheckBox,1));
     % get tight extents of text labels name
-    lblSzs  = zeros(length(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels),2);
-    q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels);
-    temp(q) = arrayfun(@(x) [x.PreferredSize.width x.PreferredSize.height]./hm.UserData.ui.DPIScale,hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(q),'uni',false);
+    lblSzs  = zeros(length(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels),2);
+    q       = ishghandle(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels);
+    temp(q) = arrayfun(@(x) [x.PreferredSize.width x.PreferredSize.height]./hm.UserData.ui.DPIScale,hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels(q),'uni',false);
     lblSzs(q,:) = cat(1,temp{:});
-    lblPad  = hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(find(q,1)).Position(4)-lblSzs(find(q,1),2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
+    lblPad  = hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels(find(q,1)).Position(4)-lblSzs(find(q,1),2);          % get how much padding there is vertically. Horizontal we can't recover, but thats fine
     lblFull = lblSzs;
     lblFull(q,:) = ceil(lblSzs(q,:)+lblPad);
     clear temp
     % get size of range labels if any
     lblRSzs = zeros(size(lblSzs));
-    q       = ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR);
-    temp(q) = arrayfun(@(x) x.Extent(3),hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(q),'uni',false);
+    q       = ishghandle(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR);
+    temp(q) = arrayfun(@(x) x.Extent(3),hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR(q),'uni',false);
     lblRSzs(q,1) = ceil(cat(1,temp{:})+4);
     lblRSzs(q,2) = lblFull(1,2);    % same height for these labels
     clear temp
@@ -2090,32 +1849,32 @@ for s=1:nStream
         off = [marginsH(1) marginsV(1)]+[0 sum(lblFull(end-i+1:end,2))+sum(eleFull(end-i+1:end,2))]+[0 (i+1)*marginsV(2)]+[0 buttonSz(2)];
         
         szE = eleFull(p,:);
-        hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position = [off szE];
+        hm.UserData.ui.coding.classifierSettingPopup(s).uiEditor(p).Position = [off szE];
         
         lblPos = [off+[0 szE(2)] lblFull(p,:)];
-        if ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p))
-            hm.UserData.ui.coding.classifierPopup.setting(s).uiLabels(p).Position = lblPos;
+        if ishghandle(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels(p))
+            hm.UserData.ui.coding.classifierSettingPopup(s).uiLabels(p).Position = lblPos;
         end
         
-        if ishghandle(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p))
+        if ishghandle(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR(p))
             lblPos    = [off 0 lblPos(4)];
-            lblPos(1) = lblPos(1)+hm.UserData.ui.coding.classifierPopup.setting(s).uiEditor(p).Position(3)+marginsH(2);
-            lblPos(3) = ceil(hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p).Extent(3)+5);
+            lblPos(1) = lblPos(1)+hm.UserData.ui.coding.classifierSettingPopup(s).uiEditor(p).Position(3)+marginsH(2);
+            lblPos(3) = ceil(hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR(p).Extent(3)+5);
             lblPos(2) = lblPos(2)-2;
-            hm.UserData.ui.coding.classifierPopup.setting(s).uiLabelsR(p).Position = lblPos;
+            hm.UserData.ui.coding.classifierSettingPopup(s).uiLabelsR(p).Position = lblPos;
         end
     end
     
     % create buttons
     tag   = sprintf('Stream%dSetting%dRecalcExecute',iStream(s),s);
-    hm.UserData.ui.coding.classifierPopup.setting(s).execButton = uicontrol(...
+    hm.UserData.ui.coding.classifierSettingPopup(s).execButton = uicontrol(...
         'Style','pushbutton','Tag',tag,'Position',[marginsH(1) marginsV(1) buttonSz],...
         'Callback',@(hBut,~) executeClassifierParamChangeFnc(hm,hBut),'String','Recalculate',...
-        'Parent',hm.UserData.ui.coding.classifierPopup.setting(s).obj);
-    hm.UserData.ui.coding.classifierPopup.setting(s).resetButton = uicontrol(...
+        'Parent',hm.UserData.ui.coding.classifierSettingPopup(s).obj);
+    hm.UserData.ui.coding.classifierSettingPopup(s).resetButton = uicontrol(...
         'Style','pushbutton','Tag',tag,'Position',[marginsH(1)+buttonSz(1)+marginsH(2) marginsV(1) buttonSz2],...
         'Callback',@(hBut,~) executeClassifierParamResetFnc(hm,hBut),'String','Restore defaults',...
-        'Parent',hm.UserData.ui.coding.classifierPopup.setting(s).obj);
+        'Parent',hm.UserData.ui.coding.classifierSettingPopup(s).obj);
 end
 end
 
@@ -2132,27 +1891,27 @@ switch hndl.UIClassID
         % spinner
         newVal = hndl.getValue();
     otherwise
-        error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierPopup.setting(idx).uiEditor(p).UIClassID)
+        error('UIClassID ''%s'' unknown',hm.UserData.ui.coding.classifierSettingPopup(idx).uiEditor(p).UIClassID)
 end
 
 % set in temp parameter store
 info = sscanf(hndl.MatlabHGContainer.Tag,'Stream%dSetting%dParam%dControl');
-hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams{info(3)}.value = newVal;
+hm.UserData.ui.coding.classifierSettingPopup(info(2)).newParams{info(3)}.value = newVal;
 
 % update buttons
-if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams,hm.UserData.coding.stream.classifier.currentSettings{info(1)})
+if ~isequal(hm.UserData.ui.coding.classifierSettingPopup(info(2)).newParams,hm.UserData.coding.stream.classifier.currentSettings{info(1)})
     % activate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(info(2)).execButton.Enable = 'on';
+    hm.UserData.ui.coding.classifierSettingPopup(info(2)).execButton.Enable = 'on';
 else
     % deactivate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(info(2)).execButton.Enable = 'off';
+    hm.UserData.ui.coding.classifierSettingPopup(info(2)).execButton.Enable = 'off';
 end
-if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(info(2)).newParams,hm.UserData.coding.stream.classifier.defaults{info(1)})
+if ~isequal(hm.UserData.ui.coding.classifierSettingPopup(info(2)).newParams,hm.UserData.coding.stream.classifier.defaults{info(1)})
     % activate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(info(2)).resetButton.Enable = 'on';
+    hm.UserData.ui.coding.classifierSettingPopup(info(2)).resetButton.Enable = 'on';
 else
     % deactivate apply button
-    hm.UserData.ui.coding.classifierPopup.setting(info(2)).resetButton.Enable = 'off';
+    hm.UserData.ui.coding.classifierSettingPopup(info(2)).resetButton.Enable = 'off';
 end
 end
 
@@ -2162,13 +1921,13 @@ info    = sscanf(hndl.Tag,'Stream%dSetting%dRecalcExecute');
 stream  = info(1);
 iSet    = info(2);
 % check if there is anything to do
-if ~isequal(hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
+if ~isequal(hm.UserData.ui.coding.classifierSettingPopup(iSet).newParams,hm.UserData.coding.stream.classifier.currentSettings{stream})
     % rerun classifier
     hndl.String = 'Recalculating...';
     drawnow
-    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams,hm.UserData.time.startTime,hm.UserData.time.endTime);
+    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.ui.coding.classifierSettingPopup(iSet).newParams,hm.UserData.time.startTime,hm.UserData.time.endTime);
     % update parameter storage
-    hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierPopup.setting(iSet).newParams;
+    hm.UserData.coding.stream.classifier.currentSettings{stream} = hm.UserData.ui.coding.classifierSettingPopup(iSet).newParams;
     % replace coding
     hm.UserData.coding.mark{stream} = tempCoding.mark;
     hm.UserData.coding.type{stream} = tempCoding.type;
@@ -2196,73 +1955,6 @@ iSet    = info(2);
 resetClassifierParameters(hm,iSet,hm.UserData.coding.stream.classifier.defaults{stream});
 end
 
-function createReloadPopup(hm)
-% see which types this applies to
-qStream = ismember(hm.UserData.coding.stream.type,{'fileStream','classifier'});
-iStream = find(qStream);
-nStream = length(iStream);
-
-hm.UserData.ui.coding.reloadPopup.obj   = dialog('WindowStyle', 'normal', 'Position',[100 100 200 200],'Name','Reload coding','Visible','off');
-hm.UserData.ui.coding.reloadPopup.obj.CloseRequestFcn = @(~,~) popupCloseFnc(gcf);
-hm.UserData.ui.coding.reloadPopup.jFig  = get(handle(hm.UserData.ui.coding.reloadPopup.obj), 'JavaFrame');
-
-% create panel
-marginsP = [3 3];
-marginsB = [2 5];   % horizontal: [margin from left edge, margin between checkboxes]
-buttonSz = [60 24];
-
-
-% temp uipanel because we need to figure out size of margins
-temp    = uipanel('Units','pixels','Position',[10 10 400 400],'title','Xxj');
-
-% temp checkbox and label because we need their sizes too
-% use largest label
-h= uicomponent('Style','checkbox', 'Parent', temp,'Units','pixels','Position',[10 10 400 100], 'String',' recompute classification');
-drawnow
-% get sizes, delete
-relExt      = h.Extent; relExt(3) = relExt(3)+20;    % checkbox not counted in, guess a bit safe
-h.FontWeight= 'bold';
-h.String    = 'manually changed!';
-off         = [temp.InnerPosition(1:2)-temp.Position(1:2) temp.Position(3:4)-temp.InnerPosition(3:4)];
-changedExt  = h.Extent;
-delete(temp);
-
-% determine size of popup
-rowWidth    = marginsB(1)*2+marginsB(2)+relExt(3)+changedExt(3);
-panelWidth  = rowWidth+ceil(off(3));
-popUpWidth  = panelWidth+marginsP(1)*2;
-panelHeight = max(relExt(4),changedExt(4))+ ceil(off(4));
-popUpHeight = panelHeight*nStream + (nStream*2+1)*marginsP(2) + buttonSz(2); % *2 because between panel margin on both sides of each panel, +2 because button, -1 because not at top
-
-% determine position and create in right size
-scrSz = get(0,'ScreenSize');
-pos = [(scrSz(3)-popUpWidth)/2 (scrSz(4)-popUpHeight)/2 popUpWidth popUpHeight];
-hm.UserData.ui.coding.reloadPopup.obj.Position = pos;
-
-% create button
-hm.UserData.ui.coding.reloadPopup.button = uicontrol(...
-    'Style','pushbutton','Tag','executeReload','Position',[3+marginsB(1) marginsP(2) buttonSz],...
-    'Callback',@(hBut,~) executeReloadButtonFnc(hm),'String','Do reload',...
-    'Parent',hm.UserData.ui.coding.reloadPopup.obj);
-
-% create panels
-for s=1:nStream
-    p = nStream-s;
-    hm.UserData.ui.coding.reloadPopup.subpanel(s) = uipanel('Units','pixels','Position',[marginsP(1) panelHeight*p+(p*2+3)*marginsP(2)+buttonSz(2) panelWidth panelHeight],'Parent',hm.UserData.ui.coding.reloadPopup.obj,'title',sprintf('%d: %s',iStream(s),hm.UserData.coding.stream.lbls{iStream(s)}));
-end
-
-% make items in each
-for s=1:nStream
-    if strcmp(hm.UserData.coding.stream.type{iStream(s)},'fileStream')
-        lbl = ' reload file';
-    else
-        lbl = ' recompute classification';
-    end
-    hm.UserData.ui.coding.reloadPopup.checks(s)     = uicomponent('Style','checkbox', 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3                        0 200 20], 'String',lbl                ,'Tag',sprintf('reloadStream%d'   ,iStream(s)),'Value',false, 'Callback',@(~,~,~) reloadCheckFnc(hm));
-    hm.UserData.ui.coding.reloadPopup.manualLbl(s)  = uicomponent('Style','text'    , 'Parent', hm.UserData.ui.coding.reloadPopup.subpanel(s),'Units','pixels','Position',[3+relExt(3)+marginsB(1) -4 200 20], 'String','manually changed!','Tag',sprintf('reloadStreamLbL%d',iStream(s)),'FontWeight','bold','ForegroundColor',[1 0 0],'HorizontalAlignment','left');
-end
-end
-
 function popupCloseFnc(hndl)
 if ishghandle(hndl)
     if strcmp(hndl.Visible,'off')
@@ -2275,81 +1967,36 @@ if ishghandle(hndl)
 end
 end
 
-function reloadCheckFnc(hm)
-vals = cat(1,hm.UserData.ui.coding.reloadPopup.checks.Value);
-if any(vals)
-    hm.UserData.ui.coding.reloadPopup.button.Enable = 'on';
-else
-    hm.UserData.ui.coding.reloadPopup.button.Enable = 'off';
-end
-end
+function executeCodingReload(hm,idx)
+stream = hm.UserData.ui.coding.reload(idx).stream;
 
-function executeReloadButtonFnc(hm)
-hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
-hm.UserData.ui.reloadDataButton.Value = 0;
-vals = cat(1,hm.UserData.ui.coding.reloadPopup.checks.Value);
-if ~any(vals)
-    return
+% load file / recompute classification
+if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')
+    tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
+else
+    tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.coding.stream.classifier.currentSettings{stream},hm.UserData.time.startTime,hm.UserData.time.endTime);
 end
-for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
-    if vals(s)
-        stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
-        % load file
-        if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')
-            tempCoding = loadCodingFile(hm.UserData.coding.stream.options{stream},hm.UserData.data.eye.left.ts,hm.UserData.time.startTime,hm.UserData.time.endTime);
-        else
-            tempCoding = doClassification(hm.UserData.data,hm.UserData.coding.stream.options{stream}.function,hm.UserData.coding.stream.classifier.currentSettings{stream},hm.UserData.time.startTime,hm.UserData.time.endTime);
-        end
-        % replace coding
-        hm.UserData.coding.mark{stream} = tempCoding.mark;
-        hm.UserData.coding.type{stream} = tempCoding.type;
-        % make back up (e.g. for manual change detection)
-        hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
-        hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
-    end
-end
+% replace coding
+hm.UserData.coding.mark{stream} = tempCoding.mark;
+hm.UserData.coding.type{stream} = tempCoding.type;
+% make back up (e.g. for manual change detection)
+hm.UserData.coding.original.mark{stream} = hm.UserData.coding.mark{stream};
+hm.UserData.coding.original.type{stream} = hm.UserData.coding.type{stream};
+        
 % refresh codings shown in GUI
 updateCodeMarks(hm);
 updateCodingShades(hm)
 updateScarf(hm);
 end
 
-function toggleReloadPopup(hm,hndl)
-if isempty(hm.UserData.ui.coding.reloadPopup.obj)
-    % no popup to show. shouldn't get here as reload button shouldn't be
-    % shown in this case, but better safe than sorry
-    return
+function toggleCrapData(hm,hndl)
+if strcmp(hndl.Checked,'on')
+    hndl.Checked = 'off';
+else
+    hndl.Checked = 'on';
 end
-
-if ~hndl.Value
-    % focusChange handler already closes popup, so don't need to do it
-    % here. Just stop executing this function
-    return;
-end
-
-% prepare state of checkbox, manually changed text, and button
-hm.UserData.ui.coding.reloadPopup.button.Enable = 'off';
-[hm.UserData.ui.coding.reloadPopup.checks.Value] = deal(false);
-[hm.UserData.ui.coding.reloadPopup.manualLbl.Visible] = deal('off');
-% check if stream was manually changed, if so, notify user
-for s=1:length(hm.UserData.ui.coding.reloadPopup.checks)
-    stream = sscanf(hm.UserData.ui.coding.reloadPopup.checks(s).Tag,'reloadStream%d');
-    isManuallyChanged = ~isequal(hm.UserData.coding.mark{stream},hm.UserData.coding.original.mark{stream}) || ~isequal(hm.UserData.coding.type{stream},hm.UserData.coding.original.type{stream});
-    if isManuallyChanged
-        hm.UserData.ui.coding.reloadPopup.manualLbl(s).Visible = 'on';
-    end
-end
-
-% ready, show
-hm.UserData.ui.coding.reloadPopup.obj.Visible = 'on';
-drawnow
-
-unMinimizePopup(hm.UserData.ui.coding.reloadPopup);
-end
-
-function setCrapData(hm,hndl)
-hm.UserData.coding.dataIsCrap = ~~hndl.Value;
-updateMainButtonStates(hm);
+hm.UserData.coding.dataIsCrap = strcmp(hndl.Checked,'on');
+updateCodingMenuStates(hm);
 end
 
 function changeSGCallback(hm,hndl,~)
@@ -2392,7 +2039,7 @@ end
 end
 
 function movePlot(hm,dir)
-listbox  = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+listbox  = hm.UserData.ui.plotArranger.shownList;
 selected = listbox.Value;
 list     = listbox.String;
 
@@ -2432,8 +2079,8 @@ end
 
 function jailAxis(hm,action,qSelectHidden)
 
-listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
-listBoxJail  = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerHidden');
+listBoxShown = hm.UserData.ui.plotArranger.shownList;
+listBoxJail  = hm.UserData.ui.plotArranger.hiddenList;
 if nargin<3 || isempty(qSelectHidden)
     qSelectHidden = true;
 end
@@ -2556,7 +2203,7 @@ if isfield(hm.UserData.plot,'codeShade')
 end
 
 % update this listbox and its selection
-listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+listBoxShown = hm.UserData.ui.plotArranger.shownList;
 newOrder = newOrder(1:length(listBoxShown.String));
 listBoxShown.String = listBoxShown.String(newOrder);
 if nargin>=3
@@ -2633,12 +2280,12 @@ hm.UserData.ui.VCR.slider.right= (w-find(diff(px2),1)-5+1)/hm.UserData.ui.DPISca
 % lets install our own mouse scroll listener. Yeah, done in a tricky way as
 % i want the java event which gives acces to modifiers and cursor location.
 % the matlab event from the figure is useless for me here
-jFrame = get(gcf,'JavaFrame');
+jFrame = get(hm,'JavaFrame');
 j=handle(jFrame.fHG2Client.getAxisComponent, 'CallbackProperties');
 j.MouseWheelMovedCallback = @(hndl,evt) scrollFunc(hm,hndl,evt);
 
 % install property listener for current object. Gets invoked upon click
-addlistener(hm,'CurrentObject','PostSet',@(~,~) focusChange(hm));
+hm.UserData.ui.focusChangeListener = addlistener(hm,'CurrentObject','PostSet',@(~,~) focusChange(hm));
 
 % UI for zooming. Create zoom object now. If doing it before the above,
 % then, for some reason the MouseWheelMovedCallback and all other callbacks
@@ -2666,7 +2313,7 @@ pOrder = [pOrder; toJail.'];
 moveThePlots(hm,pOrder);
 % remove panels
 if ~isempty(toJail)
-    listBoxShown = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','plotArrangerShown');
+    listBoxShown = hm.UserData.ui.plotArranger.shownList;
     listBoxShown.Value = [-length(toJail)+1:0]+length(panels);
     jailAxis(hm,'jail',false);
 end
@@ -2680,6 +2327,141 @@ if isfield(hm.UserData.ui.coding,'panel')
 end
 
 makeDataQualityPanel(hm);
+
+% add settings spinners to settings item in menu bar, and current time to
+% menu bar itself
+jMenu = jFrame.fHG2Client.getMenuBar();
+menus = arrayfun(@(x) char(x.getLabel()),jMenu.getComponents(),'uni',false);
+qWhich= strcmpi(menus,'settings');
+assert(sum(qWhich)==1,'Error in menu setup')
+settingsMenu  = jMenu.getComponent(find(qWhich)-1); % Java does 0-based indexing
+
+% 1. SG filter
+ts          = 1000/hm.UserData.data.eye.fs;
+jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
+jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+comp        = uicomponent(jSpinner,'Tag','SGSpinner');
+comp.StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '##0 ');
+jSpinner.setEditor(jEditor);
+hm.UserData.menu.settings.SGSpinner = comp;
+
+jLabel      = com.mathworks.mwswing.MJLabel('Savitzky-Golay window (ms)');
+jLabel.setLabelFor(jSpinner);
+jLabel.setToolTipText('Window length of Savitzky-Golay differentiation filter (ms)');
+
+addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
+
+% 2. plotLineWidth
+jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
+jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+comp        = uicomponent(jSpinner,'Tag','LWSpinner');
+comp.StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '##0.0 ');
+jSpinner.setEditor(jEditor);
+hm.UserData.menu.settings.LWSpinner = comp;
+
+jLabel      = com.mathworks.mwswing.MJLabel('Plot line width (pix)');
+jLabel.setLabelFor(jSpinner);
+jLabel.setToolTipText('Line width for the plotted data (pixels)');
+
+addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
+
+% 3. current window
+jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindow,0,hm.UserData.time.endTime,1);
+jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+comp        = uicomponent(jSpinner,'Tag','TWSpinner');
+comp.StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '###0.00 ');
+jSpinner.setEditor(jEditor);
+hm.UserData.menu.settings.TWSpinner = comp;
+
+jLabel      = com.mathworks.mwswing.MJLabel('Time window (s)');
+jLabel.setLabelFor(jSpinner);
+jLabel.setToolTipText('Duration of data shown in the timeseries panels (s)');
+
+addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
+
+% 4. playback speed
+jModel      = javax.swing.SpinnerNumberModel(1,0,16,0.001);
+jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+comp        = uicomponent(jSpinner,'Tag','PSSpinner');
+comp.StateChangedCallback = @(hndl,evt) setPlaybackSpeed(hm,hndl);
+jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '###0.000 x ');
+jSpinner.setEditor(jEditor);
+hm.UserData.menu.settings.PSSpinner = comp;
+
+jLabel      = com.mathworks.mwswing.MJLabel('Playback speed');
+jLabel.setLabelFor(jSpinner);
+
+addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
+
+% deal with layout: make all spinner boxes the same size
+fields = {'SGSpinner','LWSpinner','TWSpinner','PSSpinner'};
+for f=length(fields):-1:1
+    sizes(f) = hm.UserData.menu.settings.(fields{f}).PreferredSize;
+end
+widths = sort(arrayfun(@(x) x.getWidth() ,sizes));
+height =  max(arrayfun(@(x) x.getHeight(),sizes));
+
+newSize = java.awt.Dimension(widths(end-1),height);
+for f=length(fields):-1:1
+    hm.UserData.menu.settings.(fields{f}).MinimumSize   = newSize;
+    hm.UserData.menu.settings.(fields{f}).PreferredSize = newSize;
+    hm.UserData.menu.settings.(fields{f}).MaximumSize   = newSize;
+end
+
+% 5. add current time to menu bar
+% do this complicated way to take timezone effects into account..
+% grr... Setting the timezone of the formatter fixes the display, but
+% seems to make the spinner unsettable
+cal=java.util.GregorianCalendar.getInstance();
+cal.clear();
+cal.set(1970, cal.JANUARY, 1, 0, 0);
+hm.UserData.time.timeSpinnerOffset = cal.getTime().getTime();   % need to take this offset for the time object into account
+startDate   = java.util.Date(0+hm.UserData.time.timeSpinnerOffset);
+endDate     = java.util.Date(round(hm.UserData.time.endTime*1000)+hm.UserData.time.timeSpinnerOffset);
+% now use these adjusted start and end dates for the spinner
+jModel      = javax.swing.SpinnerDateModel(startDate,startDate,endDate,java.util.Calendar.SECOND);
+% NB: spinning the second field is only an initial state! For each spin
+% action, the current caret position is taken and the field it is in is
+% spinned
+jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
+comp        = uicomponent(jSpinner,'Tag','CTSpinner');
+jEditor     = javaObject('javax.swing.JSpinner$DateEditor', comp.JavaComponent, 'HH:mm:ss.SSS ');
+jEditor.getTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
+formatter   = jEditor.getTextField().getFormatter();
+formatter.setAllowsInvalid(false);
+formatter.setOverwriteMode(true);
+jSpinner.setEditor(jEditor);
+comp.StateChangedCallback = @(hndl,evt) setCurrentTimeSpinnerCallback(hm,hndl.Value);
+hm.UserData.menu.settings.CTSpinner = comp;
+
+jLabel      = com.mathworks.mwswing.MJLabel('Current time');
+jLabel.setLabelFor(jSpinner);
+jLabel.setToolTipText('<html>Display and change current time.<br>Spinner buttons change the field that the caret is in.<br>Typing overwrites values and is committed with [enter]</html>');
+
+jMenu.add(javax.swing.Box.createHorizontalGlue());
+jMenu.add(jLabel);
+jMenu.add(javax.swing.Box.createRigidArea(java.awt.Dimension(5*hm.UserData.ui.DPIScale,0)));
+% make sure spinner has reasonable size set before updating UI
+sz = jSpinner.getPreferredSize();
+sz = java.awt.Dimension(sz.getWidth()/3*2,sz.getHeight());
+jSpinner.setPreferredSize(sz);
+jSpinner.setMinimumSize(sz);
+jSpinner.setMaximumSize(sz);
+jMenu.add(jSpinner);
+jMenu.updateUI();
+end
+
+function addCustomMenuItem(hm,menu,item,lbl)
+box = javax.swing.Box(javax.swing.BoxLayout.X_AXIS);
+box.add(lbl);
+width = 5*hm.UserData.ui.DPIScale;
+box.add(javaObject('javax.swing.Box$Filler',java.awt.Dimension(width,0),java.awt.Dimension(width,0),java.awt.Dimension(32767,0)));
+box.add(item);
+menu.add(box);
+menu.updateUI();
 end
 
 function fixupAxisLabels(hm)
@@ -2773,21 +2555,16 @@ if isempty(hm.UserData)
     return;
 end
 % close popups if any are open
-if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.reloadPopup) && strcmp(hm.UserData.ui.coding.reloadPopup.obj.Visible,'on')
-    hm.UserData.ui.coding.reloadPopup.obj.Visible = 'off';
-    hm.UserData.ui.reloadDataButton.Value = 0;
-end
-if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopup.select) && strcmp(hm.UserData.ui.coding.classifierPopup.select.obj.Visible,'on')
-    hm.UserData.ui.coding.classifierPopup.select.obj.Visible = 'off';
-    hm.UserData.ui.classifierSettingButton.Value = 0;
-end
-if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierPopup.setting)
-    for s=1:length(hm.UserData.ui.coding.classifierPopup.setting)
-        if strcmp(hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible,'on')
-            hm.UserData.ui.coding.classifierPopup.setting(s).obj.Visible = 'off';
+if hm.UserData.coding.hasCoding && ~isempty(hm.UserData.ui.coding.classifierSettingPopup)
+    for s=1:length(hm.UserData.ui.coding.classifierSettingPopup)
+        if strcmp(hm.UserData.ui.coding.classifierSettingPopup(s).obj.Visible,'on')
+            hm.UserData.ui.coding.classifierSettingPopup(s).obj.Visible = 'off';
             hm.UserData.ui.classifierSettingButton.Value = 0;
         end
     end
+end
+if strcmp(hm.UserData.ui.plotArranger.obj.Visible,'on')
+    hm.UserData.ui.plotArranger.obj.Visible = 'off';
 end
 % close coder panel if it is open now
 if hm.UserData.coding.hasCoding && strcmp(hm.UserData.ui.coding.panel.obj.Visible,'on')
@@ -2863,17 +2640,20 @@ end
 
 % clean up popups
 try
-    delete(hm.UserData.ui.coding.reloadPopup.obj);
+    delete(hm.UserData.ui.plotArranger.obj);
 catch
     % carry on
 end
 try
-    delete(hm.UserData.ui.coding.classifierPopup.select);
+    delete([hm.UserData.ui.coding.classifierSettingPopup.obj]);
 catch
     % carry on
 end
+
+% clean up focus change listener as it can trip up closereq() execution
+% below
 try
-    delete([hm.UserData.ui.coding.classifierPopup.setting.obj]);
+    delete(hm.UserData.ui.focusChangeListener);
 catch
     % carry on
 end
@@ -3488,7 +3268,7 @@ elseif hm.UserData.ui.coding.grabbedMarker
     if nargin<2 || doFullUpdate
         updateScarf(hm);
     else
-        updateMainButtonStates(hm);
+        updateCodingMenuStates(hm);
     end
 end
 % update cursors (check for hovers and adjusts cursor if needed)
@@ -3692,8 +3472,8 @@ if qTLeft || qTimeTooFar
 end
 
 % update time spinner
-currentTime = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','CTSpinner');
-if (currentTime.Value.getTime-hm.UserData.time.timeSpinnerOffset)/1000~=hm.UserData.time.currentTime && ~hm.UserData.ui.VCR.state.playing
+currentTime = hm.UserData.menu.settings.CTSpinner;
+if (currentTime.Value.getTime-hm.UserData.time.timeSpinnerOffset)/1000~=hm.UserData.time.currentTime
     currentTime.Value = java.util.Date(round(hm.UserData.time.currentTime*1000)+hm.UserData.time.timeSpinnerOffset);
 end
 end
@@ -3796,7 +3576,7 @@ if any(left~=axlims(:,1)) || any(left+hm.UserData.settings.plot.timeWindow~=axli
     hm.UserData.ui.VCR.slider.jComp.HighValue=(left+hm.UserData.settings.plot.timeWindow)*hm.UserData.ui.VCR.slider.fac;
 end
 
-timeWindow = findobj(hm.UserData.ui.setting.panel.UserData.comps,'Tag','TWSpinner');
+timeWindow = hm.UserData.menu.settings.TWSpinner;
 if timeWindow.Value~=hm.UserData.settings.plot.timeWindow
     timeWindow.Value = hm.UserData.settings.plot.timeWindow;
 end
