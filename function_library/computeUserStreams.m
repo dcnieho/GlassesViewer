@@ -1,7 +1,8 @@
 function data = computeUserStreams(data, userStreams)
 
 for p=1:length(userStreams)
-    fprintf('  creating user streams: %s\n',userStreams(p).function);
+    streams = sprintf('%s, ',userStreams(p).streams{:}); streams(end-1:end) = [];
+    fprintf('  creating user streams: %s() -> %s\n',userStreams(p).function,streams);
     
     func = str2func(userStreams(p).function);
     
