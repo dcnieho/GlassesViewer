@@ -194,7 +194,7 @@ hm.UserData.plot.margin.xy      = posxy-opos-hm.UserData.plot.margin.base-hm.Use
 hm.UserData.plot.margin.between = 8;
 
 % setup plot axes
-panels      = {'azi','scarf','ele','videoGaze','gazePoint3D','vel','pup','pupCentLeft','pupCentRight','gyro','acc'};
+panels      = getBuiltInPanels();
 isUserStream= false(1,length(panels));
 if isfield(hm.UserData.data,'user')
     % get user streams
