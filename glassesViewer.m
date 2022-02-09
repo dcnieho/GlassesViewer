@@ -707,11 +707,14 @@ function setupCodingStreamMenu(hm,parent,callback)
 for s=1:length(hm.UserData.coding.codeCats)
     stream = uimenu(parent,'Text',sprintf('&%d: %s',s,hm.UserData.coding.stream.lbls{s}));
     for c=1:size(hm.UserData.coding.codeCats{s},1)
-        name = hm.UserData.coding.codeCats{s}{c,1};
-        name(name=='*'|name=='+') = [];
-        cat = uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),'Enable','off');
+        name = getCodingCategoryName(hm.UserData.coding.codeCats{s}{c,1});
+        uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),'Enable','off');
     end
 end
+end
+
+function name = getCodingCategoryName(name)
+name(name=='*'|name=='+') = [];
 end
 
 function saveCodingData(hm)
@@ -731,7 +734,7 @@ fprintf(fid,'index\tcategory\tstart_time\tend_time\tcam_pos_x\tcam_pos_y\tleft_a
 % make labels
 catNames= hm.UserData.coding.codeCats{sIdx}(:,1);
 for c=1:size(catNames,1)
-    catNames{c}(catNames{c}=='*'|catNames{c}=='+') = [];
+    catNames{c} = getCodingCategoryName(catNames{c});
 end
 % run through codings, store to file
 for c=1:length(hm.UserData.coding.type{sIdx})
@@ -981,8 +984,7 @@ temp    = uipanel('Units','pixels','Position',[10 10 400 400],'title','Xxj');
 butH    = cell(nStream,max(cellfun(@length,buttons)));
 for s=1:nStream
     for q=1:size(buttons{s},1)
-        btnLbl = buttons{s}{q,1};
-        btnLbl(btnLbl=='*'|btnLbl=='+') = [];
+        btnLbl = getCodingCategoryName(buttons{s}{q,1});
         butH{s,q} = uicontrol('Style','togglebutton','String',btnLbl,'Parent',temp);
     end
 end
@@ -1053,8 +1055,7 @@ for p=1:length(buttons)
             assert(q==size(buttons{p},1)-1)
             start(1) = max(rowWidths)-marginsB(1)-buttonSz(1);
         else
-            btnLbl = buttons{p}{q,1};
-            btnLbl(btnLbl=='*'|btnLbl=='+') = [];
+            btnLbl = getCodingCategoryName(buttons{p}{q,1});
             hm.UserData.ui.coding.buttons(butIdx) = uicontrol(...
                 'Style','togglebutton','Tag',sprintf('%s',buttons{p}{q,1}),'Position',[start buttonSz],...
                 'Callback',@(hBut,~) codingButtonCallback(hBut,hm,p,buttons{p}{q,:}),'String',btnLbl,...
