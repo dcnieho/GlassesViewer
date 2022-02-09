@@ -726,19 +726,18 @@ updateCodingMenuStates(hm);
 end
 
 function saveCodingDataTSV(hm,sIdx)
-coding  = rmfield(hm.UserData.coding,'hasCoding');
-fname   = makeValidFilename(sprintf('coding_%d_%s.tsv',sIdx,coding.stream.lbls{sIdx}));
+fname   = makeValidFilename(sprintf('coding_%d_%s.tsv',sIdx,hm.UserData.coding.stream.lbls{sIdx}));
 fid     = fopen(fullfile(hm.UserData.fileDir,fname),'wt');
 fprintf(fid,'index\tcategory\tstart_time\tend_time\tcam_pos_x\tcam_pos_y\tleft_azi\tleft_ele\tright_azi\tright_ele\n');
 % make labels
-catNames= coding.codeCats{sIdx}(:,1);
+catNames= hm.UserData.coding.codeCats{sIdx}(:,1);
 for c=1:size(catNames,1)
     catNames{c}(catNames{c}=='*'|catNames{c}=='+') = [];
 end
 % run through codings, store to file
-for c=1:length(coding.type{sIdx})
-    bits  = find(getCodeBits(coding.type{sIdx}(c)));
-    times = coding.mark{sIdx}(c:c+1);
+for c=1:length(hm.UserData.coding.type{sIdx})
+    bits  = find(getCodeBits(hm.UserData.coding.type{sIdx}(c)));
+    times = hm.UserData.coding.mark{sIdx}(c:c+1);
     qDat  = hm.UserData.data.eye.binocular.ts>=times(1) & hm.UserData.data.eye.binocular.ts<=times(2);
     camPos= mean(hm.UserData.data.eye.binocular.gp(qDat,:),1,'omitnan');
     qDat  = hm.UserData.data.eye.     left.ts>=times(1) & hm.UserData.data.eye.     left.ts<=times(2);
