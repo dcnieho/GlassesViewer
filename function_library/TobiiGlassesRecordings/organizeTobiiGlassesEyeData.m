@@ -116,9 +116,7 @@ hasRight = hasRight & ~any(isnan(data.right.gd(ifr,:)),2);
 % now count on how many monocular samples each binocular sample is based
 data.binocular.nEye = sum([hasLeft hasRight],2);
 
-% check gidx is still monotonically increasing and then remove, it has
-% served its purpose
+% check gidx is still monotonically increasing
 for eye={'left','right','binocular'}
     assert(issorted(data.(eye{1}).gidx,'monotonic'))
-    data.(eye{1}) = rmfield(data.(eye{1}),'gidx');
 end
