@@ -615,24 +615,19 @@ end
 
 %% helpers etc
 function setupMenu(hm)
-
 % export
-
 % data streams
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','&Data streams');
-mitem2 = uimenu(mitem,'Text','Export &full recording to tsv','Enable','off');
+mitem2 = uimenu(mitem,'Text','Export &full recording to tsv','Callback',@(~,~) saveDataStreamsTSV(hm));
 mitem2 = uimenu(mitem,'Text','Export &segments to tsv');
 setupCodingStreamMenu(hm,mitem2);
-
 % data quality
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Data &quality');
 mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','Enable','off');
 mitem2 = uimenu(mitem,'Text','Store to tsv for &segments');
 setupCodingStreamMenu(hm,mitem2);
-
 % scene video
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Export scene &video with gaze','Enable','off');
-
 
 % coding
 if hm.UserData.coding.hasCoding
@@ -691,11 +686,21 @@ if hm.UserData.coding.hasCoding
     updateCodingMenuStates(hm);
 end
 
-
 % settings
 uimenu(hm.UserData.menu.settings.hndl,'Text','&Change plot order and shown axes','CallBack',@(~,~)showPlotArrangerPopup(hm));
 createPlotArrangerPopup(hm);
-% NB: other menu items are added in doPostInit()
+% NB: other menu items are added to settings menu in doPostInit()
+end
+
+
+
+function saveDataStreamsTSV(hm,csIdx,cIdx)
+qFullFile = nargin<2;
+if qFullFile
+    saveDataToTSV(hm.UserData.data,hm.UserData.fileDir,'full');
+else
+    % TODO
+end
 end
 
 function setupCodingStreamMenu(hm,parent,callback)
