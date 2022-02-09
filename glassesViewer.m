@@ -620,7 +620,7 @@ function setupMenu(hm)
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','&Data streams');
 mitem2 = uimenu(mitem,'Text','Export &full recording to tsv','Callback',@(~,~) saveDataStreamsTSV(hm));
 mitem2 = uimenu(mitem,'Text','Export &segments to tsv');
-setupCodingStreamMenu(hm,mitem2);
+setupCodingStreamMenu(hm,mitem2, @(s,c) @(~,~) saveDataStreamsTSV(hm,s,c));
 % data quality
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Data &quality');
 mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','Enable','off');
@@ -699,7 +699,14 @@ qFullFile = nargin<2;
 if qFullFile
     saveDataToTSV(hm.UserData.data,hm.UserData.fileDir,'full');
 else
-    % TODO
+    filenameSuffix = makeValidFilename(sprintf('coding_%d_%s_%d_%s',csIdx,hm.UserData.coding.stream.lbls{csIdx},cIdx,getCodingCategoryName(hm.UserData.coding.codeCats{csIdx}{cIdx,1})));
+    
+    % get
+    iCode = find(~~bitand(hm.UserData.coding.type{csIdx},hm.UserData.coding.codeCats{csIdx}{cIdx,2}));
+    intervalTs = [hm.UserData.coding.mark{csIdx}(iCode); hm.UserData.coding.mark{csIdx}(iCode+1)].';
+    
+    % store
+    saveDataToTSV(hm.UserData.data,hm.UserData.fileDir,filenameSuffix,{},intervalTs);
 end
 end
 
@@ -708,7 +715,11 @@ for s=1:length(hm.UserData.coding.codeCats)
     stream = uimenu(parent,'Text',sprintf('&%d: %s',s,hm.UserData.coding.stream.lbls{s}));
     for c=1:size(hm.UserData.coding.codeCats{s},1)
         name = getCodingCategoryName(hm.UserData.coding.codeCats{s}{c,1});
-        uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),'Enable','off');
+        extra = {'Enable','off'};
+        if nargin>2
+            extra = {'CallBack',callback(s,c)};
+        end
+        uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),extra{:});
     end
 end
 end
