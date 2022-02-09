@@ -199,12 +199,6 @@ isUserStream= false(1,length(panels));
 if isfield(hm.UserData.data,'user')
     % get user streams
     userStreams = fieldnames(hm.UserData.data.user);
-    qExists = ismember(userStreams,panels);
-    if any(qExists)
-        offending = sprintf('  %s\n',userStreams{qExists});
-        offending(end) = [];
-        error('Some user-created streams have names conflicting with built-in streams. Rename the following user-created streams:\n%s',offending)
-    end
     panels = [panels userStreams(:).'];
     isUserStream = [isUserStream true(1,length(userStreams))];
 end
