@@ -14,10 +14,11 @@ else
     assert(size(intervalTs,2)==2,'intervalTs, if provided, should be an Mx2 matrix')
 end
 
-qGenCacheFile = ~exist(fullfile(recordingDir,'dataquality.mat'),'file');
+cacheFile = fullfile(recordingDir,'dataquality.mat');
+qGenCacheFile = isempty(recordingDir) || ~exist(cacheFile,'file');
 if ~qGenCacheFile
     % we have a cache file, check its file version and windowLength
-    cache = load(fullfile(recordingDir,'dataquality.mat'),'fileVersion','windowMs','intervalTs');
+    cache = load(cacheFile,'fileVersion','windowMs','intervalTs');
     qGenCacheFile = cache.fileVersion~=fileVersion || cache.windowMs~=windowLengthMs || ~isequal(cache.intervalTs,intervalTs);
 end
 
@@ -59,27 +60,30 @@ if qGenCacheFile
         quality.interval(p).dataLoss.bgp = [DLbgpX DLbgpY]*100;
     end
     
-    save(fullfile(recordingDir,'dataquality.mat'),'-struct','quality');
+    if ~isempty(recordingDir)
+        save(cacheFile,'-struct','quality');
+    end
 else
-    quality = load(fullfile(recordingDir,'dataquality.mat'));
+    quality = load(cacheFile);
 end
 
-
-% print DQ values
-fprintf(' \n');
-fprintf('<strong>Data quality:</strong>\n');
-fprintf('--------------------------------------\n');
-fprintf('Signal            RMS-S2S*   Data loss\n');
-fprintf('--------------------------------------\n');
-fprintf('Left azi           %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.azi(1),quality.interval(1).dataLoss.azi(1));
-fprintf('Left ele           %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.ele(1),quality.interval(1).dataLoss.ele(1));
-fprintf('Right azi          %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.azi(2),quality.interval(1).dataLoss.azi(2));
-fprintf('Right ele          %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.ele(2),quality.interval(1).dataLoss.ele(2));
-fprintf('Gaze point video X %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.bgp(1),quality.interval(1).dataLoss.bgp(1));
-fprintf('Gaze point video Y %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.bgp(2),quality.interval(1).dataLoss.bgp(2));
-fprintf('--------------------------------------\n');
-
-% print RMS-S2S details
-fprintf('* Median RMS-S2S using %.0fms moving window\n', quality.windowMs);
-fprintf('* Unit for azi/ele: deg, gaze point video: pix\n');
-fprintf(' \n');
+if ~isempty(recordingDir)
+    % print DQ values
+    fprintf(' \n');
+    fprintf('<strong>Data quality:</strong>\n');
+    fprintf('--------------------------------------\n');
+    fprintf('Signal            RMS-S2S*   Data loss\n');
+    fprintf('--------------------------------------\n');
+    fprintf('Left azi           %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.azi(1),quality.interval(1).dataLoss.azi(1));
+    fprintf('Left ele           %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.ele(1),quality.interval(1).dataLoss.ele(1));
+    fprintf('Right azi          %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.azi(2),quality.interval(1).dataLoss.azi(2));
+    fprintf('Right ele          %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.ele(2),quality.interval(1).dataLoss.ele(2));
+    fprintf('Gaze point video X %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.bgp(1),quality.interval(1).dataLoss.bgp(1));
+    fprintf('Gaze point video Y %6.2f      %5.2f%%\n',quality.interval(1).RMSS2S.bgp(2),quality.interval(1).dataLoss.bgp(2));
+    fprintf('--------------------------------------\n');
+    
+    % print RMS-S2S details
+    fprintf('* Median RMS-S2S using %.0fms moving window\n', quality.windowMs);
+    fprintf('* Unit for azi/ele: deg, gaze point video: pix\n');
+    fprintf(' \n');
+end

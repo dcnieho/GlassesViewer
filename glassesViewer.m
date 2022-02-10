@@ -623,9 +623,9 @@ mitem2 = uimenu(mitem,'Text','Export &segments to tsv');
 setupCodingStreamMenu(hm,mitem2, @(s,c) @(~,~) saveDataStreamsTSV(hm,s,c));
 % data quality
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Data &quality');
-mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','Enable','off');
+mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','CallBack',@(~,~) saveDataQualityTSV(hm));
 mitem2 = uimenu(mitem,'Text','Store to tsv for &segments');
-setupCodingStreamMenu(hm,mitem2);
+setupCodingStreamMenu(hm,mitem2, @(s,c) @(~,~) saveDataQualityTSV(hm,s,c));
 % scene video
 mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Export scene &video with gaze','Enable','off');
 
@@ -692,8 +692,6 @@ createPlotArrangerPopup(hm);
 % NB: other menu items are added to settings menu in doPostInit()
 end
 
-
-
 function saveDataStreamsTSV(hm,csIdx,cIdx)
 qFullFile = nargin<2;
 if qFullFile
@@ -710,16 +708,28 @@ else
 end
 end
 
+function saveDataQualityTSV(hm,csIdx,cIdx)
+qFullFile = nargin<2;
+if qFullFile
+    saveDataQualityToTSV(hm.UserData.data,hm.UserData.fileDir,hm.UserData.settings.dataQuality.windowLength,'full');
+else
+    filenameSuffix = makeValidFilename(sprintf('coding_%d_%s_%d_%s',csIdx,hm.UserData.coding.stream.lbls{csIdx},cIdx,getCodingCategoryName(hm.UserData.coding.codeCats{csIdx}{cIdx,1})));
+    
+    % get
+    iCode = find(~~bitand(hm.UserData.coding.type{csIdx},hm.UserData.coding.codeCats{csIdx}{cIdx,2}));
+    intervalTs = [hm.UserData.coding.mark{csIdx}(iCode); hm.UserData.coding.mark{csIdx}(iCode+1)].';
+    
+    % store
+    saveDataQualityToTSV(hm.UserData.data,hm.UserData.fileDir,hm.UserData.settings.dataQuality.windowLength,filenameSuffix,intervalTs);
+end
+end
+
 function setupCodingStreamMenu(hm,parent,callback)
 for s=1:length(hm.UserData.coding.codeCats)
     stream = uimenu(parent,'Text',sprintf('&%d: %s',s,hm.UserData.coding.stream.lbls{s}));
     for c=1:size(hm.UserData.coding.codeCats{s},1)
         name = getCodingCategoryName(hm.UserData.coding.codeCats{s}{c,1});
-        extra = {'Enable','off'};
-        if nargin>2
-            extra = {'CallBack',callback(s,c)};
-        end
-        uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),extra{:});
+        uimenu(stream,'Text',sprintf('&%d: %s',hm.UserData.coding.codeCats{s}{c,2},name),'CallBack',callback(s,c));
     end
 end
 end

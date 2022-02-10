@@ -21,6 +21,8 @@ else
 end
 if nargin>=3 && ~isempty(fileSuffix)
     fileSuffix = ['_' fileSuffix];
+else
+    fileSuffix = '';
 end
 
 qHaveIntervals = nargin>=5 && ~isempty(intervalTs);
