@@ -115,6 +115,7 @@ end
 
 % load glasses data, get data quality
 codeStream      = 'analysis interval';
+codeCat         = 'included';
 for p=length(folders):-1:1
     myDir           = fullfile(selectedDir,folders{p});
     
@@ -122,19 +123,33 @@ for p=length(folders):-1:1
     data            = getTobiiDataFromGlasses(myDir,settings.userStreams,qDEBUG);
     
     % get data quality, use coding if available
-    codingFile = fullfile(myDir,'coding.mat');
+    qHaveAnalysisInterval = false;
+    codingFile            = fullfile(myDir,'coding.mat');
     if exist(codingFile,'file')==2
-        coding = load(codingFile);
-        qWhich = strcmp(coding.stream.lbls,codeStream);
-        assert(sum(qWhich)==1,'No analysis interval coding stream found')
-        analysisInterval = coding.mark{qWhich}(2:3);    % idx 1 is start of file
-        data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength, analysisInterval);
-    else
-        warning('analysis interval unknown');
-        data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
+        coding                  = load(codingFile);
+        qWhichStream            = strcmp(coding.stream.lbls,codeStream);
+        nStreams                = sum(qWhichStream)==1;
+        assert(nStreams<2,'More than one analysis interval coding stream found, impossible');
+        if nStreams==1
+            qWhichCodeCat           = strcmp(coding.codeCats{qWhichStream}(:,1),codeCat);
+            nCodeCats               = sum(qWhichCodeCat);
+            assert(nCodeCats<2,'More than one coding category with the same name found in coding stream, impossible');
+            qHaveAnalysisInterval   = nCodeCats==1;
+        end
     end
     
-    % store for output
+    if qHaveAnalysisInterval
+        code                = coding.codeCats{qWhichStream}{qWhichCodeCat,2};
+        iCode               = find(~~bitand(coding.type{qWhichStream},code));
+        analysisIntervals   = [coding.mark{qWhichStream}(iCode); coding.mark{qWhichStream}(iCode+1)].';
+        data.quality        = computeDataQuality(myDir, data, settings.dataQuality.windowLength, analysisIntervals);
+    else
+        warning('analysis interval unknown');
+        data.quality        = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
+    end
+    
+    % store for output (NB! this just outputs data quality for the first
+    % analysis interval!)
     output(p).dq        = data.quality.interval(1);
     output(p).vq.scene  = data.video.scene.missProp;
     if isfield(data.video,'eye')
