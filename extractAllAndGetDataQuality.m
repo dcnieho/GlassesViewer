@@ -114,12 +114,28 @@ else
 end
 
 % load glasses data, get data quality
+codeStream      = 'analysis interval';
 for p=length(folders):-1:1
     myDir           = fullfile(selectedDir,folders{p});
+    
+    % load data
     data            = getTobiiDataFromGlasses(myDir,settings.userStreams,qDEBUG);
-    data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
+    
+    % get data quality, use coding if available
+    codingFile = fullfile(myDir,'coding.mat');
+    if exist(codingFile,'file')==2
+        coding = load(codingFile);
+        qWhich = strcmp(coding.stream.lbls,codeStream);
+        assert(sum(qWhich)==1,'No analysis interval coding stream found')
+        analysisInterval = coding.mark{qWhich}(2:3);    % idx 1 is start of file
+        data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength, analysisInterval);
+    else
+        warning('analysis interval unknown');
+        data.quality    = computeDataQuality(myDir, data, settings.dataQuality.windowLength);
+    end
+    
     % store for output
-    output(p).dq        = data.quality;
+    output(p).dq        = data.quality.interval(1);
     output(p).vq.scene  = data.video.scene.missProp;
     if isfield(data.video,'eye')
         output(p).vq.eye    = data.video.eye.missProp;
