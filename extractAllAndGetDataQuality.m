@@ -75,7 +75,7 @@ end
 
 % check what to process
 if qIsSingleRecording
-    folders = {selectedDir};
+    folders = {''};
     % get some info about recording
     project = {''};
     recjson = jsondecoder(fileread(fullfile(selectedDir, 'recording.json')));
