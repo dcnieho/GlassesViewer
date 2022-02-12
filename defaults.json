@@ -54,6 +54,12 @@
       "streams": ["orientation"]
     }
   ],
+  "export": {
+    "sceneVideo" : {
+      "clrs" : [[255,0,0],[0,255,0]],
+      "alpha": 0.6
+    }
+  },
   "coding": {
     "closePanelAfterCode": true,
     "streams": [

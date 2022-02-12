@@ -627,7 +627,9 @@ mitem2 = uimenu(mitem,'Text','Store to tsv for &full recording','CallBack',@(~,~
 mitem2 = uimenu(mitem,'Text','Store to tsv for &segments');
 setupCodingStreamMenu(hm,mitem2, @(s,c) @(~,~) saveDataQualityTSV(hm,s,c));
 % scene video
-mitem  = uimenu(hm.UserData.menu.export.hndl,'Text','Export scene &video with gaze','Enable','off');
+hm.UserData.menu.export.video = uimenu(hm.UserData.menu.export.hndl,...
+    'Text','Export scene &video with gaze',...
+    'CallBack',@(~,~) saveSceneVideo(hm,hm.UserData.settings.export.sceneVideo));
 
 % coding
 if hm.UserData.coding.hasCoding
@@ -659,8 +661,8 @@ if hm.UserData.coding.hasCoding
                 txt = 'Recompute classification';
             end
             
-            hm.UserData.ui.coding.reload(s).stream = iStream(s);
-            hm.UserData.ui.coding.reload(s).obj    = uimenu(mitem,...
+            hm.UserData.menu.coding.reload(s).stream = iStream(s);
+            hm.UserData.menu.coding.reload(s).obj    = uimenu(mitem,...
                 'Text', sprintf('%s for &%d: %s', txt, iStream(s), hm.UserData.coding.stream.lbls{s}),...
                 'CallBack', @(~,~) executeCodingReload(hm,s));
         end
@@ -734,6 +736,19 @@ for s=1:length(hm.UserData.coding.codeCats)
 end
 end
 
+function saveSceneVideo(hm,exportSettings)
+text = hm.UserData.menu.export.video.Text;
+hm.UserData.menu.export.video.Enable = 'off';
+callback = @(x) textUpdater(hm.UserData.menu.export.video, sprintf('Exporting scene video, %d%%...',x));
+saveSceneVideoWithGaze(hm.UserData.data,hm.UserData.fileDir,exportSettings.clrs,exportSettings.alpha,callback);
+hm.UserData.menu.export.video.Text = text;
+hm.UserData.menu.export.video.Enable = 'on';
+end
+
+function textUpdater(object,text)
+object.Text = text;
+end
+
 function name = getCodingCategoryName(name)
 name(name=='*'|name=='+') = [];
 end
@@ -795,13 +810,13 @@ if isfield(hm.UserData.ui,'savedCoding')
 end
 % reload actions, if any
 if isfield(hm.UserData.ui.coding,'reload')
-    for s=1:length(hm.UserData.ui.coding.reload)
-        stream = hm.UserData.ui.coding.reload(s).stream;
+    for s=1:length(hm.UserData.menu.coding.reload)
+        stream = hm.UserData.menu.coding.reload(s).stream;
         isManuallyChanged = ~isequal(hm.UserData.coding.mark{stream},hm.UserData.coding.original.mark{stream}) || ~isequal(hm.UserData.coding.type{stream},hm.UserData.coding.original.type{stream});
         if isManuallyChanged
-            hm.UserData.ui.coding.reload(s).obj.Enable = 'on';
+            hm.UserData.menu.coding.reload(s).obj.Enable = 'on';
         else
-            hm.UserData.ui.coding.reload(s).obj.Enable = 'off';
+            hm.UserData.menu.coding.reload(s).obj.Enable = 'off';
         end
     end
 end
@@ -1988,7 +2003,7 @@ end
 end
 
 function executeCodingReload(hm,idx)
-stream = hm.UserData.ui.coding.reload(idx).stream;
+stream = hm.UserData.menu.coding.reload(idx).stream;
 
 % load file / recompute classification
 if strcmp(hm.UserData.coding.stream.type{stream},'fileStream')

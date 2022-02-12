@@ -42,6 +42,6 @@ end
 
 % Get full file name as read by the read function
 % This heads off problems when the filename was specified without
-% an extension, and an MATLAB file exists with the same name.
+% an extension, and a MATLAB file exists with the same name.
 rdr.full_name = fullfile(mmrobj.Path, mmrobj.Name);
 end
