@@ -1,15 +1,17 @@
-function saveSceneVideoWithGaze(data, directory, clrs, alpha, callback)
+function saveSceneVideoWithGaze(data, directory, clrs, alpha, ffmpegPath, callback)
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
 % the Tobii Pro Glasses 2 eye tracker. Behavior Research Methods. doi:
 % 10.3758/s13428-019-01314-1
 
-qHaveCallback = nargin>4 && ~isempty(callback);
+qHaveCallback = nargin>5 && ~isempty(callback);
 percDone = 0;
 if qHaveCallback
     callback(percDone);
 end
+
+qHaveFFmpeg = nargin>4 && ~isempty(ffmpegPath) && exist(fullfile(ffmpegPath,'ffmpeg.exe'),'file')==2;
 
 % load videos
 segments = FolderFromFolder(fullfile(directory,'segments'));
@@ -18,6 +20,7 @@ for s=length(segments):-1:1
     % for warmup, read first frame
     reader{s}.read(1);
 end
+res = [reader{1}.Width reader{1}.Height];
 
 % find where black frames should be inserted to make up for holes in scene
 % video (e.g. segment switchover)
@@ -42,7 +45,8 @@ for p=length(data.video.scene.segframes):-1:1
 end
 isBlackFrame    = false(size(fridxs));
 for p=length(iGap):-1:1
-    fts          = [         fts(1:iGap)  nan(1,nFrameMissing(p))          fts(iGap+1:end)];
+    blackFrameTs = interp1([0 nFrameMissing(p)+1],fts(iGap+[0 1]),[1:nFrameMissing(p)]);
+    fts          = [         fts(1:iGap)       blackFrameTs             fts(iGap+1:end)];
     fridxs       = [      fridxs(1:iGap)  nan(1,nFrameMissing(p))       fridxs(iGap+1:end)];
     vididxs      = [     vididxs(1:iGap)  nan(1,nFrameMissing(p))      vididxs(iGap+1:end)];
     isBlackFrame = [isBlackFrame(1:iGap) true(1,nFrameMissing(p)) isBlackFrame(iGap+1:end)];
@@ -55,13 +59,47 @@ vididxs(qRem)       = [];
 isBlackFrame(qRem)  = [];
 
 % open output video
-writer              = VideoWriter(fullfile(directory,'sceneVideo.mp4'),'MPEG-4');
-writer.FrameRate    = 1/ifi;
-writer.Quality      = 75;
-open(writer);
+if qHaveFFmpeg
+    % run ffmpeg via java so we can pipe videodata into it
+    % and directly copy audio
+    % prep audio
+    inputs  = {};
+    filters = {};
+    for s=1:length(segments)
+        if s==1
+            offset  = data.video.scene.fts(1)-data.time.startTime;
+            filters = [filters sprintf('[0:a]atrim=start=%.6f,asetpts=PTS-STARTPTS[a]',max(0,-offset))];
+        else
+            startTs = data.video.scene.fts(data.video.scene.segframes(s-1)+1)-data.time.startTime;
+            filters = [filters sprintf('[%d:a]adelay=delays=%.3f:all=1[%c]',s-1,startTs*1000,char('a'+s-1))];
+        end
+    
+        inputs = [inputs '-i' fullfile(directory,'segments',segments(s).name,'fullstream.mp4')];
+    end
+    filters = [filters; repmat({';'},size(filters))];
+    filters = [filters{:}];
+    filters = [filters sprintf('%samix=%d[audio];',sprintf('[%c]',char('a'+[1:length(segments)]-1)),length(segments))];
+    % prep video
+    inputs = [inputs '-f','rawvideo','-video_size',sprintf('%dx%d',res),'-framerate',sprintf('%.3f',1/ifi),'-pixel_format','rgb24','-i','pipe:'];
+    filters = [filters sprintf('[%d:v]format=yuv420p[video]',length(segments))];
+    % prep command and launch ffmpeg
+    command = {fullfile(ffmpegPath,'ffmpeg.exe'),'-y',inputs{:},'-filter_complex',filters,'-map','[video]','-map','[audio]','-c:v','libx264',fullfile(directory,'sceneVideo.mp4')};
+    h       = java.lang.ProcessBuilder(command).redirectErrorStream(true).start();
+    stdin   = h.getOutputStream();
+    % NB: need to get all handles as we need to close them all
+    % also, need to read from stdout+stderr to not get blocked
+    jReader = java.io.BufferedReader(java.io.InputStreamReader(h.getInputStream()));
+    
+else
+    outName             = fullfile(directory,'sceneVideo.mp4');
+    writer              = VideoWriter(outName,'MPEG-4');
+    writer.FrameRate    = 1/ifi;
+    writer.Quality      = 75;
+    open(writer);
+end
 
 % prep gaze circle
-rad     = max([reader{1}.Width reader{1}.Height])/190;
+rad     = max(res)/190;
 [x,y]   = meshgrid(linspace(-rad,rad,ceil(2*rad)+2),linspace(-rad,rad,ceil(2*rad)+2));
 circle  = abs(x./rad).^2 + abs(y./rad).^2 < 1;
 circle  = circle(any(circle,1),any(circle,2));  % crop edges so its tightly fitting
@@ -72,7 +110,7 @@ mask    = repmat(alpha*circle, [1 1 3]);
 for f=1:length(fridxs)
     % get frame
     if isBlackFrame(f)
-        frame = zeros(reader{1}.Height,reader{1}.Width,3,'uint8');
+        frame = zeros(res(2),res(1),3,'uint8');
     else
         frame = reader{vididxs(f)}.read(fridxs(f));
     end
@@ -83,7 +121,7 @@ for f=1:length(fridxs)
     else
         qDat = data.eye.binocular.ts>=fts(f) & data.eye.binocular.ts<fts(f+1);
     end
-    dat = round(data.eye.binocular.gp(qDat,:));
+    dat = round(data.eye.binocular.gp  (qDat,:));
     nEye=       data.eye.binocular.nEye(qDat,:);
     
     % overlay circle
@@ -95,8 +133,8 @@ for f=1:length(fridxs)
         oIdxX = dat(d,1)+cIdx;
         oIdxY = dat(d,2)+cIdx;
         
-        qUseX = oIdxX>1 & oIdxX<=reader{1}.Width;
-        qUseY = oIdxY>1 & oIdxY<=reader{1}.Height;
+        qUseX = oIdxX>1 & oIdxX<=res(1);
+        qUseY = oIdxY>1 & oIdxY<=res(2);
         
         dCircle = cat(3,...
             circle(qUseY,qUseX)*clrs(nEye(d),1),...
@@ -109,7 +147,15 @@ for f=1:length(fridxs)
     end
     
     % write to video
-    writeVideo(writer,frame);
+    if qHaveFFmpeg
+        stdin.write(reshape(permute(frame,[3 2 1]),1,[]));
+        stdin.flush();
+        while jReader.ready()
+            fprintf('%s\n',jReader.readLine());
+        end
+    else
+        writeVideo(writer,frame);
+    end
     
     newPercDone = floor(f/length(fridxs)*100);
     if qHaveCallback && newPercDone ~= percDone
@@ -118,6 +164,10 @@ for f=1:length(fridxs)
     percDone = newPercDone;
 end
 
-
 % finalize
-close(writer);
+if qHaveFFmpeg
+    stdin.close();
+    jReader.close();
+else
+    close(writer);
+end

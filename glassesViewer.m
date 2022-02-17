@@ -740,7 +740,11 @@ function saveSceneVideo(hm,exportSettings)
 text = hm.UserData.menu.export.video.Text;
 hm.UserData.menu.export.video.Enable = 'off';
 callback = @(x) textUpdater(hm.UserData.menu.export.video, sprintf('Exporting scene video, %d%%...',x));
-saveSceneVideoWithGaze(hm.UserData.data,hm.UserData.fileDir,exportSettings.clrs,exportSettings.alpha,callback);
+ffmpegPath = '';
+if isfield(exportSettings,'ffmpegPath')
+    ffmpegPath = exportSettings.ffmpegPath;
+end
+saveSceneVideoWithGaze(hm.UserData.data,hm.UserData.fileDir,exportSettings.clrs,exportSettings.alpha,ffmpegPath,callback);
 hm.UserData.menu.export.video.Text = text;
 hm.UserData.menu.export.video.Enable = 'on';
 end
