@@ -2379,7 +2379,7 @@ settingsMenu  = jMenu.getComponent(find(qWhich)-1); % Java does 0-based indexing
 ts          = 1000/hm.UserData.data.eye.fs;
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.SGWindowVelocity,ts,ts*2000,ts);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comp        = uicomponent(jSpinner,'Tag','SGSpinner');
+comp        = uicomponent(jSpinner,'Tag','SGSpinner','Position',[-99 -99 60 20]);
 comp.StateChangedCallback = @(hndl,evt) changeSGCallback(hm,hndl,evt);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '##0 ');
 jSpinner.setEditor(jEditor);
@@ -2394,7 +2394,7 @@ addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
 % 2. plotLineWidth
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.lineWidth,.5,5,.5);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comp        = uicomponent(jSpinner,'Tag','LWSpinner');
+comp        = uicomponent(jSpinner,'Tag','LWSpinner','Position',[-99 -99 60 20]);
 comp.StateChangedCallback = @(hndl,evt) changeLineWidth(hm,hndl,evt);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '##0.0 ');
 jSpinner.setEditor(jEditor);
@@ -2409,7 +2409,7 @@ addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
 % 3. current window
 jModel      = javax.swing.SpinnerNumberModel(hm.UserData.settings.plot.timeWindow,0,hm.UserData.time.endTime,1);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comp        = uicomponent(jSpinner,'Tag','TWSpinner');
+comp        = uicomponent(jSpinner,'Tag','TWSpinner','Position',[-99 -99 60 20]);
 comp.StateChangedCallback = @(hndl,evt) setTimeWindow(hm,hndl.getValue,true);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '###0.00 ');
 jSpinner.setEditor(jEditor);
@@ -2424,7 +2424,7 @@ addCustomMenuItem(hm,settingsMenu,jSpinner,jLabel);
 % 4. playback speed
 jModel      = javax.swing.SpinnerNumberModel(1,0,16,0.001);
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comp        = uicomponent(jSpinner,'Tag','PSSpinner');
+comp        = uicomponent(jSpinner,'Tag','PSSpinner','Position',[-99 -99 60 20]);
 comp.StateChangedCallback = @(hndl,evt) setPlaybackSpeed(hm,hndl);
 jEditor     = javaObject('javax.swing.JSpinner$NumberEditor', comp.JavaComponent, '###0.000 x ');
 jSpinner.setEditor(jEditor);
@@ -2466,7 +2466,7 @@ jModel      = javax.swing.SpinnerDateModel(startDate,startDate,endDate,java.util
 % action, the current caret position is taken and the field it is in is
 % spinned
 jSpinner    = com.mathworks.mwswing.MJSpinner(jModel);
-comp        = uicomponent(jSpinner,'Tag','CTSpinner');
+comp        = uicomponent(jSpinner,'Tag','CTSpinner','Position',[-99 -99 60 20]);
 jEditor     = javaObject('javax.swing.JSpinner$DateEditor', comp.JavaComponent, 'HH:mm:ss.SSS ');
 jEditor.getTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
 formatter   = jEditor.getTextField().getFormatter();
