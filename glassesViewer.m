@@ -1,4 +1,4 @@
-function hm = glassesViewer(settings)
+function hm = glassesViewer(settings,selectedDir)
 close all
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
@@ -17,6 +17,7 @@ if qDEBUG
     dbstop if error
 end
 
+myDir     = fileparts(mfilename('fullpath'));
 if nargin<1 || isempty(settings)
     if ~isempty(which('matlab.internal.webservices.fromJSON'))
         jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -25,39 +26,42 @@ if nargin<1 || isempty(settings)
     else
         error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
     end
-    myDir     = fileparts(mfilename('fullpath'));
     settings  = jsondecoder(fileread(fullfile(myDir,'defaults.json')));
 end
 
-addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'))
+addpath(genpath(fullfile(myDir,'function_library')),...
+        genpath(fullfile(myDir,'user_functions')),...
+        genpath(fullfile(myDir,'SDparser')));
 
-% select either the folder of a specific recording to open, or the projects
-% directory copied from the SD card itself. So, if "projects" is the
-% project folder on the SD card, there are three places that you can point
-% the software to:
-% 1. the projects folder itself
-% 2. the folder of a specific project. An example of a specific project is:
-%    projects\raoscyb.
-% 3. the folder of a specific recording. An example of a specific recording
-%    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
-%    folders are not needed when opening a recording, so you can just copy
-%    the "gzz7stc" of this example somewhere and open it in isolation.
-if 1
-    selectedDir = uigetdir('','Select projects, project or recording folder');
-else
-    % for easy use, hardcode a folder. 
-    mydir       = fileparts(mfilename('fullpath'));
+if nargin<2 || isempty(selectedDir)
+    % select either the folder of a specific recording to open, or the projects
+    % directory copied from the SD card itself. So, if "projects" is the
+    % project folder on the SD card, there are three places that you can point
+    % the software to:
+    % 1. the projects folder itself
+    % 2. the folder of a specific project. An example of a specific project is:
+    %    projects\raoscyb.
+    % 3. the folder of a specific recording. An example of a specific recording
+    %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
+    %    folders are not needed when opening a recording, so you can just copy
+    %    the "gzz7stc" of this example somewhere and open it in isolation.
     if 1
-        % example of where projects directory is selected, shows recording
-        % selector
-        selectedDir = fullfile(mydir,'demo_data','projects');
-    elseif 0
-        % example of where directory of a specific project is selected,
-        % shows recording selector
-        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb');
+        selectedDir = uigetdir('','Select projects, project or recording folder');
     else
-        % example of where a recording is directly selected
-        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
+        % for easy use, hardcode a folder.
+        mydir       = fileparts(mfilename('fullpath'));
+        if 1
+            % example of where projects directory is selected, shows recording
+            % selector
+            selectedDir = fullfile(mydir,'demo_data','projects');
+        elseif 0
+            % example of where directory of a specific project is selected,
+            % shows recording selector
+            selectedDir = fullfile(mydir,'demo_data','projects','raoscyb');
+        else
+            % example of where a recording is directly selected
+            selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
+        end
     end
 end
 if ~selectedDir
