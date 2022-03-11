@@ -61,18 +61,17 @@ if nargin<2 || isempty(selectedDir)
         selectedDir = uigetdir('','Select projects, project or recording folder');
     else
         % for easy use, hardcode a folder.
-        mydir       = fileparts(mfilename('fullpath'));
         if 1
             % example of where projects directory is selected, shows recording
             % selector
-            selectedDir = fullfile(mydir,'demo_data','projects');
+            selectedDir = fullfile(myDir,'demo_data','projects');
         elseif 0
             % example of where directory of a specific project is selected,
             % shows recording selector
-            selectedDir = fullfile(mydir,'demo_data','projects','raoscyb');
+            selectedDir = fullfile(myDir,'demo_data','projects','raoscyb');
         else
             % example of where a recording is directly selected
-            selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
+            selectedDir = fullfile(myDir,'demo_data','projects','raoscyb','recordings','gzz7stc');
         end
     end
 end
@@ -96,9 +95,9 @@ else
     success = G2ProjectParser(selectedDir,true);
     if ~success
         success = G3ProjectParser(selectedDir,true);
-    end
-    if ~success
-        error('Could not find Glasses 2 or Glasses 3 recordings or projects in the folder: %s',selectedDir);
+        if ~success
+            error('Could not find Glasses 2 or Glasses 3 recordings or projects in the folder: %s',selectedDir);
+        end
     end
     recordingDir = recordingSelector(selectedDir);
     if isempty(recordingDir)
