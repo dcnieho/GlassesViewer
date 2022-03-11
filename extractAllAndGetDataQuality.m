@@ -16,6 +16,7 @@ if qDEBUG
     dbstop if error
 end
 
+myDir     = fileparts(mfilename('fullpath'));
 if nargin<1 || isempty(settings)
     if ~isempty(which('matlab.internal.webservices.fromJSON'))
         jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -24,37 +25,49 @@ if nargin<1 || isempty(settings)
     else
         error('Your MATLAB version does not provide a way to decode json (which means its really old), upgrade to something newer');
     end
-    myDir     = fileparts(mfilename('fullpath'));
     settings  = jsondecoder(fileread(fullfile(myDir,'defaults.json')));
 end
 
 addpath(genpath('function_library'),genpath('user_functions'),genpath('SDparser'))
 
-% select either the folder of a specific recording to open, or the projects
-% directory copied from the SD card itself. So, if "projects" is the
-% project folder on the SD card, there are three places that you can point
-% the software to:
+% For the Glasses 2, select either the folder of a specific recording
+% to open, or the projects directory copied from the SD card itself.
+% So, if "projects" is the project folder on the SD card, there are
+% three places that you can point the software to:
 % 1. the projects folder itself
-% 2. the folder of a specific project. An example of a specific project is:
-%    projects\raoscyb.
-% 3. the folder of a specific recording. An example of a specific recording
-%    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
-%    folders are not needed when opening a recording, so you can just copy
-%    the "gzz7stc" of this example somewhere and open it in isolation.
+% 2. the folder of a specific project. An example of a specific project
+%    is: projects\raoscyb.
+% 3. the folder of a specific recording. An example of a specific
+%    recording is: projects\raoscyb\recordings\gzz7stc. Note that the
+%    higher level folders are not needed when opening a recording, so
+%    you can just copy the "gzz7stc" folder of this example somewhere
+%    and open it in isolation.
+%
+% For the Glasses 3, select either a folder containing Glasses 3
+% recording folders, or the folder of a specific recording. So if "xxx"
+% is the folder on the SD card, there are two places that you can point
+% the software to:
+% 1. the xxx folder itself
+% 2. the folder of a specific recording. An example of a specific
+%    recording is: xxx\20220310T130724Z. Note that only this folder in
+%    isolation is needed when opening a recording, so you can just copy
+%    the "20220310T130724Z" folder of this example somewhere and open
+%    it in isolation.
 if 1
     selectedDir = uigetdir('','Select projects, project or recording folder');
 else
-    % for easy use, hardcode a folder. 
-    mydir       = fileparts(mfilename('fullpath'));
+    % for easy use, hardcode a folder.
     if 1
-        % example of where projects directory is selected
-        selectedDir = fullfile(mydir,'demo_data','projects');
+        % example of where projects directory is selected, shows recording
+        % selector
+        selectedDir = fullfile(myDir,'demo_data','projects');
     elseif 0
-        % example of where directory of a specific project is selected
-        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb');
+        % example of where directory of a specific project is selected,
+        % shows recording selector
+        selectedDir = fullfile(myDir,'demo_data','projects','raoscyb');
     else
         % example of where a recording is directly selected
-        selectedDir = fullfile(mydir,'demo_data','projects','raoscyb','recordings','gzz7stc');
+        selectedDir = fullfile(myDir,'demo_data','projects','raoscyb','recordings','gzz7stc');
     end
 end
 if ~selectedDir
@@ -63,13 +76,18 @@ end
 
 % find out if this is a projects folder or the folder of an individual
 % recording, take appropriate action
-qIsSingleRecording = exist(fullfile(selectedDir,'segments'),'dir') && exist(fullfile(selectedDir,'recording.json'),'file');
+qIsSingleRecording = ...
+    exist(fullfile(selectedDir,'segments'),'dir') && exist(fullfile(selectedDir,'recording.json'),'file') || ... % G2
+    exist(fullfile(selectedDir,'recording.g3'),'file');
 qIsSpecificProject = false;
 if ~qIsSingleRecording
     % assume this is a project dir. G2ProjectParser will fail if it is not
-    [success,qIsSpecificProject] = G2ProjectParser(selectedDir,true);
-    if ~success
-        error('Could not find projects in the folder: %s',selectedDir);
+    [isG2,qIsSpecificProject] = G2ProjectParser(selectedDir,true);
+    if ~isG2
+        isG3 = G3ProjectParser(selectedDir,true);
+        if ~isG3
+            error('Could not find Glasses 2 or Glasses 3 recordings or projects in the folder: %s',selectedDir);
+        end
     end
 end
 
@@ -97,19 +115,32 @@ if qIsSingleRecording
         end
     end
 else
-    fid = fopen(fullfile(selectedDir,'lookup.xls'));
-    fgetl(fid);
-    C = textscan(fid,repmat('%s',1,18),'delimiter','\t');
-    fclose(fid);
-    
-    project     = C{5};
-    participant = C{7};
-    recording   = C{9};
-    
-    if qIsSpecificProject
-        folders = cellfun(@(x)  fullfile(  'recordings',x),     C{3},'uni',false);
+    if isG2
+        fid = fopen(fullfile(selectedDir,'lookup_G2.tsv'),'rt');
+        fgetl(fid);
+        C = textscan(fid,repmat('%s',1,18),'delimiter','\t');
+        fclose(fid);
+        
+        project     = C{5};
+        participant = C{7};
+        recording   = C{9};
+        
+        if qIsSpecificProject
+            folders = cellfun(@(x)  fullfile(  'recordings',x),     C{3},'uni',false);
+        else
+            folders = cellfun(@(x,y)fullfile(x,'recordings',y),C{1},C{3},'uni',false);
+        end
     else
-        folders = cellfun(@(x,y)fullfile(x,'recordings',y),C{1},C{3},'uni',false);
+        fid = fopen(fullfile(selectedDir,'lookup_G3.tsv'));
+        fgetl(fid);
+        C = textscan(fid,repmat('%s',1,8),'delimiter','\t');
+        fclose(fid);
+        
+        recording   = C{3};
+        participant = C{2};
+        project     = repmat({''},length(recording),1);
+        
+        folders     = C{1};
     end
 end
 
@@ -120,7 +151,11 @@ for p=length(folders):-1:1
     myDir           = fullfile(selectedDir,folders{p});
     
     % load data
-    data            = getTobiiDataFromGlasses(myDir,settings.userStreams,qDEBUG);
+    if isG2
+        data            = readG2DataFiles(myDir,settings.userStreams,qDEBUG);
+    else
+        data            = readG3DataFiles(myDir,settings.userStreams,qDEBUG);
+    end
     
     % get data quality, use coding if available
     qHaveAnalysisInterval = false;
