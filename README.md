@@ -45,7 +45,7 @@ in a project. An example of a specific recording is:
 
 If you just wish to parse the Tobii glasses data into a MATLAB readable
 file, you can directly call
-`./function_library/TobiiGlassesRecordings/getTobiiDataFromGlasses.m`
+`./function_library/TobiiG2DataReader/readG2DataFiles.m`
 with the same specific recording as above as the input argument.
 
 An overview of the viewer GUI's functionality is provided in the [manual](/manual.md).

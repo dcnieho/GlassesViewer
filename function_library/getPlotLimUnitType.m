@@ -42,6 +42,8 @@ switch panel
         unit = 'deg/s';
     case 'acc'
         unit = 'm/s^2';
+    case 'magno'
+        unit = '\mu T';
     otherwise
         assert(isfield(plotSettings,'units')&&isfield(plotSettings.units,panel),'Stream %s is not built-in, you must provide panel unit for it to be plotted',panel);
         unit = plotSettings.units.(panel);
@@ -51,7 +53,7 @@ end
 switch panel
     case {'azi','ele','vel','pup'}
         pType = 'lr';
-    case {'videoGaze','gazePoint3D','pupCentLeft','pupCentRight','gyro','acc'}
+    case {'videoGaze','gazePoint3D','pupCentLeft','pupCentRight','gyro','acc','magno'}
         pType = 'xyz';
     otherwise
         assert(isfield(plotSettings,'type')&&isfield(plotSettings.type,panel),'Stream %s is not built-in, you must provide panel type for it to be plotted',panel);

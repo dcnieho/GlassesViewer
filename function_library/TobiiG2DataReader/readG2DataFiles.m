@@ -1,4 +1,4 @@
-function data = getTobiiDataFromGlasses(recordingDir,userStreams,qDEBUG)
+function data = readG2DataFiles(recordingDir,userStreams,qDEBUG)
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
@@ -7,7 +7,7 @@ function data = getTobiiDataFromGlasses(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 17;
+fileVersion = 18;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -316,7 +316,7 @@ if qGenCacheFile || qDEBUG
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
     data.syncAPI.ts         = (data.syncAPI.ts-t0)./1000000;
     
-    % 12 open video files for each segment, check how many frames, and make
+    % 12 check video files for each segment: how many frames, and make
     % frame timestamps
     data.video.scene.fts        = [];
     data.video.scene.segframes  = [];
@@ -376,8 +376,11 @@ if qGenCacheFile || qDEBUG
             % resolution sanity check
             assert(atoms.tracks(videoTrack).tkhd.width ==atoms.tracks(videoTrack).stsd.width , 'mp4 file weird: video widths in tkhd and stsd atoms do not match')
             assert(atoms.tracks(videoTrack).tkhd.height==atoms.tracks(videoTrack).stsd.height,'mp4 file weird: video heights in tkhd and stsd atoms do not match')
-            data.video.(field).width  = atoms.tracks(videoTrack).tkhd.width;
-            data.video.(field).height = atoms.tracks(videoTrack).tkhd.height;
+            data.video.(field).width    = atoms.tracks(videoTrack).tkhd.width;
+            data.video.(field).height   = atoms.tracks(videoTrack).tkhd.height;
+            
+            % store name of video files
+            data.video.(field).file{s}  = fullfile('segments',segments(s).name,file);
         end
     end
     % clean up unneeded fields
@@ -407,10 +410,10 @@ if qGenCacheFile || qDEBUG
     % at t=0, and similarly endTime is adjusted to the timestamp of the
     % first sample after t=end if there is no sample at t=end. If data ends
     % before end of any video, endTime is end of data.
-    % 14.1 start time: timestamps are already relative to last video start
+    % 15.1 start time: timestamps are already relative to last video start
     % time, so just get time of first sample at 0 or just before
     data.time.startTime = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
-    % 14.2 end time
+    % 15.2 end time
     if qHasEyeVideo
         te = min([data.video.scene.fts(end) data.video.eye.fts(end)]);
     else

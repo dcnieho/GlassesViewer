@@ -18,9 +18,11 @@ for p=1:length(userStreams)
     % run and assign outputs
     outputs = cell(1,nout);
     [outputs{:}] = func(data, userStreams(p).parameters);
-    for q=1:length(userStreams(p).streams)
-        data.user.(userStreams(p).streams{q}).ts   = outputs{q}{1};
-        data.user.(userStreams(p).streams{q}).data = outputs{q}{2};
+    if ~isempty(outputs{1})
+        for q=1:length(userStreams(p).streams)
+            data.user.(userStreams(p).streams{q}).ts   = outputs{q}{1};
+            data.user.(userStreams(p).streams{q}).data = outputs{q}{2};
+        end
     end
 end
 
