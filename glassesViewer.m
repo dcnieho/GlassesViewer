@@ -111,7 +111,7 @@ isG2 = exist(fullfile(recordingDir,'segments'),'dir') && exist(fullfile(recordin
 
 %% init figure
 hm=figure();
-hm.Name='Tobii Pro Glasses 2 Viewer';
+hm.Name='Tobii Pro Glasses 2/3 Viewer';
 hm.NumberTitle = 'off';
 hm.Units = 'pixels';
 hm.MenuBar = 'none';
@@ -184,7 +184,7 @@ hm.Name = [hm.Name ' (' hm.UserData.data.subjName '-' hm.UserData.data.recName '
 % setup main time and timer for smooth playback
 hm.UserData.time.tickPeriod         = 0.05; % 20Hz hardcoded (doesn't have to update so frequently, that can't be displayed by this GUI anyway)
 hm.UserData.time.timeIncrement      = hm.UserData.time.tickPeriod;   % change to play back at slower rate
-hm.UserData.time.currentTime        = 0;
+hm.UserData.time.currentTime        = max(0,hm.UserData.data.time.startTime);
 hm.UserData.time.startTime          = hm.UserData.data.time.startTime;
 hm.UserData.time.endTime            = hm.UserData.data.time.endTime;
 hm.UserData.time.mainTimer          = timer('Period', hm.UserData.time.tickPeriod, 'ExecutionMode', 'fixedRate', 'TimerFcn', @(~,evt) timerTick(evt,hm), 'BusyMode', 'drop', 'TasksToExecute', inf, 'StartFcn',@(~,evt) initPlayback(evt,hm));
@@ -236,6 +236,14 @@ end
 if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf panel is not in list of panels that can be shown, nor in user setup
     panels(strcmp(panels,'scarf')) = [];
     hm.UserData.settings.plot.panelOrder(strcmp(hm.UserData.settings.plot.panelOrder,'scarf')) = [];
+end
+check = {'gyroscope','gyro';'accelerometer','acc'};
+for p=1:size(check,1)
+    if ~isfield(hm.UserData.data,check{p,1})
+        isUserStream(strcmp(panels,check{p,2})) = [];
+        panels      (strcmp(panels,check{p,2})) = [];
+        hm.UserData.settings.plot.panelOrder(strcmp(hm.UserData.settings.plot.panelOrder,check{p,2})) = [];
+    end
 end
 setupPlots(hm,panels);
 
@@ -423,16 +431,15 @@ for p=1:3
 end
 
 %% load videos
-segments = FolderFromFolder(fullfile(hm.UserData.fileDir,'segments'));
-for s=1:length(segments)
+for s=1:length(hm.UserData.data.video.scene.file)
     for p=1:1+hm.UserData.ui.haveEyeVideo
         switch p
             case 1
-                file = 'fullstream.mp4';
+                field= 'scene';
             case 2
-                file = 'eyesstream.mp4';
+                field= 'eye';
         end
-        hm.UserData.vid.objs(s,p) = makeVideoReader(fullfile(hm.UserData.fileDir,'segments',segments(s).name,file),false);
+        hm.UserData.vid.objs(s,p) = makeVideoReader(fullfile(hm.UserData.fileDir,hm.UserData.data.video.(field).file{s}),false);
         % for warmup, read first frame
         hm.UserData.vid.objs(s,p).StreamHandle.read(1);
     end
