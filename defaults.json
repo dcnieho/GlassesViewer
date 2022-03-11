@@ -14,7 +14,8 @@
       "pupCentLeft": "left pupil center",
       "pupCentRight": "right pupil center",
       "gyro": "gyroscope",
-      "acc": "acceleration",
+      "acc": "accelerometer",
+      "magno": "magnetometer",
       "scarf": "coding scarf"
     },
     "lims": {

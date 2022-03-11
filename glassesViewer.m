@@ -237,7 +237,7 @@ if ~hm.UserData.coding.hasCoding    % if don't have coding, make sure scarf pane
     panels(strcmp(panels,'scarf')) = [];
     hm.UserData.settings.plot.panelOrder(strcmp(hm.UserData.settings.plot.panelOrder,'scarf')) = [];
 end
-check = {'gyroscope','gyro';'accelerometer','acc'};
+check = {'gyroscope','gyro';'accelerometer','acc';'magnetometer','magno'};
 for p=1:size(check,1)
     if ~isfield(hm.UserData.data,check{p,1})
         isUserStream(strcmp(panels,check{p,2})) = [];
@@ -297,9 +297,11 @@ for a=1:nPanel
                         {hm.UserData.data.eye.left.pd, hm.UserData.data.eye.right.pd}};
             case {'pupCentLeft','pupCentRight'}  % pupil center
                 field = lower(strrep(panels{a},'pupCent',''));
-                pDat = {{hm.UserData.data.eye.(field).ts}, num2cell(hm.UserData.data.eye.(field).pc,1)};
+                pDat = {{hm.UserData.data.eye.(field) .ts}, num2cell(hm.UserData.data.eye.(field).pc,1)};
             case 'gyro'  % gyroscope
-                pDat = {{hm.UserData.data.gyroscope.ts}, num2cell(hm.UserData.data.gyroscope.gy,1)};
+                pDat = {{hm.UserData.data.gyroscope   .ts}, num2cell(hm.UserData.data.gyroscope.gy,1)};
+            case 'magno'  % magnetometer
+                pDat = {{hm.UserData.data.magnetometer.ts}, num2cell(hm.UserData.data.magnetometer.mag,1)};
             case 'acc'  % accelerometer
                 ac = hm.UserData.data.accelerometer.ac;
                 if hm.UserData.settings.plot.removeAccDC
