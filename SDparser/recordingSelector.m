@@ -10,8 +10,8 @@ set(f,'Resize','off');
 set(f,'Position',[0 0 440 340]);
 set(f,'Units','pixels');
 
-if exist(fullfile(projectfolder,'lookup.xls'),'file')
-    fid = fopen(fullfile(projectfolder,'lookup.xls'));
+if exist(fullfile(projectfolder,'lookup.tsv'),'file')
+    fid = fopen(fullfile(projectfolder,'lookup.tsv'));
     fgetl(fid);
     C = textscan(fid,repmat('%s',1,18),'delimiter','\t');
     fclose(fid);

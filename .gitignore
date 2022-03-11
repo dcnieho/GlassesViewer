@@ -5,6 +5,7 @@
 *.bak
 
 *.xls
+*.tsv
 
 *.suo
 

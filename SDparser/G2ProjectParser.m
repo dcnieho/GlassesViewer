@@ -34,7 +34,7 @@ for p = 1:nproj
     % for each folder in projects find projectName in project.json
     projects(p).jsonfile = fullfile(projectfolder, projects(p).name, 'project.json');
     if exist(projects(p).jsonfile,'file')~=2
-        warning('No project.json file found for: %s\n',projectfolder);
+        warning('No Glasses 2 project.json file found for: %s\n',fullfile(projectfolder, projects(p).name));
         continue;
     end
     
@@ -153,15 +153,15 @@ for p = 1:nproj
         end
         
         if isempty(fid)
-            lookupFile = fullfile(storeFolder,'lookup.xls');
+            lookupFile = fullfile(storeFolder,'lookup_G2.tsv');
             fid = fopen(lookupFile,'wt');
             if fid==-1
                 if dontFailOnLockedFile && ~~exist(lookupFile,'file')
-                    warning('Could not open the lookup.xls file for writing, probably because you have it open. Any changes in projects/recordings will not be picked up. Make sure ''%s'' is writeable and not opened in another program.',lookupFile)
+                    warning('Could not open the lookup_G2.tsv file for writing, probably because you have it open. Any changes in projects/recordings will not be picked up. Make sure ''%s'' is writeable and not opened in another program.',lookupFile)
                     success = true;
                     return;
                 else
-                    error('Could not open the lookup.xls file for writing. Full filename: ''%s''',lookupFile);
+                    error('Could not open the lookup_G2.tsv file for writing. Full filename: ''%s''',lookupFile);
                 end
             end
             fprintf(fid,'ProjectID\tParticipantID\tRecordingID\tCalibrationID\tProjectName\tProjectCreateTime\tParticipantName\tParticipantNotes\tRecordingName\tRecordingStartTime\tRecordingDurationSecs\tRecordingNotes\tCalibrationStatus\tFirmwareVersion\tHeadUnitSerial\tRecordingUnitSerial\tEyeCameraSetting\tSceneCameraSetting\n');
