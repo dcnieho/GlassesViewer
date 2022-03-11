@@ -7,7 +7,7 @@ function data = readG2DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 17;
+fileVersion = 18;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -376,8 +376,11 @@ if qGenCacheFile || qDEBUG
             % resolution sanity check
             assert(atoms.tracks(videoTrack).tkhd.width ==atoms.tracks(videoTrack).stsd.width , 'mp4 file weird: video widths in tkhd and stsd atoms do not match')
             assert(atoms.tracks(videoTrack).tkhd.height==atoms.tracks(videoTrack).stsd.height,'mp4 file weird: video heights in tkhd and stsd atoms do not match')
-            data.video.(field).width  = atoms.tracks(videoTrack).tkhd.width;
-            data.video.(field).height = atoms.tracks(videoTrack).tkhd.height;
+            data.video.(field).width    = atoms.tracks(videoTrack).tkhd.width;
+            data.video.(field).height   = atoms.tracks(videoTrack).tkhd.height;
+            
+            % store name of video files
+            data.video.(field).file{s}  = fullfile('segments',segments(s).name,file);
         end
     end
     % clean up unneeded fields
