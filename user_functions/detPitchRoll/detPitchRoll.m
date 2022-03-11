@@ -13,6 +13,11 @@ function [output] = detPitchRoll(data, params)
 
 % For details see Tobii Glasses 2 Analyzer Manual
 
+if ~isfield(data,'accelerometer') || ~isfield(data,'gyroscope')
+    output = {};
+    return;
+end
+
 dt = 1/params.fs; % inter-sample interval
 
 %% pre-process data
