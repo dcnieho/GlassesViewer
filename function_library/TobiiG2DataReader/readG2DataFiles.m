@@ -316,7 +316,7 @@ if qGenCacheFile || qDEBUG
     data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
     data.syncAPI.ts         = (data.syncAPI.ts-t0)./1000000;
     
-    % 12 open video files for each segment, check how many frames, and make
+    % 12 check video files for each segment: how many frames, and make
     % frame timestamps
     data.video.scene.fts        = [];
     data.video.scene.segframes  = [];
@@ -407,10 +407,10 @@ if qGenCacheFile || qDEBUG
     % at t=0, and similarly endTime is adjusted to the timestamp of the
     % first sample after t=end if there is no sample at t=end. If data ends
     % before end of any video, endTime is end of data.
-    % 14.1 start time: timestamps are already relative to last video start
+    % 15.1 start time: timestamps are already relative to last video start
     % time, so just get time of first sample at 0 or just before
     data.time.startTime = data.eye.left.ts(find(data.eye.left.ts<=0,1,'last'));
-    % 14.2 end time
+    % 15.2 end time
     if qHasEyeVideo
         te = min([data.video.scene.fts(end) data.video.eye.fts(end)]);
     else
