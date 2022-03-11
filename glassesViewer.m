@@ -34,17 +34,29 @@ addpath(genpath(fullfile(myDir,'function_library')),...
         genpath(fullfile(myDir,'SDparser')));
 
 if nargin<2 || isempty(selectedDir)
-    % select either the folder of a specific recording to open, or the projects
-    % directory copied from the SD card itself. So, if "projects" is the
-    % project folder on the SD card, there are three places that you can point
-    % the software to:
+    % For the Glasses 2, select either the folder of a specific recording
+    % to open, or the projects directory copied from the SD card itself.
+    % So, if "projects" is the project folder on the SD card, there are
+    % three places that you can point the software to:
     % 1. the projects folder itself
-    % 2. the folder of a specific project. An example of a specific project is:
-    %    projects\raoscyb.
-    % 3. the folder of a specific recording. An example of a specific recording
-    %    is: projects\raoscyb\recordings\gzz7stc. Note that the higher level
-    %    folders are not needed when opening a recording, so you can just copy
-    %    the "gzz7stc" of this example somewhere and open it in isolation.
+    % 2. the folder of a specific project. An example of a specific project
+    %    is: projects\raoscyb.
+    % 3. the folder of a specific recording. An example of a specific
+    %    recording is: projects\raoscyb\recordings\gzz7stc. Note that the
+    %    higher level folders are not needed when opening a recording, so
+    %    you can just copy the "gzz7stc" folder of this example somewhere
+    %    and open it in isolation.
+    %
+    % For the Glasses 3, select either a folder containing Glasses 3
+    % recording folders, or the folder of a specific recording. So if "xxx"
+    % is the folder on the SD card, there are two places that you can point
+    % the software to:
+    % 1. the xxx folder itself
+    % 2. the folder of a specific recording. An example of a specific
+    %    recording is: xxx\20220310T130724Z. Note that only this folder in
+    %    isolation is needed when opening a recording, so you can just copy
+    %    the "20220310T130724Z" folder of this example somewhere and open
+    %    it in isolation.
     if 1
         selectedDir = uigetdir('','Select projects, project or recording folder');
     else
@@ -68,22 +80,33 @@ if ~selectedDir
     return
 end
 
-% find out if this is a projects folder or the folder of an individual
-% recording, take appropriate action
+% find out if this is G2 or G3 data and if this is a projects folder, a
+% folder with recordings, or the folder of an individual recording. Take
+% appropriate action
 if exist(fullfile(selectedDir,'segments'),'dir') && exist(fullfile(selectedDir,'recording.json'),'file')
+    % G2 recording folder
+    recordingDir = selectedDir;
+elseif exist(fullfile(selectedDir,'recording.g3'),'file')
+    % G3 recording folder
     recordingDir = selectedDir;
 else
-    % assume this is a project dir. G2ProjectParser will fail if it is not
+    % assume this is a project dir or a directory containing multiple
+    % recordings. G2ProjectParser and G3ProjectParser will fail if it is
+    % neither
     success = G2ProjectParser(selectedDir,true);
     if ~success
-        error('Could not find projects in the folder: %s',selectedDir);
+        success = G3ProjectParser(selectedDir,true);
+    end
+    if ~success
+        error('Could not find Glasses 2 or Glasses 3 recordings or projects in the folder: %s',selectedDir);
     end
     recordingDir = recordingSelector(selectedDir);
     if isempty(recordingDir)
         return
     end
 end
-
+% check if we have a G2 or a G3 recording selected
+isG2 = exist(fullfile(recordingDir,'segments'),'dir') && exist(fullfile(recordingDir,'recording.json'),'file');
 
 
 %% init figure
@@ -133,7 +156,11 @@ hm.UserData.settings = settings;
 
 %% load data
 % read glasses data
-hm.UserData.data            = readG2DataFiles(hm.UserData.fileDir,hm.UserData.settings.userStreams,qDEBUG);
+if isG2
+    hm.UserData.data        = readG2DataFiles(hm.UserData.fileDir,hm.UserData.settings.userStreams,qDEBUG);
+else
+    hm.UserData.data        = readG3DataFiles(hm.UserData.fileDir,hm.UserData.settings.userStreams,qDEBUG);
+end
 hm.UserData.data.quality    = computeDataQuality(hm.UserData.fileDir, hm.UserData.data, hm.UserData.settings.dataQuality.windowLength);
 hm.UserData.ui.haveEyeVideo = isfield(hm.UserData.data.video,'eye');
 %% get coding setup
