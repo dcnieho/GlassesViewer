@@ -7,7 +7,7 @@ function data = readG3DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 2;
+fileVersion = 3;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -235,6 +235,7 @@ if qGenCacheFile || qDEBUG
         end
         data.video.(field).width    = atoms.tracks(videoTrack).stsd.width;
         data.video.(field).height   = atoms.tracks(videoTrack).stsd.height;
+        data.video.(field).fs       = round(1/median(diff(data.video.(field).fts)));    % observed frame rate
         
         % store name of video file
         data.video.(field).file{1}  = file;
