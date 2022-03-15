@@ -7,7 +7,7 @@ function data = readG3DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 1;
+fileVersion = 2;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -92,7 +92,9 @@ if qGenCacheFile || qDEBUG
     data.eye.binocular.nEye                 = sum([qNotMissingLA qNotMissingRA],2);
     % clean up
     clear gazeData left right qNotMissing qNotMissingL qNotMissingLA qNotMissingR qNotMissingRA
-    % 2.4 convert gaze vectors to azimuth elevation
+    % 2.4 fill up missed samples with nan
+    data.eye                                = fillMissingSamples(data.eye,data.eye.fs);
+    % 2.5 convert gaze vectors to azimuth elevation
     [la,le] = cart2sph(data.eye. left.gd(:,1),data.eye. left.gd(:,3),data.eye. left.gd(:,2));   % matlab's Z and Y are reversed w.r.t. ours
     [ra,re] = cart2sph(data.eye.right.gd(:,1),data.eye.right.gd(:,3),data.eye.right.gd(:,2));
     data.eye. left.azi  =  la*180/pi-90;    % I have checked sign and offset of azi and ele so that things match the gaze position on the scene video in the data file (gp)

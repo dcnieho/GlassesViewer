@@ -17,8 +17,8 @@ function data = fillMissingSamples(data,expectedFs)
 % gaps are places where ISI is 1.333 (4/3) times longer than expected given
 % sampling frequency expectedFs (arbitrarily chosen). Plug 'em, filling the
 % signals up with nan data
-thr = round(1000*1000/expectedFs*4/3); % consider a gap as more than thr time elapsed between consequtive samples (4/3 means gap when ISI is 1.333 times longer than expected)
-thr2= round(1000*1000/expectedFs*3/4);
+thr = 1/expectedFs*4/3; % consider a gap as more than thr time elapsed between consequtive samples (4/3 means gap when ISI is 1.333 times longer than expected)
+thr2= 1/expectedFs*3/4;
 for c=1:3
     switch c
         case 1
@@ -39,7 +39,7 @@ for c=1:3
     
     % determine how long the new signal will be with gaps filled
     gapSzs          = dt(iGap);
-    nSampMissing    = round(gapSzs/(1000*1000/expectedFs))-1;     % round instead of ceil or floor gives smallest deviation from nominal framerate: 5.4->5, 5.6->6
+    nSampMissing    = round(gapSzs/(1/expectedFs))-1;     % round instead of ceil or floor gives smallest deviation from nominal framerate: 5.4->5, 5.6->6
     
     % place samples in the right places (effectively inserts the missing
     % samples)
@@ -56,7 +56,7 @@ for c=1:3
     end
     
     % fill gaps in time with faked equally intersecting intervals
-    data.(ch).ts = round(interp1(idxs,data.(ch).ts(idxs),1:idxs(end),'linear')).';
+    data.(ch).ts = interp1(idxs,data.(ch).ts(idxs),1:idxs(end),'linear').';
 end
 % tiny differences between timestamps for left and right eye have been
 % spotted in the wild, and are not caused by this code: they were indeed in

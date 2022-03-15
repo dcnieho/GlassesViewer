@@ -267,17 +267,14 @@ if qGenCacheFile || qDEBUG
     data.eye. left.ele  = -le*180/pi;
     data.eye.right.ele  = -re*180/pi;
     
-    % 6 fill up missed samples with nan
-    data.eye = fillMissingSamples(data.eye,data.eye.fs);
-    
-    % 7 add gyroscope and accelerometer data to output file
+    % 6 add gyroscope and accelerometer data to output file
     assert(issorted(gy.ts,'monotonic'))
     assert(issorted(ac.ts,'monotonic'))
     data.gyroscope      = gy;
     data.accelerometer  = ac;
     clear gy ac
     
-    % 8 add video sync data to output file
+    % 7 add video sync data to output file
     assert(issorted( vts.ts,'monotonic'))
     assert(numel(unique(vts.ts-vts.vts))==length(segments))    % this is an assumption of the fts calculation code below
     data.video.scene.sync   =  vts;
@@ -288,33 +285,36 @@ if qGenCacheFile || qDEBUG
     end
     clear vts evts
     
-    % 9 add sync port data to output file
+    % 8 add sync port data to output file
     data.syncPort = sig;
     clear sig
     
-    % 10 add API sync data to output file
+    % 9 add API sync data to output file
     data.syncAPI = syncAPI;
     clear syncAPI
     
-    % 11 determine t0, convert all timestamps to s
+    % 10 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
     t0s = min(data.video.scene.sync.ts);
     if qHasEyeVideo
         t0s = [t0s min(data.video.eye.sync.ts)];
     end
     t0 = max(t0s);
-    data.eye.left.ts        = (data.eye.left.ts-t0)./1000000;
-    data.eye.right.ts       = (data.eye.right.ts-t0)./1000000;
-    data.eye.binocular.ts   = (data.eye.binocular.ts-t0)./1000000;
-    data.gyroscope.ts       = (data.gyroscope.ts-t0)./1000000;
-    data.accelerometer.ts   = (data.accelerometer.ts-t0)./1000000;
+    data.eye.left.ts        = (data.eye.left.ts        -t0)./1000000;
+    data.eye.right.ts       = (data.eye.right.ts       -t0)./1000000;
+    data.eye.binocular.ts   = (data.eye.binocular.ts   -t0)./1000000;
+    data.gyroscope.ts       = (data.gyroscope.ts       -t0)./1000000;
+    data.accelerometer.ts   = (data.accelerometer.ts   -t0)./1000000;
     data.video.scene.sync.ts= (data.video.scene.sync.ts-t0)./1000000;
     if qHasEyeVideo
         data.video.eye.sync.ts  = (data.video.eye.sync.ts-t0)./1000000;
     end
-    data.syncPort.out.ts    = (data.syncPort.out.ts-t0)./1000000;
-    data.syncPort. in.ts    = (data.syncPort. in.ts-t0)./1000000;
-    data.syncAPI.ts         = (data.syncAPI.ts-t0)./1000000;
+    data.syncPort.out.ts    = (data.syncPort.out.ts    -t0)./1000000;
+    data.syncPort. in.ts    = (data.syncPort. in.ts    -t0)./1000000;
+    data.syncAPI.ts         = (data.syncAPI.ts         -t0)./1000000;
+    
+    % 11 fill up missed samples with nan
+    data.eye = fillMissingSamples(data.eye,data.eye.fs);
     
     % 12 check video files for each segment: how many frames, and make
     % frame timestamps
