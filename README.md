@@ -5,7 +5,7 @@ parsed, it will display this data in a MATLAB GUI. Optional eye videos
 are also supported. In this GUI, sync events can be shown, and data can
 be optionally annotated (e.g. as slow and fast phase intervals) by hand
 or by a classifier algorithm, or such annotations can be loaded from
-file. 
+file. Parsed data is stored in a mat file and can also be stored in tab-delimited text files. Furthermore, a version of the scene video with overlaid gaze point can be exported.
 
 Cite as:
 [Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
@@ -114,13 +114,13 @@ In `settings.plot`, the following fields are understood:
 
 |settings|description|
 | --- | --- |
-|`initPanelOrder`|Sets which data panels are initially shown on the left side of the interface and the order in which they are shown, as an array. E.g. `["azi", "ele"]`. Understood panels are `"azi"`, `"ele"`, `"videoGaze"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`. `"scarf"` is a special panel showing the annotations in one or multiple coding streams and allows switching for which stream annotations are shown in the other panels. |
-|`panelNames`|Table in which you can provide a name to be shown for each panel. E.g. `{"azi":"azimuth", "ele":"elevation"}`. Understood panels are `"azi"`, `"ele"`, `"videoGaze"`, `"vel"`, `"pup"`, `"gyro"`, `"acc"` and `"scarf"`.|
+|`panelOrder`|Sets which data panels are initially shown on the left side of the interface and the order in which they are shown, as an array. E.g. `["azi", "ele"]`. Understood panels are `"azi"`, `"ele"`, `"videoGaze"`, `"gazePoint3D"`, `"vel"`, `"pup"`, `"pupCentLeft"`, `"pupCentRight"`, `"gyro"`, `"acc"`. `"magno"` and `"scarf"`. `"scarf"` is a special panel showing the annotations in one or multiple coding streams and allows switching for which stream annotations are shown in the other panels. |
+|`streamNames`|Table in which you can provide a name to be shown for each data stream's panel. E.g. `{"azi":"azimuth", "ele":"elevation"}`. Understood panels are the same as for the `panelOrder` setting.|
+|`lims`|Table in which you can set plot limits for different data panels. E.g. `{"azi":45, "vel":[0, 400]}`. Single values are shorthand for an symmetric axis range around 0, i.e., in the example, the azimuth axis will range from -45 to 45 degrees. If no limit is set for a stream, the panel's limit will be set to the range of values in the stream. Understood panels are the same as for the `panelOrder` setting.|
+|`adjustLimsToData`|List containing names of streams whose plot limits will be reduced to the data range if the data does not span the full range set in `lims`. That is, if the data range for `vel` is set to 400 deg/s, but the maximum value in the stream is only 300 deg/s, the plot limit will be 300 deg/s, not 400 deg/s. Understood panels are the same as for the `panelOrder` setting.|
+|`units`| Units of the data in a stream. Understood panels are the same as for the `panelOrder` setting. |
+|`type`| The type of data in a stream. Use to indicate whether a stream contains `"xyz"` data or `"lr"` (left eye, right eye) data. |
 |`timeWindow`|Length (s) of the time window|
-|`aziLim`| The range (deg) of the `"azi"` panel. |
-|`eleLim`| The range (deg) of the `"ele"` panel. |
-|`velLim`| The range (deg) of the `"vel"` panel. |
-|`gyroLim`| The range (deg) of the `"gyro"` panel. |
 |`lineWidth`| Width of the lines of the data plots in the panels |
 |`removeAccDC`| If true, the mean value of the three traces in the acceleration plot is removed. This removes the 1g acceleration that is always measured due to earth's gravity, making it easier to see accelerations due to subject movement|
 |`SGWindowVelocity`| Length (ms) of the Savitzky-Golay filter used to calculate gaze velocity |
