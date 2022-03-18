@@ -1,5 +1,5 @@
 # About
-This matlab utility can parse recording files from the Tobii Glasses 2
+This matlab utility can parse recording files from the Tobii Glasses 2 and 3
 as stored on the SD card (no need for intervening Tobii software). Once
 parsed, it will display this data in a MATLAB GUI. Optional eye videos
 are also supported. In this GUI, sync events can be shown, and data can
@@ -19,7 +19,7 @@ This integration is demoed in the [manual](/manual.md), see [the GazeCode
 repository](https://github.com/jsbenjamins/gazecode) for further details
 on how to acquire and use GazeCode.
 
-Tested on MATLAB R2017b and R2018b. Because a bunch of java hacks are
+Tested on MATLAB R2017b, R2018b and R2021a. Because a bunch of java hacks are
 used for the GUI, it is quite possible that the viewer part of this repository
 is not all that compatible with different matlab versions. Pull requests
 welcomed! Some used functionality was only introduced with R2015b
@@ -36,17 +36,18 @@ Click the screenshot to see a full-size version.
 To run GlassesViewer, after downloading this repository, open the file
 `glassesViewer.m` in MATLAB and run it.
 When running the viewer GUI, `glassesViewer.m`, a file picker will
-appear. As shown in the [manual](/manual.md), select either a folder
+appear. As shown in the [manual](/manual.md), for the Glasses 2 select either a folder
 containing one or multiple projects, or a specific recording's folder
 to view. If "projects" is the project folder on the SD card, either
-select this folder "projects" in the file picker, or a specific recording
-in a project. An example of a specific recording is:
-`projects/rkamrkb/recordings/zi4xmt2`.
+select this folder "projects" in the file picker, or the folder of a specific project, or a specific recording
+in a project. An example of a specific Glasses 2 project is `projects/rkamrkb` and an example of a specific Glasses 2 recording is
+`projects/rkamrkb/recordings/zi4xmt2`. For the Glasses 3 select either a folder containing multiple Glasses 3 recordings (such as the root of its SD card), or the folder of a specific recording. An example of a specific Glasses 3 recording is `/20220310T130724Z`.
 
-If you just wish to parse the Tobii glasses data into a MATLAB readable
+If you just wish to parse the Tobii Glasses 2 data into a MATLAB readable
 file, you can directly call
 `./function_library/TobiiG2DataReader/readG2DataFiles.m`
 with the same specific recording as above as the input argument.
+For the Tobii Glasses 3, you can directly call `./function_library/TobiiG2DataReader/readG3DataFiles.m`
 
 An overview of the viewer GUI's functionality is provided in the [manual](/manual.md).
 
@@ -62,7 +63,7 @@ the GUI if any annotations are defined, and can be updated by pressing the
 "save coding" button in the GUI.  When opening the same folder again in the
 GUI, annotations are loaded from this file (and possibly overridden depending
 on the [settings of some annotation streams](#annotation-streams)). Note that
-the GUI contains a checkbox labeled `crap data`.  Checking this box sets the
+the GUI contains a checkbox labeled `crap data`. Checking this box sets the
 `dataIsCrap` field to true in the session's `coding.mat` file, allowing such
 files to easily be skipped in later analysis.
 
@@ -279,7 +280,7 @@ The following settings are understood for classifier parameters:
 
 # TODOs
 The below items could be considered to be implemented. Currently, none are
-planned to actually be executed.
+planned to be executed.
 - use own json decoder function (or get from mathworks FEX), so we can support
   matlab version a little older than what i do currently. In terms of JSON parsing,
   we however currently already support R2015b. This old version is otherwise untested,
@@ -292,15 +293,15 @@ planned to actually be executed.
   last few frames of some video files, when seeking to a specific time
   of frame, even though it can read them when just reading through the
   file frame by frame. This *appears* to occur for files where the last
-  few frames are marked as keyframes in the mp4 stss table, even though
+  few frames are marked as keyframes in the mp4 `stss` table, even though
   they are not. All read frames are correct, so not a big problem.
 
 # Requirements
-- Firmware versions that are too old do not contain some of the fields
-  in their data file that are required by this reader. Known to work are
-  1.22.0-zucchinipaj and several later firmware releases.
+- For the Glasses 2, firmware versions that are too old do not contain some of the fields
+  in their data file that are required by GlassesViewer. Known to work are
+  `1.22.0-zucchinipaj` and several later firmware releases. For the Glasses 3, firmware `1.26.2+cremla` is known to work.
 
-# Relation GlassesViewer export to Tobii Pro Lab export
+# Glasses 2: Relation GlassesViewer export to Tobii Pro Lab export
 Tobii Pro Glasses 2 recordings can be exported to a plain text file and
 a scene video with overlaid gaze marker using the Tobii Pro Lab software.
 When doing so, a different time code is used than produced by
