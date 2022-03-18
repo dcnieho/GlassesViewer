@@ -48,12 +48,12 @@ if nargin<2 || isempty(selectedDir)
     %    and open it in isolation.
     %
     % For the Glasses 3, select either a folder containing Glasses 3
-    % recording folders, or the folder of a specific recording. So if "xxx"
-    % is the folder on the SD card, there are two places that you can point
-    % the software to:
-    % 1. the xxx folder itself
+    % recording folders, or the folder of a specific recording. So if
+    % "root" refers to the root of the SD card itself, there are two places
+    % that you can point the software to:
+    % 1. the root folder itself
     % 2. the folder of a specific recording. An example of a specific
-    %    recording is: xxx\20220310T130724Z. Note that only this folder in
+    %    recording is: root\20220310T130724Z. Note that only this folder in
     %    isolation is needed when opening a recording, so you can just copy
     %    the "20220310T130724Z" folder of this example somewhere and open
     %    it in isolation.
