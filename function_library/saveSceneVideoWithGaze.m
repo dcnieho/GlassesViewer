@@ -11,7 +11,7 @@ if qHaveCallback
     callback(percDone);
 end
 
-qHaveFFmpeg = nargin>4 && ~isempty(ffmpegPath) && exist(fullfile(ffmpegPath,'ffmpeg.exe'),'file')==2;
+qHaveFFmpeg = nargin>4 && ~isempty(ffmpegPath) && exist(ffmpegPath,'file')==2;
 
 % load videos
 segments = FolderFromFolder(fullfile(directory,'segments'));
@@ -83,7 +83,7 @@ if qHaveFFmpeg
     inputs = [inputs '-f','rawvideo','-video_size',sprintf('%dx%d',res),'-framerate',sprintf('%.3f',1/ifi),'-pixel_format','rgb24','-i','pipe:'];
     filters = [filters sprintf('[%d:v]format=yuv420p[video]',length(segments))];
     % prep command and launch ffmpeg
-    command = {fullfile(ffmpegPath,'ffmpeg.exe'),'-y',inputs{:},'-filter_complex',filters,'-map','[video]','-map','[audio]','-c:v','libx264',fullfile(directory,'sceneVideo.mp4')};
+    command = {ffmpegPath,'-y',inputs{:},'-filter_complex',filters,'-map','[video]','-map','[audio]','-c:v','libx264',fullfile(directory,'sceneVideo.mp4')};
     h       = java.lang.ProcessBuilder(command).redirectErrorStream(true).start();
     stdin   = h.getOutputStream();
     % NB: need to get all handles as we need to close them all
