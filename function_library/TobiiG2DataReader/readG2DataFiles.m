@@ -7,7 +7,7 @@ function data = readG2DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 19;
+fileVersion = 20;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -69,9 +69,9 @@ if qGenCacheFile || qDEBUG
     % remove fields requiring custom processing (sig, type) and remove
     % unwanted fields (pts, epts)
     qSyncPort = strcmp(types(:,3),'sig');
-    qSyncAPI  = strcmp(types(:,3),'type');
+    qAPIEvent = strcmp(types(:,3),'type');
     qUnwanted = strcmp(types(:,3),'pts')|strcmp(types(:,3),'epts');
-    qKeep   = ~qSyncPort & ~qSyncAPI & ~qUnwanted;  % remove non-zero s, split off fields to process separately and unwanted fields
+    qKeep   = ~qSyncPort & ~qAPIEvent & ~qUnwanted;  % remove non-zero s, split off fields to process separately and unwanted fields
     nKeep   = sum(qKeep);
     dat     = struct('ts',[],'dat',[],'gidx',[],'eye',[],'s',[]);
     dat.ts  = sscanf(cat(2,types{qKeep,1}),'%f,');
@@ -89,8 +89,8 @@ if qGenCacheFile || qDEBUG
     % split off the ones we process separately
     q = bounds2bool(iNewLines([qSyncPort; false])+1,iNewLines([false; qSyncPort]));
     syncPortTxt = txt(q);
-    q = bounds2bool(iNewLines([qSyncAPI; false])+1,iNewLines([false; qSyncAPI]));
-    syncAPITxt  = txt(q);
+    q = bounds2bool(iNewLines([qAPIEvent; false])+1,iNewLines([false; qAPIEvent]));
+    APIEventTxt = txt(q);
     % get types for main packets
     types   = types(qKeep,3);
     % now remove these packets from string
@@ -239,20 +239,20 @@ if qGenCacheFile || qDEBUG
     end
     
     % 4.8 parse sync API signals
-    if ~isempty(syncAPITxt)
+    if ~isempty(APIEventTxt)
         % 4.8.1 parse json
-        syncAPIStr  = jsondecoder(['[' syncAPITxt ']']);
+        APIEventStr  = jsondecoder(['[' APIEventTxt ']']);
         % 4.8.2 organize port signals
-        syncAPI.ts  = cat(1,syncAPIStr.ts);
-        syncAPI.ets = cat(1,syncAPIStr.ets);
-        syncAPI.type= {syncAPIStr.type}.';
-        syncAPI.tag = {syncAPIStr.tag}.';
+        APIevent.ts  = cat(1,APIEventStr.ts);
+        APIevent.ets = cat(1,APIEventStr.ets);
+        APIevent.type= {APIEventStr.type}.';
+        APIevent.tag = {APIEventStr.tag}.';
     else
-        [syncAPI.ts,syncAPI.ets,syncAPI.type,syncAPI.tag] = deal([],[],{},{});
+        [APIevent.ts,APIevent.ets,APIevent.type,APIevent.tag] = deal([],[],{},{});
     end
     
     % clean up
-    clear syncPortTxt syncPortStr syncAPITxt syncAPIStr;
+    clear syncPortTxt syncPortStr APIEventTxt APIEventStr;
     
     
     % 5 reorganize eye data into binocular data, left eye data and right eye data
@@ -290,8 +290,8 @@ if qGenCacheFile || qDEBUG
     clear sig
     
     % 9 add API sync data to output file
-    data.syncAPI = syncAPI;
-    clear syncAPI
+    data.APIevent = APIevent;
+    clear APIevent
     
     % 10 determine t0, convert all timestamps to s
     % set t0 as start point of latest video
@@ -311,7 +311,7 @@ if qGenCacheFile || qDEBUG
     end
     data.syncPort.out.ts    = (data.syncPort.out.ts    -t0)./1000000;
     data.syncPort. in.ts    = (data.syncPort. in.ts    -t0)./1000000;
-    data.syncAPI.ts         = (data.syncAPI.ts         -t0)./1000000;
+    data.APIevent.ts        = (data.APIevent.ts        -t0)./1000000;
     
     % 11 fill up missed samples with nan
     data.eye = fillMissingSamples(data.eye,data.eye.fs);

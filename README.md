@@ -205,18 +205,18 @@ These streams visualize the activity of those channels. Understood options are:
 |`lbl`|String to be shown in GUI, naming the stream|
 |`categories`|Array defining the labels for each code, and the colors in which to show them. `syncIn` and `syncOut` streams have two events, up/inactive (1) and down/active (2). |
 
-#### 2. syncAPI
-The `syncAPI` is a special streams that is view-only, and
+#### 2. APIevent
+The `APIevent` is a special stream that is view-only, and
 cannot be edited through the GUI. The Tobii Glasses 2 has an API through which events
 can be logged to the data stream, with this stream these events can be visualized.
 Understood options are:
 
 |setting|description|
 | --- | --- |
-|`type`|Stream type. `syncAPI`|
+|`type`|Stream type. `APIevent`|
 |`lbl`|String to be shown in GUI, naming the stream|
-|`mapping`|Array defining mapping from syncAPI event types to GUI labels, list of "type_name","new_label",.... It is optional to provide this option, and only part of the types may be renamed through it while for others the original name can be kept.|
-|`categories`|Array defining the labels for each code, and the colors in which to show them. `syncAPI` streams have a special first event (1) to which any encountered types that are not in this category array will be mapped, as well as episodes before the first sync API event. `null` is likely a good color for this event category. |
+|`mapping`|Array defining mapping from APIevent event types to GUI labels, list of "type_name","new_label",.... It is optional to provide this option, and only part of the types may be renamed through it while for others the original name can be kept.|
+|`categories`|Array defining the labels for each code, and the colors in which to show them. `APIevent` streams have a special first event (1) to which any encountered types that are not in this category array will be mapped, as well as episodes before the first sync API event. `null` is likely a good color for this event category. |
 
 #### 3. handStream
 `handStream` streams start empty and annotations are made in them through hand coding.

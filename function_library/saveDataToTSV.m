@@ -5,7 +5,7 @@ function saveDataToTSV(data,directory,fileSuffix,which,intervalTs)
 % the Tobii Pro Glasses 2 eye tracker. Behavior Research Methods. doi:
 % 10.3758/s13428-019-01314-1
 
-allStreams   = {'eye','gyroscope','accelerometer','video','syncPort','syncAPI','time'};
+allStreams   = {'eye','gyroscope','accelerometer','video','syncPort','APIevent','time'};
 if isfield(data,'user')
     allStreams   = [allStreams fieldnames(data.user).'];
 end
@@ -104,10 +104,10 @@ for p=1:length(which)
             [qOutput,ival] = getIntervalSamples(data.syncPort.in.ts,intervalTs);
             writeDat = [num2cell(ival).'; repmat({'in'} ,1,sum(qOutput)); num2cell([data.syncPort. in.ts(qOutput) data.syncPort. in.state(qOutput)].')];
             fprintf(fid,[extraFmt '%s\t%.6f\t%d\n'], writeDat{:});
-        case 'syncAPI'
+        case 'APIevent'
             fprintf(fid,[extraHeader 'timestamp\texternal_timestamp\ttype\ttag\n']);
-            [qOutput,ival] = getIntervalSamples(data.syncAPI.ts,intervalTs);
-            writeDat = [num2cell([ival data.syncAPI.ts(qOutput) data.syncAPI.ets(qOutput)]) data.syncAPI.type(qOutput) data.syncAPI.tag(qOutput)].';
+            [qOutput,ival] = getIntervalSamples(data.APIevent.ts,intervalTs);
+            writeDat = [num2cell([ival data.APIevent.ts(qOutput) data.APIevent.ets(qOutput)]) data.APIevent.type(qOutput) data.APIevent.tag(qOutput)].';
             fprintf(fid,[extraFmt '%.6f\t%.0f\t%s\t%s\n'],writeDat{:});
         case 'time'
             fprintf(fid,[extraHeader 'start_time\tend_time\n']);

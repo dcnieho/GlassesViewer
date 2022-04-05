@@ -68,8 +68,8 @@ end
 % parse type of each stream, and other info
 type    = cellfun(@(x) x.type, coding.settings.streams, 'uni', false);
 locked  = true(size(type)); % a stream is locked by default, for all except buttonPress stream, user can set it to unlocked (i.e., user can edit coding)
-qSyncEvents = ismember(lower(type),{'syncin','syncout','syncapi'});
-locked(~qSyncEvents) = cellfun(@(x) x.locked, coding.settings.streams(~qSyncEvents));
+qJSONEvents = ismember(lower(type),{'syncin','syncout','apievent'});
+locked(~qJSONEvents) = cellfun(@(x) x.locked, coding.settings.streams(~qJSONEvents));
 lbls    = cellfun(@(x) x.lbl, coding.settings.streams, 'uni', false);
 options = cellfun(@(x) rmFieldOrContinue(x,{'lbl','type','locked','categories','parameters'}), coding.settings.streams, 'uni', false);
 
@@ -109,8 +109,8 @@ for p=1:nStream
             % store
             coding.mark{p} = ts;
             coding.type{p} = type;
-        case 'syncapi'
-            ts = tobiiData.syncAPI.ts(:).';
+        case 'apievent'
+            ts = tobiiData.APIevent.ts(:).';
             if isempty(ts)
                 qSkipped(p) = true;
                 warning('glassesViewer: no %s events found for stream %d. Skipped.',coding.stream.type{p},p);
@@ -130,7 +130,7 @@ for p=1:nStream
             % 2. check all types against type map--unmatched stay category 1
             type = ones(size(ts));
             for q=1:size(mapping,1)
-                type(strcmp(tobiiData.syncAPI.type,mapping{q,1})) = mapping{q,2};
+                type(strcmp(tobiiData.APIevent.type,mapping{q,1})) = mapping{q,2};
             end
             % 3. trim any beyond range of data off the end
             qTooMuch = ts>=endTime;

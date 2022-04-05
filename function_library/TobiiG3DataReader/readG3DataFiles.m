@@ -135,6 +135,8 @@ if qGenCacheFile || qDEBUG
     else
         [data.syncPort.in.ts,data.syncPort.in.state] = deal([]);
     end
+    % 3.4 API events
+    % TODO
     % clean up
     clear eventData sync ts qSync qOut
     
