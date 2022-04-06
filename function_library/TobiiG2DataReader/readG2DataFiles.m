@@ -7,7 +7,7 @@ function data = readG2DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 20;
+fileVersion = 21;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -256,6 +256,7 @@ if qGenCacheFile || qDEBUG
     
     
     % 5 reorganize eye data into binocular data, left eye data and right eye data
+    data.device = 'G2';
     data.eye = organizeTobiiGlassesEyeData(pc,pd,gd,gp,gp3);
     clear pc pd gd gp gp3
     data.eye.fs = expectedFs;

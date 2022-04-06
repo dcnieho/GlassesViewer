@@ -129,8 +129,16 @@ for p=1:nStream
             end
             % 2. check all types against type map--unmatched stay category 1
             type = ones(size(ts));
+            switch tobiiData.device
+                case 'G2'
+                    mapField = 'type';
+                case 'G3'
+                    mapField = 'tag';
+                otherwise
+                    error('device %s not supported for API events',tobiiData.device)
+            end
             for q=1:size(mapping,1)
-                type(strcmp(tobiiData.APIevent.type,mapping{q,1})) = mapping{q,2};
+                type(strcmp(tobiiData.APIevent.(mapField),mapping{q,1})) = mapping{q,2};
             end
             % 3. trim any beyond range of data off the end
             qTooMuch = ts>=endTime;

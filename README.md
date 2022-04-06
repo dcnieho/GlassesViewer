@@ -215,7 +215,7 @@ Understood options are:
 | --- | --- |
 |`type`|Stream type. `APIevent`|
 |`lbl`|String to be shown in GUI, naming the stream|
-|`mapping`|Array defining mapping from APIevent event types to GUI labels, list of "type_name","new_label",.... It is optional to provide this option, and only part of the types may be renamed through it while for others the original name can be kept.|
+|`mapping`|Array defining mapping from APIevent event types (`type` field for Glasses 2, `tag` field for Glasses 3) to GUI labels, list of "type_name","new_label",.... It is optional to provide this option, and only part of the types may be renamed through it while for others the original name can be kept.|
 |`categories`|Array defining the labels for each code, and the colors in which to show them. `APIevent` streams have a special first event (1) to which any encountered types that are not in this category array will be mapped, as well as episodes before the first sync API event. `null` is likely a good color for this event category. |
 
 #### 3. handStream
