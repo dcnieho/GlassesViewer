@@ -43,26 +43,32 @@ for p=1:length(which)
             fprintf(fid,[extraHeader 'timestamp\tgaze sample index\tpupil_center_left_x\tpupil_center_left_y\tpupil_center_left_z\tpupil_diameter_left\tgaze_direction_left_x\tgaze_direction_left_y\tgaze_direction_left_z\tazimuth_left\televation_left\t']);
             fprintf(fid,'pupil_center_right_x\tpupil_center_right_y\tpupil_center_right_z\tpupil_diameter_right\tgaze_direction_right_x\tgaze_direction_right_y\tgaze_direction_right_z\tazimuth_right\televation_right\t');
             fprintf(fid,'gaze_point_video_x\tgaze_point_video_y\tgaze_point_3D_x\tgaze_point_3D_y\tgaze_point_3D_z\n');
-            % collect data based on gidx
-            off   = min([data.eye.left.gidx(1) data.eye.right.gidx(1) data.eye.binocular.gidx(1)])-1;
+            % collect data based on interval timestamps
+            if ~isfield(data.eye.left,'gidx')
+                % G3 doesn't have a gaze sample index, make one
+                data.eye.left.gidx = [1:size(data.eye.left.ts)].';
+                off   = 0;
+            else
+                off   = min([data.eye.left.gidx(1) data.eye.right.gidx(1) data.eye.binocular.gidx(1)])-1;
+            end
             [qOutput,ival] = getIntervalSamples(data.eye.left.ts,intervalTs);
             
             writeDat  = nan(25+qHaveIntervals,sum(qOutput));
             if qHaveIntervals
                 writeDat(1,:) = ival;
             end
-            writeDat(     1 +qHaveIntervals,:) = data.eye.left.ts(qOutput).';
-            writeDat(     2 +qHaveIntervals,:) = data.eye.left.gidx(qOutput)-off.';
+            writeDat(     1 +qHaveIntervals,:) = data.eye.left.ts(qOutput);
+            writeDat(     2 +qHaveIntervals,:) = data.eye.left.gidx(qOutput)-off;
             writeDat([ 3: 5]+qHaveIntervals,:) = data.eye.left.pc(qOutput,:).';
-            writeDat(     6 +qHaveIntervals,:) = data.eye.left.pd(qOutput).';
+            writeDat(     6 +qHaveIntervals,:) = data.eye.left.pd(qOutput);
             writeDat([ 7: 9]+qHaveIntervals,:) = data.eye.left.gd(qOutput,:).';
-            writeDat(    10 +qHaveIntervals,:) = data.eye.left.azi(qOutput).';
-            writeDat(    11 +qHaveIntervals,:) = data.eye.left.ele(qOutput).';
+            writeDat(    10 +qHaveIntervals,:) = data.eye.left.azi(qOutput);
+            writeDat(    11 +qHaveIntervals,:) = data.eye.left.ele(qOutput);
             writeDat([12:14]+qHaveIntervals,:) = data.eye.right.pc(qOutput,:).';
-            writeDat(    15 +qHaveIntervals,:) = data.eye.right.pd(qOutput).';
+            writeDat(    15 +qHaveIntervals,:) = data.eye.right.pd(qOutput);
             writeDat([16:18]+qHaveIntervals,:) = data.eye.right.gd(qOutput,:).';
-            writeDat(    19 +qHaveIntervals,:) = data.eye.right.azi(qOutput).';
-            writeDat(    20 +qHaveIntervals,:) = data.eye.right.ele(qOutput).';
+            writeDat(    19 +qHaveIntervals,:) = data.eye.right.azi(qOutput);
+            writeDat(    20 +qHaveIntervals,:) = data.eye.right.ele(qOutput);
             writeDat([21:22]+qHaveIntervals,:) = data.eye.binocular.gp(qOutput,:).';
             writeDat([23:25]+qHaveIntervals,:) = data.eye.binocular.gp3(qOutput,:).';
             
