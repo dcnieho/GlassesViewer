@@ -1,4 +1,4 @@
-function saveDataToTSV(data,directory,fileSuffix,which,intervalTs)
+function saveDataToTSV(data,directory,fileSuffix,whichStreams,intervalTs)
 
 % Cite as: Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
 % GlassesViewer: Open-source software for viewing and analyzing data from
@@ -10,14 +10,14 @@ if isfield(data,'user')
     allStreams   = [allStreams fieldnames(data.user).'];
 end
 
-if nargin<4 || isempty(which)
-    which = allStreams;
+if nargin<4 || isempty(whichStreams)
+    whichStreams = allStreams;
 else
-    qExist = isfield(data,which);
+    qExist = isfield(data,whichStreams);
     if isfield(data,'user')
-        qExist = qExist | isfield(data.user,which);
+        qExist = qExist | isfield(data.user,whichStreams);
     end
-    assert(all(qExist),'The following are not known data streams:\n%s',sprintf('  %s\n',which{~qExist}));
+    assert(all(qExist),'The following are not known data streams:\n%s',sprintf('  %s\n',whichStreams{~qExist}));
 end
 if nargin>=3 && ~isempty(fileSuffix)
     fileSuffix = ['_' fileSuffix];
@@ -35,10 +35,10 @@ else
     intervalTs = [-inf inf];
 end
 
-for p=1:length(which)
-    fname = fullfile(directory,sprintf('%s%s.tsv',which{p},fileSuffix));
+for p=1:length(whichStreams)
+    fname = fullfile(directory,sprintf('%s%s.tsv',whichStreams{p},fileSuffix));
     fid   = fopen(fname,'wt');
-    switch which{p}
+    switch whichStreams{p}
         case 'eye'
             fprintf(fid,[extraHeader 'timestamp\tgaze sample index\tpupil_center_left_x\tpupil_center_left_y\tpupil_center_left_z\tpupil_diameter_left\tgaze_direction_left_x\tgaze_direction_left_y\tgaze_direction_left_z\tazimuth_left\televation_left\t']);
             fprintf(fid,'pupil_center_right_x\tpupil_center_right_y\tpupil_center_right_z\tpupil_diameter_right\tgaze_direction_right_x\tgaze_direction_right_y\tgaze_direction_right_z\tazimuth_right\televation_right\t');
@@ -117,21 +117,38 @@ for p=1:length(which)
             writeDat = [num2cell(ival).'; repmat({'in'} ,1,sum(qOutput)); num2cell([data.syncPort. in.ts(qOutput) data.syncPort. in.state(qOutput)].')];
             fprintf(fid,[extraFmt '%s\t%.6f\t%d\n'], writeDat{:});
         case 'APIevent'
-            fprintf(fid,[extraHeader 'timestamp\texternal_timestamp\ttype\ttag\n']);
-            [qOutput,ival] = getIntervalSamples(data.APIevent.ts,intervalTs);
-            writeDat = [num2cell([ival data.APIevent.ts(qOutput) data.APIevent.ets(qOutput)]) data.APIevent.type(qOutput) data.APIevent.tag(qOutput)].';
-            fprintf(fid,[extraFmt '%.6f\t%.0f\t%s\t%s\n'],writeDat{:});
+            switch data.device
+                case 'G2'
+                    fprintf(fid,[extraHeader 'timestamp\texternal_timestamp\ttype\ttag\n']);
+                    [qOutput,ival] = getIntervalSamples(data.APIevent.ts,intervalTs);
+                    writeDat = [num2cell([ival data.APIevent.ts(qOutput) data.APIevent.ets(qOutput)]) data.APIevent.type(qOutput) data.APIevent.tag(qOutput)].';
+                    fprintf(fid,[extraFmt '%.6f\t%.0f\t%s\t%s\n'],writeDat{:});
+                case 'G3'
+                    if ~isempty(which('matlab.internal.webservices.toJSON'))
+                        jsonencoder = @matlab.internal.webservices.toJSON;
+                    elseif ~isempty(which('jsonencode'))
+                        jsonencoder = @jsonencode;
+                    else
+                        error('Your MATLAB version does not provide a way to encode json (which means its really old), upgrade to something newer');
+                    end
+                    fprintf(fid,[extraHeader 'timestamp\ttag\tobject\n']);
+                    [qOutput,ival] = getIntervalSamples(data.APIevent.ts,intervalTs);
+                    writeDat = [num2cell([ival data.APIevent.ts(qOutput)]) data.APIevent.tag(qOutput) cellfun(jsonencoder,data.APIevent.object(qOutput),'uni',false)].';
+                    fprintf(fid,[extraFmt '%.6f\t%s\t%s\n'],writeDat{:});
+                otherwise
+                    error('device %s not supported for exporting API events',data.device)
+            end
         case 'time'
             fprintf(fid,[extraHeader 'start_time\tend_time\n']);
             fprintf(fid,[extraFmt '%.6d\t%.6d\n'],[data.time.startTime data.time.endTime]);
         otherwise
             % user stream
-            nCol = size(data.user.(which{p}).data,2);
+            nCol = size(data.user.(whichStreams{p}).data,2);
             header = sprintf('channel_%d\t',1:nCol); header(end) = [];
             fprintf(fid,[extraHeader 'timestamp\t%s\n'],header);
             fmt    = repmat('%.6f\t',1,nCol); fmt(end-1:end) = [];
-            [qOutput,ival] = getIntervalSamples(data.user.(which{p}).ts,intervalTs);
-            fprintf(fid,[extraFmt '%.6d\t' fmt '\n'],[ival data.user.(which{p}).ts(qOutput) data.user.(which{p}).data(qOutput,:)].');
+            [qOutput,ival] = getIntervalSamples(data.user.(whichStreams{p}).ts,intervalTs);
+            fprintf(fid,[extraFmt '%.6d\t' fmt '\n'],[ival data.user.(whichStreams{p}).ts(qOutput) data.user.(whichStreams{p}).data(qOutput,:)].');
     end
     
     fclose(fid);
