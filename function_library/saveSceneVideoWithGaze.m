@@ -14,17 +14,20 @@ end
 qHaveFFmpeg = nargin>4 && ~isempty(ffmpegPath) && exist(ffmpegPath,'file')==2;
 
 % load videos
-if exist(fullfile(directory,'recording.g3'),'file')
-    fullpath{1} = fullfile(directory,'scenevideo.mp4');
-    reader{1}   = VideoReader(fullpath{1});
-else
-    segments = FolderFromFolder(fullfile(directory,'segments'));
-    for s=length(segments):-1:1
-        fullpath{s} = fullfile(directory,'segments',segments(s).name,'fullstream.mp4');
-        reader{s}   = VideoReader(fullpath{s}); %#ok<TNMLP>
-        % for warmup, read first frame
-        reader{s}.read(1);
-    end
+switch data.device
+    case 'G2'
+        segments = FolderFromFolder(fullfile(directory,'segments'));
+        for s=length(segments):-1:1
+            fullpath{s} = fullfile(directory,'segments',segments(s).name,'fullstream.mp4');
+            reader{s}   = VideoReader(fullpath{s}); %#ok<TNMLP>
+            % for warmup, read first frame
+            reader{s}.read(1);
+        end
+    case 'G3'
+        fullpath{1} = fullfile(directory,'scenevideo.mp4');
+        reader{1}   = VideoReader(fullpath{1});
+    otherwise
+        error('device %s not supported for API events',data.device)
 end
 res = [reader{1}.Width reader{1}.Height];
 
@@ -52,7 +55,7 @@ end
 isBlackFrame    = false(size(fridxs));
 for p=length(iGap):-1:1
     blackFrameTs = interp1([0 nFrameMissing(p)+1],fts(iGap+[0 1]),[1:nFrameMissing(p)]);
-    fts          = [         fts(1:iGap)       blackFrameTs             fts(iGap+1:end)];
+    fts          = [         fts(1:iGap)       blackFrameTs                fts(iGap+1:end)];
     fridxs       = [      fridxs(1:iGap)  nan(1,nFrameMissing(p))       fridxs(iGap+1:end)];
     vididxs      = [     vididxs(1:iGap)  nan(1,nFrameMissing(p))      vididxs(iGap+1:end)];
     isBlackFrame = [isBlackFrame(1:iGap) true(1,nFrameMissing(p)) isBlackFrame(iGap+1:end)];
