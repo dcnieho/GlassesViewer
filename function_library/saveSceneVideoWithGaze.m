@@ -14,11 +14,17 @@ end
 qHaveFFmpeg = nargin>4 && ~isempty(ffmpegPath) && exist(ffmpegPath,'file')==2;
 
 % load videos
-segments = FolderFromFolder(fullfile(directory,'segments'));
-for s=length(segments):-1:1
-    reader{s} = VideoReader(fullfile(directory,'segments',segments(s).name,'fullstream.mp4')); %#ok<TNMLP>
-    % for warmup, read first frame
-    reader{s}.read(1);
+if exist(fullfile(directory,'recording.g3'),'file')
+    fullpath{1} = fullfile(directory,'scenevideo.mp4');
+    reader{1}   = VideoReader(fullpath{1});
+else
+    segments = FolderFromFolder(fullfile(directory,'segments'));
+    for s=length(segments):-1:1
+        fullpath{s} = fullfile(directory,'segments',segments(s).name,'fullstream.mp4');
+        reader{s}   = VideoReader(fullpath{s}); %#ok<TNMLP>
+        % for warmup, read first frame
+        reader{s}.read(1);
+    end
 end
 res = [reader{1}.Width reader{1}.Height];
 
@@ -65,7 +71,7 @@ if qHaveFFmpeg
     % prep audio
     inputs  = {};
     filters = {};
-    for s=1:length(segments)
+    for s=1:length(reader)
         if s==1
             offset  = data.video.scene.fts(1)-data.time.startTime;
             filters = [filters sprintf('[0:a]atrim=start=%.6f,asetpts=PTS-STARTPTS[a]',max(0,-offset))];
@@ -74,16 +80,16 @@ if qHaveFFmpeg
             filters = [filters sprintf('[%d:a]adelay=delays=%.3f:all=1[%c]',s-1,startTs*1000,char('a'+s-1))];
         end
     
-        inputs = [inputs '-i' fullfile(directory,'segments',segments(s).name,'fullstream.mp4')];
+        inputs = [inputs '-i' fullpath{s}];
     end
     filters = [filters; repmat({';'},size(filters))];
     filters = [filters{:}];
-    filters = [filters sprintf('%samix=%d[audio];',sprintf('[%c]',char('a'+[1:length(segments)]-1)),length(segments))];
+    filters = [filters sprintf('%samix=%d[audio];',sprintf('[%c]',char('a'+[1:length(reader)]-1)),length(reader))];
     % prep video
     inputs = [inputs '-f','rawvideo','-video_size',sprintf('%dx%d',res),'-framerate',sprintf('%.3f',1/ifi),'-pixel_format','rgb24','-i','pipe:'];
-    filters = [filters sprintf('[%d:v]format=yuv420p[video]',length(segments))];
+    filters = [filters sprintf('[%d:v]format=yuv420p[video]',length(reader))];
     % prep command and launch ffmpeg
-    command = {ffmpegPath,'-y',inputs{:},'-filter_complex',filters,'-map','[video]','-map','[audio]','-c:v','libx264',fullfile(directory,'sceneVideo.mp4')};
+    command = {ffmpegPath,'-y',inputs{:},'-filter_complex',filters,'-map','[video]','-map','[audio]','-c:v','libx264',fullfile(directory,'scenevideo_gaze.mp4')};
     h       = java.lang.ProcessBuilder(command).redirectErrorStream(true).start();
     stdin   = h.getOutputStream();
     % NB: need to get all handles as we need to close them all
@@ -91,7 +97,7 @@ if qHaveFFmpeg
     jReader = java.io.BufferedReader(java.io.InputStreamReader(h.getInputStream()));
     
 else
-    outName             = fullfile(directory,'sceneVideo.mp4');
+    outName             = fullfile(directory,'scenevideo_gaze.mp4');
     writer              = VideoWriter(outName,'MPEG-4');
     writer.FrameRate    = 1/ifi;
     writer.Quality      = 75;
