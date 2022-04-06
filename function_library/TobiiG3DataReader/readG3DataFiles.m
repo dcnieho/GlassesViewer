@@ -7,7 +7,7 @@ function data = readG3DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 3;
+fileVersion = 4;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -59,6 +59,7 @@ if qGenCacheFile || qDEBUG
     
     % 2 turn into our data format
     % 2.1 prep storage
+    data.device             = 'G3';
     data.eye.fs             = expectedFs;
     data.eye.left.ts        = cat(1,gazeData.timestamp);
     data.eye.right.ts       = data.eye.left.ts;
@@ -123,12 +124,14 @@ if qGenCacheFile || qDEBUG
     sync = cat(1,eventData(qSync).data);
     ts   = cat(1,eventData(qSync).timestamp);
     qOut = strcmp({sync.direction},'out');
+    % 3.3.1 outgoing
     if any(qOut)
         data.syncPort.out.ts    = ts(qOut);
         data.syncPort.out.state = cat(1,sync(qOut).value);
     else
         [data.syncPort.out.ts,data.syncPort.out.state] = deal([]);
     end
+    % 3.3.2 incoming
     if any(~qOut)
         data.syncPort.in.ts    = ts(~qOut);
         data.syncPort.in.state = cat(1,sync(~qOut).value);
@@ -136,9 +139,18 @@ if qGenCacheFile || qDEBUG
         [data.syncPort.in.ts,data.syncPort.in.state] = deal([]);
     end
     % 3.4 API events
-    % TODO
+    qAPI = strcmp({eventData.type},'event');
+    if ~isempty(qAPI)
+        data.APIevent.ts    = cat(1,eventData(qAPI).timestamp);
+        temp                = cat(1,eventData(qAPI).data);
+        data.APIevent.tag   = {temp.tag}.';
+        data.APIevent.object= {temp.object}.';
+        clear temp
+    else
+        [data.APIevent.ts,data.APIevent.tag,data.APIevent.object] = deal([],{},{});
+    end
     % clean up
-    clear eventData sync ts qSync qOut
+    clear eventData sync ts qSync qOut qAPI
     
     % 4 read in IMU data (NB some old firmware versions didn't record IMU
     % data)
