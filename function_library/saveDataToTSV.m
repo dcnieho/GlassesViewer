@@ -5,7 +5,7 @@ function saveDataToTSV(data,directory,fileSuffix,which,intervalTs)
 % the Tobii Pro Glasses 2 eye tracker. Behavior Research Methods. doi:
 % 10.3758/s13428-019-01314-1
 
-allStreams   = {'eye','gyroscope','accelerometer','video','syncPort','APIevent','time'};
+allStreams   = {'eye','gyroscope','accelerometer','magnetometer','video','syncPort','APIevent','time'};
 if isfield(data,'user')
     allStreams   = [allStreams fieldnames(data.user).'];
 end
@@ -75,6 +75,12 @@ for p=1:length(which)
             fprintf(fid,[extraHeader 'timestamp\taccelerometer_x\taccelerometer_y\taccelerometer_z\n']);
             [qOutput,ival] = getIntervalSamples(data.accelerometer.ts,intervalTs);
             fprintf(fid,[extraFmt '%.6d\t%.3d\t%.3d\t%.3d\n'],[ival data.accelerometer.ts(qOutput) data.accelerometer.ac(qOutput,:)].');
+        case 'magnetometer'
+            if isfield(data,'magnetometer')
+                fprintf(fid,[extraHeader 'timestamp\tmagnetometer_x\tmagnetometer_y\tmagnetometer_z\n']);
+                [qOutput,ival] = getIntervalSamples(data.magnetometer.ts,intervalTs);
+                fprintf(fid,[extraFmt '%.6d\t%.3d\t%.3d\t%.3d\n'],[ival data.magnetometer.ts(qOutput) data.magnetometer.mag(qOutput,:)].');
+            end
         case 'video'
             fprintf(fid,[extraHeader 'video_type\tframe_index\ttimestamp\n']);
             nFr = length(data.video.scene.fts);
