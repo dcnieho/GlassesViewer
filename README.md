@@ -5,7 +5,9 @@ parsed, it will display this data in a MATLAB GUI. Optional eye videos
 are also supported. In this GUI, sync events can be shown, and data can
 be optionally annotated (e.g. as slow and fast phase intervals) by hand
 or by a classifier algorithm, or such annotations can be loaded from
-file. Parsed data is stored in a mat file and can also be stored in tab-delimited text files. Furthermore, a version of the scene video with overlaid gaze point can be exported.
+file. Parsed data is stored in a mat file and can also be stored in
+tab-delimited text files. Furthermore, a version of the scene video with
+overlaid gaze point can be exported.
 
 Cite as:
 [Niehorster, D.C., Hessels, R.S., and Benjamins, J.S. (2020).
@@ -24,7 +26,7 @@ used for the GUI, it is quite possible that the viewer part of this repository
 is not all that compatible with different matlab versions. Pull requests
 welcomed! Some used functionality was only introduced with R2015b
 (JSON decoder), so the code in this repository is not expected to run
-on versions of matlab older than that. Note that on smaller screens, the layout may not be optimal. If GUI elements overlap, consider using a larger screen.
+on versions of matlab older than that. Note that the layout may not be optimal on smaller screens. If GUI elements overlap, consider using a larger screen.
 
 NB: GlassesViewer is not able to provide fluent video playback due to performance issues with MATLAB figure windows. For instance, I get a few frames a second on my 4K display. We however do not see GlassesViewer as primarily a replay tool (the free Tobii Glasses Controller software serves this purpose well), but as a more advanced tool where all signals can be scrutinized together with the current view of the scene and eye cameras. Choppy playback is not an indication of user or software error--everything is working as expected.
 
@@ -33,23 +35,30 @@ Click the screenshot to see a full-size version.
 ![Glasses viewer screenshot](/screenshot.jpg?raw=true)
 
 # Usage
+An overview of the viewer GUI's functionality is provided in the [manual](/manual.md).
+
 To run GlassesViewer, after downloading this repository, open the file
 `glassesViewer.m` in MATLAB and run it.
 When running the viewer GUI, `glassesViewer.m`, a file picker will
-appear. As shown in the [manual](/manual.md), for the Glasses 2 select either a folder
-containing one or multiple projects, or a specific recording's folder
-to view. If "projects" is the project folder on the SD card, either
-select this folder "projects" in the file picker, or the folder of a specific project, or a specific recording
-in a project. An example of a specific Glasses 2 project is `projects/rkamrkb` and an example of a specific Glasses 2 recording is
-`projects/rkamrkb/recordings/zi4xmt2`. For the Glasses 3 select either a folder containing multiple Glasses 3 recordings (such as the root of its SD card), or the folder of a specific recording. An example of a specific Glasses 3 recording is `/20220310T130724Z`.
+appear. As shown in the [manual](/manual.md), there are multiple folders
+you could open for the Glasses 2. For the Glasses 2, if "projects" is the
+project folder on the SD card, either select this folder "projects" in the
+file picker, or the folder of a specific project, or a specific recording
+in a project. An example of a specific Glasses 2 project is `projects/rkamrkb`
+and an example of a specific Glasses 2 recording is
+`projects/rkamrkb/recordings/zi4xmt2`. For the Glasses 3 select either a folder
+containing multiple Glasses 3 recordings (such as the root of its SD card),
+or the folder of a specific recording. An example of a specific Glasses 3
+recording is `/20220310T130724Z`.
 
-If you just wish to parse the Tobii Glasses 2 data into a MATLAB readable
-file, you can directly call
-`./function_library/TobiiG2DataReader/readG2DataFiles.m`
-with the same specific recording as above as the input argument.
-For the Tobii Glasses 3, you can directly call `./function_library/TobiiG2DataReader/readG3DataFiles.m`
-
-An overview of the viewer GUI's functionality is provided in the [manual](/manual.md).
+If you just wish to parse the Tobii Glasses 2 or 3 data into a MATLAB readable
+file, you can directly call the function responsible for parsing the Tobii data.
+For the Glasses 2, this function is `./function_library/TobiiG2DataReader/readG2DataFiles.m`
+with a specific recording (see above) as the input argument.
+For the Tobii Glasses 3, this function is `./function_library/TobiiG3DataReader/readG3DataFiles.m`
+When opening a recording in GlassesViewer, or when directly calling one of the
+above functions, the parsed data will be stored in a mat file in the recording's
+directory (`livedata.mat` for the Glasses 2, and `gazedata.mat` for the Glasses 3).
 
 Default settings for the reader are in the `default.json` file. To alter
 these settings, read in the json file with `jsondecode()`, change any
@@ -66,6 +75,17 @@ on the [settings of some annotation streams](#annotation-streams)). Note that
 the GUI contains a checkbox labeled `crap data`. Checking this box sets the
 `dataIsCrap` field to true in the session's `coding.mat` file, allowing such
 files to easily be skipped in later analysis.
+
+Data streams (such as gaze position on the video), a data quality report and
+annotations can be exported to tab-separated files, and a version of the scene
+video with overlaid gaze point can also be rendered. This exports can be started
+from the menu bar in the GlassesViewer GUI, or for most also by directly calling
+the functions that perform the export with the return value from the `readG2DataFiles`
+and `readG3DataFiles` parser functions. The export functions are `saveDataToTSV`
+for data streams, `saveDataQualityToTSV` for the data quality report, and
+`saveSceneVideoWithGaze` for rendering the scene video with overlaid gaze point.
+Using these functions together allows batch parsing and exporting of Glasses 2 and
+Glasses 3 recordings.
 
 # Viewer interface
 *mouse*:
