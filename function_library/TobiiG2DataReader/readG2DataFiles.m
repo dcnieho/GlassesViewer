@@ -43,14 +43,16 @@ if qGenCacheFile || qDEBUG
     for s=1:length(segments)
         % read in all segments, just concat
         % 1.1 unpack gz file, if doesn't exist
-        if ~exist(fullfile(recordingDir,'segments',segments(s).name,'livedata.json'),'file')
-            gunzip(fullfile(recordingDir,'segments',segments(s).name,'livedata.json.gz'));
+        file = fullfile(recordingDir,'segments',segments(s).name,'livedata.json');
+        if ~exist(file,'file')
+            gunzip([file '.gz']);
         end
         % 1.2 read all lines
-        fprintf('reading: %s\n',fullfile(recordingDir,'segments',segments(s).name,'livedata.json'));
+        fprintf('reading: %s\n',file);
         fid = fopen(fullfile(recordingDir,'segments',segments(s).name,'livedata.json'),'rt');
         txt = [txt fread(fid,inf,'*char').']; %#ok<AGROW>
         fclose(fid);
+        delete(file);
     end
     % 2 get ts, s and type per packet
     types = regexp(txt,'(?:"ts":)(\d+,).*?(?:"s":)(\d+,).*?(?:")(pc|pd|gd|gp|gp3|gy|ac|vts|evts|pts|epts|sig|type)(?:")','tokens');   % only get first item of status code, we just care if 0 or not. get delimiter of ts on purpose, so we can concat all matches and just sscanf

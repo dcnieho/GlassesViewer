@@ -69,6 +69,7 @@ while true
     end
 end
 fclose(fid);
+delete(filename);
 
 % trim off excess from output cell
 parsedData(i+1:end,:) = [];

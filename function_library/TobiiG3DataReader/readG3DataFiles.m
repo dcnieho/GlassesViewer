@@ -39,17 +39,19 @@ if qGenCacheFile || qDEBUG
     fclose(fid);
     
     % 1 read in gaze data
-    fprintf('reading: %s\n',fullfile(recordingDir,recording.gaze.file));
     % 1.1 unpack gz file, if doesn't exist
     gzFile = fullfile(recordingDir,recording.gaze.file);
     [~,gazeFile,~] = fileparts(gzFile);
-    if ~exist(fullfile(recordingDir,gazeFile),'file')
+    gazeFile = fullfile(recordingDir,gazeFile);
+    if ~exist(gazeFile,'file')
         gunzip(fullfile(recordingDir,recording.gaze.file));
     end
     % 1.2 read in gaze data
-    fid = fopen(fullfile(recordingDir,gazeFile),'rt');
+    fprintf('reading: %s\n',gazeFile);
+    fid = fopen(gazeFile,'rt');
     gazeData = fread(fid,inf,'*char').';
     fclose(fid);
+    delete(gazeFile);
     % turn into something we can read
     gazeData(gazeData==10) = ',';
     gazeData = jsondecoder(['[' gazeData ']']);
@@ -113,13 +115,16 @@ if qGenCacheFile || qDEBUG
     % 3.1 unpack gz file, if doesn't exist
     gzFile = fullfile(recordingDir,recording.events.file);
     [~,eventFile,~] = fileparts(gzFile);
-    if ~exist(fullfile(recordingDir,eventFile),'file')
+    eventFile = fullfile(recordingDir,eventFile);
+    if ~exist(eventFile,'file')
         gunzip(fullfile(recordingDir,recording.events.file));
     end
     % 3.2 read in event data
-    fid = fopen(fullfile(recordingDir,eventFile),'rt');
+    fprintf('reading: %s\n',eventFile);
+    fid = fopen(eventFile,'rt');
     eventData = fread(fid,inf,'*char').';
     fclose(fid);
+    delete(eventFile);
     % turn into something we can read
     eventData(eventData==10) = ',';
     eventData = jsondecoder(['[' eventData ']']);
@@ -162,13 +167,16 @@ if qGenCacheFile || qDEBUG
     if isfield(recording,'imu')
         gzFile = fullfile(recordingDir,recording.imu.file);
         [~,imuFile,~] = fileparts(gzFile);
-        if ~exist(fullfile(recordingDir,imuFile),'file')
+        imuFile = fullfile(recordingDir,imuFile);
+        if ~exist(imuFile,'file')
             gunzip(fullfile(recordingDir,recording.imu.file));
         end
         % 4.2 read in event data
-        fid = fopen(fullfile(recordingDir,imuFile),'rt');
+        fprintf('reading: %s\n',imuFile);
+        fid = fopen(imuFile,'rt');
         imuData = fread(fid,inf,'*char').';
         fclose(fid);
+        delete(imuFile);
         % turn into something we can read
         imuData(imuData==10) = ',';
         imuData = jsondecoder(['[' imuData ']']);
