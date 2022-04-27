@@ -144,7 +144,7 @@ if qGenCacheFile || qDEBUG
     end
     % 3.4 API events
     qAPI = strcmp({eventData.type},'event');
-    if ~isempty(qAPI)
+    if any(qAPI)
         data.APIevent.ts    = cat(1,eventData(qAPI).timestamp);
         temp                = cat(1,eventData(qAPI).data);
         data.APIevent.tag   = {temp.tag}.';
