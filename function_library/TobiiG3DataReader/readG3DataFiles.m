@@ -83,12 +83,16 @@ if qGenCacheFile || qDEBUG
     qNotMissingRA(qNotMissing)              = qNotMissingR;
     left                                    = cat(1,gazeData(qNotMissingL).eyeleft);
     right                                   = cat(1,gazeData(qNotMissingR).eyeright);
-    data.eye.left .pc(qNotMissingLA,:)      = cat(2,left.gazeorigin).';
-    data.eye.left .pd(qNotMissingLA)        = cat(2,left.pupildiameter).';
-    data.eye.left .gd(qNotMissingLA,:)      = cat(2,left.gazedirection).';
-    data.eye.right.pc(qNotMissingRA,:)      = cat(2,right.gazeorigin).';
-    data.eye.right.pd(qNotMissingRA)        = cat(2,right.pupildiameter).';
-    data.eye.right.gd(qNotMissingRA,:)      = cat(2,right.gazedirection).';
+    if ~isempty(left)
+        data.eye.left .pc(qNotMissingLA,:)      = cat(2,left.gazeorigin).';
+        data.eye.left .pd(qNotMissingLA)        = cat(2,left.pupildiameter).';
+        data.eye.left .gd(qNotMissingLA,:)      = cat(2,left.gazedirection).';
+    end
+    if ~isempty(right)
+        data.eye.right.pc(qNotMissingRA,:)      = cat(2,right.gazeorigin).';
+        data.eye.right.pd(qNotMissingRA)        = cat(2,right.pupildiameter).';
+        data.eye.right.gd(qNotMissingRA,:)      = cat(2,right.gazedirection).';
+    end
     % 2.3 for each binocular sample, see on how many eyes its based
     data.eye.binocular.nEye                 = sum([qNotMissingLA qNotMissingRA],2);
     % clean up
