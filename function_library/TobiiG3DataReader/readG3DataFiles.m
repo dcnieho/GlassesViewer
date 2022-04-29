@@ -7,7 +7,7 @@ function data = readG3DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 4;
+fileVersion = 6;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -302,7 +302,14 @@ if qGenCacheFile || qDEBUG
     end
     
     % 9 add scene camera calibration info
-    data.video.scene.calibration = recording.scenecamera.camera_calibration;
+    data.video.scene.calibration.position               = recording.scenecamera.camera_calibration.position.';
+    data.video.scene.calibration.focalLength            = recording.scenecamera.camera_calibration.focal_length.';
+    data.video.scene.calibration.rotation               = recording.scenecamera.camera_calibration.rotation;
+    data.video.scene.calibration.skew                   = recording.scenecamera.camera_calibration.skew;
+    data.video.scene.calibration.principalPoint         = recording.scenecamera.camera_calibration.principal_point.';
+    data.video.scene.calibration.radialDistortion       = recording.scenecamera.camera_calibration.radial_distortion.';
+    data.video.scene.calibration.tangentialDistortion   = recording.scenecamera.camera_calibration.tangential_distortion.';
+    data.video.scene.calibration.resolution             = recording.scenecamera.camera_calibration.resolution.';
     
     % 10 compute user streams, if any
     if ~isempty(userStreams)
