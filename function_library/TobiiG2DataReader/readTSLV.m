@@ -310,7 +310,7 @@ switch type
         sx = readInt(fid, 2);
         sy = readInt(fid, 2);
         
-        out = outputBuilder('id',id,'location',location,'position',[x y z],'rotation',[r11 r12 r13; r21 r22 r23; r31 r32 r33],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'sensorDimensions',[sx sy]);
+        out = outputBuilder('id',id,'location',location,'position',[x y z],'rotation',[r11 r12 r13; r21 r22 r23; r31 r32 r33],'focalLength',[fx fy],'skew',skew,'principalPoint',[px py],'radialDistortion',[rd1 rd2 rd3],'tangentialDistortion',[t1 t2 t3],'resolution',[sx sy]);
         
     otherwise
         % not implemented, skip
