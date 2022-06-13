@@ -39,7 +39,7 @@ fclose(data.fid);
 data = rmfield(data,{'fid','eof'});
 
 % get data to return
-trackIdx = find(arrayfun(@(x) strcmpi('avc1',x.stsd.type),data.tracks));
+trackIdx = find(arrayfun(@(x) ismember(x.stsd.type,{'avc1','mp4v'}),data.tracks));
 time_info = data.tracks(trackIdx).mdhd;
 sttsEntries = [data.tracks(trackIdx).stts.sample_count; data.tracks(trackIdx).stts.sample_delta].';
 if sttsEntries(end,2)==0
