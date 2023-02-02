@@ -6,11 +6,12 @@ close all
 % the Tobii Pro Glasses 2 eye tracker. Behavior Research Methods. doi:
 % 10.3758/s13428-019-01314-1
 
-% temporarily silence two warnings while constructing GUI
+% temporarily silence some warnings while constructing GUI
 oldWarn = warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 c = onCleanup(@() warning(oldWarn));    % reset warning
 warning('off','MATLAB:ui:javaframe:PropertyToBeRemoved');
 warning('off','MATLAB:ui:javacomponent:FunctionToBeRemoved');
+warning('off','MATLAB:im2java:functionToBeRemoved');
 
 qDEBUG = false;
 if qDEBUG
