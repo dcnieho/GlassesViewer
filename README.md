@@ -166,6 +166,20 @@ For each object in the `settings.userStreams` array the following fields are und
 |`parameters`|An object containing the settings that the function takes.|
 |`streams`|An array with names for the output of the function. These should be valid fieldnames for matlab structs. User-friendly names for these userStreams can be set with the `streamNames` setting in [`settings.plot`](#plot). |
 
+An example userStream configuration, using a function included with glassesViewer, is:
+```json
+"userStreams" : [
+  {
+    "recomputeOnLoad": false,
+    "function": "detPitchRoll",
+    "parameters": {
+      "fs": 100,
+      "sigma": 0.05
+      },
+    "streams": ["orientation"]
+  }
+],
+```
 
 ## dataQuality
 In `settings.dataQuality`, the following field is understood:
