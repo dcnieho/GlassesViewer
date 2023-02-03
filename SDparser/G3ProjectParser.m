@@ -46,7 +46,11 @@ for p = 1:nrec
     recs(p).recStartT       = datenum(recording.created,'yyyy-mm-ddTHH:MM:SS.FFF');
     recs(p).durationSecs    = recording.duration;
     
-    recs(p).partName        = jsondecoder(fileread(fullfile(recorddir,recording.meta_folder,'participant'))).name;
+    % participant file may not exist
+    pFile = fullfile(recorddir,recording.meta_folder,'participant');
+    if ~~exist(pFile,"file")
+        recs(p).partName        = jsondecoder(fileread(pFile)).name;
+    end
     
     % get system/setup info
     recs(p).sysFWVersion = fileread(fullfile(recorddir,recording.meta_folder,'RuVersion'));

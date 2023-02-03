@@ -34,9 +34,14 @@ if qGenCacheFile || qDEBUG
     if qDEBUG
         fprintf('determined fs: %d Hz\n',expectedFs);
     end
-    fid = fopen(fullfile(recordingDir,recording.meta_folder,'participant'),'rt');
-    participant = jsondecoder(fread(fid,inf,'*char').');
-    fclose(fid);
+    pFile = fullfile(recordingDir,recording.meta_folder,'participant');
+    if ~~exist(pFile,"file")
+        fid = fopen(pFile,'rt');
+        participant = jsondecoder(fread(fid,inf,'*char').');
+        fclose(fid);
+    else
+        participant.name = 'unknown';
+    end
     
     % 1 read in gaze data
     % 1.1 unpack gz file, if doesn't exist
