@@ -7,7 +7,7 @@ function data = readG3DataFiles(recordingDir,userStreams,qDEBUG)
 
 % set file format version. cache files older than this are overwritten with
 % a newly generated cache file
-fileVersion = 6;
+fileVersion = 7;
 
 if ~isempty(which('matlab.internal.webservices.fromJSON'))
     jsondecoder = @matlab.internal.webservices.fromJSON;
@@ -244,7 +244,11 @@ if qGenCacheFile || qDEBUG
         % specific time or frame number), so take number of frames as
         % last real keyframe. If not a problem, just take number of
         % frames as last for which we have timeStamp
-        lastFrame = atoms.tracks(videoTrack).stss.table(find(diff(atoms.tracks(videoTrack).stss.table)==1,1));
+        lastFrame = [];
+        [sf,ef] = bool2bounds(diff(atoms.tracks(videoTrack).stss.table)==1);
+        if ~isempty(ef) && ef(end)==length(atoms.tracks(videoTrack).stss.table)
+            lastFrame = atoms.tracks(videoTrack).stss.table(sf(end));
+        end
         if isempty(lastFrame)
             lastFrame = sum(sttsEntries(:,1));
         end
