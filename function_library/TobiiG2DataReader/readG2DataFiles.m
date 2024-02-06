@@ -354,7 +354,10 @@ if qGenCacheFile || qDEBUG
             % frames as last for which we have timeStamp
             lastFrame = [];
             [sf,ef] = bool2bounds(diff(atoms.tracks(videoTrack).stss.table)==1);
-            if ~isempty(ef) && ef(end)==length(atoms.tracks(videoTrack).stss.table)
+            % NB: if last stss entry points to a non-existant sample (not
+            % last entry in timeStamps is end of last frame, so not a real
+            % frame), use entry before that
+            if ~isempty(ef) && (ef(end)==length(atoms.tracks(videoTrack).stss.table) || (atoms.tracks(videoTrack).stss.table(end)>=length(timeStamps) && ef(end)==length(atoms.tracks(videoTrack).stss.table)-1))
                 lastFrame = atoms.tracks(videoTrack).stss.table(sf(end));
             end
             if isempty(lastFrame)
