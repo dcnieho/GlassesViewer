@@ -224,20 +224,10 @@ if qGenCacheFile || qDEBUG
         fname = fullfile(recordingDir,file);
         % get frame timestamps and such from info stored in the mp4
         % file's atoms
-        [timeInfo,sttsEntries,atoms,videoTrack] = getMP4VideoInfo(fname);
-        % 1. timeInfo (from mdhd atom) contains info about timescale,
-        % duration in those units and duration in ms
-        % 2. stts table, contains the info needed to determine
-        % timestamp for each frame. Use entries in stts to determine
-        % frame timestamps. Use formulae described here:
-        % https://developer.apple.com/library/content/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html#//apple_ref/doc/uid/TP40000939-CH204-25696
-        fIdxs = SmartVec(sttsEntries(:,2),sttsEntries(:,1),'flat');
-        timeStamps = cumsum([0 fIdxs]);
-        timeStamps = timeStamps/timeInfo.time_scale;
-        % last is timestamp for end of last frame, should be equal to
-        % length of video
-        assert(floor(timeStamps(end)*1000)==timeInfo.duration_ms,'these should match')
-        % 3. determine number of frames in file that matlab can read by
+        [sttsEntries,atoms,videoTrack] = getMP4VideoInfo(fname);
+        % 1. get timestamps for the frames
+        timeStamps = determineVideoTimestamps(sttsEntries, atoms, videoTrack);
+        % 2. determine number of frames in file that matlab can read by
         % direct indexing. It seems the Tobii files sometimes have a
         % few frames at the end erroneously marked as keyframes. All
         % those cannot be read by matlab (when using read for a
@@ -256,7 +246,7 @@ if qGenCacheFile || qDEBUG
         % timestamps than actually readable frames, throw away ones we
         % don't need as we can't read those frames
         assert(length(timeStamps)>=lastFrame)
-        timeStamps(lastFrame+1:end) = [];
+        timeStamps(lastFrame+1:end) = [];   % NB: always throws away at least the last timeStamp. this is expected as it is the end of the last frame, not the start which is what we're interested in
         % Sync video frames with data by offsetting the timelines for
         % each based on timesync info in tobii data file
         data.video.(field).fts = [data.video.(field).fts timeStamps];

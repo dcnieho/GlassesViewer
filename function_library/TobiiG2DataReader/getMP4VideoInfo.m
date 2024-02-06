@@ -1,4 +1,4 @@
-function [time_info,sttsEntries,data,trackIdx] = getMP4VideoInfo(filename)
+function [sttsEntries,data,trackIdx] = getMP4VideoInfo(filename)
 
 data.fid = fopen(filename,'rb');
 
@@ -40,12 +40,11 @@ data = rmfield(data,{'fid','eof'});
 
 % get data to return
 trackIdx = find(arrayfun(@(x) ismember(x.stsd.type,{'avc1','mp4v'}),data.tracks));
-time_info = data.tracks(trackIdx).mdhd;
 sttsEntries = [data.tracks(trackIdx).stts.sample_count; data.tracks(trackIdx).stts.sample_delta].';
 if sttsEntries(end,2)==0
     sttsEntries(end,:) = [];
 end
-assert(sum(sttsEntries(:,1).*sttsEntries(:,2)) == time_info.duration)
+assert(sum(sttsEntries(:,1).*sttsEntries(:,2)) == data.tracks(trackIdx).mdhd.duration)
 end
 
 
@@ -132,6 +131,20 @@ function data = read_atom(data, size, type)
 destination = ftell(data.fid) + size;
 
 switch type
+    case 'mvhd'
+        fread(data.fid,1,'uchar');  % version (TODO: below creation time and such can also be 64 bit if version==1)
+        fread(data.fid,3,'uchar');  % flags
+        data.moov.mvhd.creationTime    = read_int(data.fid, 4);
+        data.moov.mvhd.modificationTime= read_int(data.fid, 4);
+        data.moov.mvhd.timeScale       = read_int(data.fid, 4);
+        data.moov.mvhd.duration        = read_int(data.fid, 4);
+        fread(data.fid,4,'uchar');  % rate
+        fread(data.fid,2,'uchar');  % volume
+        fread(data.fid,10,'uchar'); % reserved
+        fread(data.fid,9*4,'uchar');% matrix
+        fread(data.fid,24,'uchar'); % reserved
+        fread(data.fid,4,'uchar');  % next_track_id
+
     case 'mdhd'
         version = read_int(data.fid, 4);    % TODO: this should really be 1 8bit for version and 24bit for flags
         if version==1
@@ -144,6 +157,29 @@ switch type
             data.tracks(data.total_tracks).mdhd.duration = read_int(data.fid, 4);
         end
         data.tracks(data.total_tracks).mdhd.duration_ms = floor(data.tracks(data.total_tracks).mdhd.duration*1000/data.tracks(data.total_tracks).mdhd.time_scale);
+
+    case 'elst'
+        version     = read_int(data.fid, 4);    % TODO: this should really be 1 8bit for version and 24bit for flags
+        entry_count = read_int(data.fid, 4);
+        if version==1
+            data.tracks(data.total_tracks).elst.segment_duration = zeros(1,entry_count,'uint64');
+            data.tracks(data.total_tracks).elst.media_time = zeros(1,entry_count,'int64');
+        else
+            data.tracks(data.total_tracks).elst.segment_duration = zeros(1,entry_count,'uint32');
+            data.tracks(data.total_tracks).elst.media_time = zeros(1,entry_count,'int32');
+        end
+        data.tracks(data.total_tracks).elst.media_rate = nan(1,entry_count);
+        for e=1:entry_count
+            if version==1
+                data.tracks(data.total_tracks).elst.segment_duration(e) = read_int(data.fid, 8, 1, @uint64);
+                data.tracks(data.total_tracks).elst.media_time(e) = fread(data.fid, 1, 'int64');
+                data.tracks(data.total_tracks).elst.media_rate(e) = read_int(data.fid, 4)/2^16;
+            else
+                data.tracks(data.total_tracks).elst.segment_duration(e) = read_int(data.fid, 4, 1, @uint32);
+                data.tracks(data.total_tracks).elst.media_time(e) = fread(data.fid, 1, 'int32');
+                data.tracks(data.total_tracks).elst.media_rate(e) = read_int(data.fid, 4)/2^16;
+            end
+        end
         
     case 'tkhd'
         fread(data.fid,1,'uchar');  % version (TODO: below creation time and such can also be 64 bit if version==1)
