@@ -369,9 +369,5 @@ exports should thus be a matter of adding or subtracting the time difference
 between the timestamp of the first gaze sample and the timestamp of the first
 eye- or scene video frame (whichever is later).
 
-# License details
-Most parts of this repository are licensed under the Creative Commons
-Attribution 4.0 (CC BY 4.0) license.
-
 # Acknowledgments
 mp4 parsing code extracted from https://se.mathworks.com/matlabcentral/fileexchange/28028-mpeg-4-aac-lc-decoder, and further extended for our purposes.
