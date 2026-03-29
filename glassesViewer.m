@@ -305,7 +305,7 @@ for a=1:nPanel
             case 'acc'  % accelerometer
                 ac = hm.UserData.data.accelerometer.ac;
                 if hm.UserData.settings.plot.removeAccDC
-                    ac = ac-nanmean(ac,1);
+                    ac = ac-mean(ac,1,'omitnan');
                 end
                 pDat = {{hm.UserData.data.accelerometer.ts}, num2cell(ac,1)};
             otherwise
