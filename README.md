@@ -28,7 +28,7 @@ used for the GUI, it is quite possible that the viewer part of this repository
 is not all that compatible with different matlab versions. Pull requests
 welcomed! Some used functionality was only introduced with R2015b
 (JSON decoder), so the code in this repository is not expected to run
-on versions of matlab older than that. Note that the layout may not be optimal on smaller screens. If GUI elements overlap, consider using a larger screen.
+on versions of matlab older than that. Note that the layout may not be optimal on smaller screens. If GUI elements overlap, consider using a larger screen. Note that the newest supported MATLAB version is R2024b. R2025a and newer will not work as a lot of the functionality the GUI uses has been removed. The functionality for parsing a recording into a matalab format should still work (but is untested).
 
 NB: GlassesViewer is not able to provide fluent video playback due to performance issues with MATLAB figure windows. For instance, I get a few frames a second on my 4K display. We however do not see GlassesViewer as primarily a replay tool (the free Tobii Glasses Controller software serves this purpose well), but as a more advanced tool where all signals can be scrutinized together with the current view of the scene and eye cameras. Choppy playback is not an indication of user or software error--everything is working as expected.
 
