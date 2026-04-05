@@ -30,6 +30,19 @@ if nargin<1 || isempty(settings)
     settings  = jsondecoder(fileread(fullfile(myDir,'defaults.json')));
 end
 
+% Check if MATLAB release is <= R2024b since java was killed with R2025a
+if exist('isMATLABReleaseOlderThan','file') == 2
+    % Use newer API (recommended by MathWorks)
+    isLE_R2024b = isMATLABReleaseOlderThan("R2025a");  % true for <= R2024b
+else
+    % Fallback for older MATLAB versions
+    isLE_R2024b = verLessThan('matlab','25.1');        % R2024b is 24.2, so this is true for <= R2024b
+end
+if ~isLE_R2024b
+    v = ver('matlab');
+    error('This code requires MATLAB R2024b or older. Detected version: %s.', v.Release);
+end
+
 addpath(genpath(fullfile(myDir,'function_library')),...
         genpath(fullfile(myDir,'user_functions')),...
         genpath(fullfile(myDir,'SDparser')));
